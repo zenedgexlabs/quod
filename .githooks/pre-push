@@ -1,0 +1,4 @@
+#!/bin/sh
+# Blocks a push when local CI fails. Bypass in an emergency with: git push --no-verify
+# Enabled by: git config core.hooksPath .githooks
+exec "$(git rev-parse --show-toplevel)/scripts/ci.sh"

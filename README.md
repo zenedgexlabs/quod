@@ -24,11 +24,21 @@ separate `verifier`, language `probes/`, and the `server/` control plane.
 
 ## Development
 
+Run local CI, which does the same checks as `.github/workflows/ci.yml`:
+
 ```sh
-cargo fmt --all
-cargo clippy --all-targets -- -D warnings
-cargo test
+scripts/ci.sh                                                # Git Bash / Linux / macOS
+powershell -ExecutionPolicy Bypass -File scripts/ci.ps1      # Windows PowerShell
 ```
+
+Enable the pre-push hook once per clone. It blocks a push when local CI fails:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Hosted GitHub Actions is configured but currently blocked at the account
+level. Until that's resolved, local CI plus the hook is the gate.
 
 The toolchain is pinned in `rust-toolchain.toml` (stable, with rustfmt and clippy).
 
