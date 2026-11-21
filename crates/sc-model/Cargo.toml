@@ -1,0 +1,18 @@
+[package]
+name = "sc-model"
+description = "Skipcert v1 on-disk and on-wire schemas (footprint graph, outcome keys, certificates, journal)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sc-hash.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
