@@ -215,22 +215,34 @@ Packages with C extensions, or with no RECORD available, are fail-closed: every 
 - **I5:** a changed test_code_hash ⇒ the test runs, with no exceptions.
 - **I6:** certificates exist only from the trusted namespace. Advisory outputs can never enter the outcome index.
 
-### Fail-closed rule catalog (v1, versioned in `sc-policy`)
+### Fail-closed rule catalog (v1, implemented in `sc-policy`, which is authoritative)
 
-| Rule | Triggers |
-|---|---|
-| R001 | CI configuration changed |
-| R002 | conftest, pytest.ini, pyproject `[tool.pytest]`, jest.config or vitest.config changed |
-| R003 | interpreter or node version changed |
-| R004 | policy file changed |
-| R005 | unknown file kind changed |
-| R006 | C-extension or native module package changed |
-| R007 | map older than k commits, for the files changed since then |
-| R008 | dynamic import, `eval` or `exec` with non-constant input observed in the test |
-| R009 | network observed without a declared stub |
-| R010 | clock or randomness used without a seed |
-| R011 | test deleted, or skip/xfail added (flagged, plus a reviewer notice) |
-| R012 | new test with no footprint (always runs) |
+| Rule | Scope | Triggers |
+|---|---|---|
+| R001 | global | CI configuration changed |
+| R002 | global | Test-runner configuration changed (conftest, pytest.ini, pyproject, tox, setup.cfg, jest/vitest config) |
+| R003 | global | Runtime version pin changed (.python-version, .nvmrc, ...) |
+| R004 | global | Skipcert policy changed |
+| R005 | global | Build-affecting input changed (setup.py, C/Cython sources, native binaries, .pth, sitecustomize) |
+| R006 | global | Lockfile unparseable, or requirement options (index, includes, editables) changed |
+| R007 | global | Map staleness unknown or above `max_staleness` |
+| R008 | test | Dynamic import / eval with non-constant input observed |
+| R009 | test | Network contacted without a declared stub |
+| R010 | test (L1 only) | Nondeterminism, clock or randomness: blocks outcome reuse, not L0 skipping |
+| R011 | report | Test integrity: test removed, test file deleted, skip/xfail markers added |
+| R012 | test | No complete footprint (new or untraced test) |
+| R013 | test | Subprocess spawned (child process not traced) |
+| R014 | test | Never-skip (policy glob or marker) |
+| R015 | global | Path in the policy's `run_all_paths` |
+| R016 | test | Native code executed and `native_code = "run"` |
+
+Other changed files map to graph nodes, and the inverse index decides who runs:
+- data files map to file nodes;
+- module-level Python changes map to file nodes;
+- body-only Python changes map to function nodes, falling back to the file node when the map has no function-level observations for that file;
+- lockfile package changes map to `pypi:<name>` package nodes.
+
+A file no test read can't affect any test, so it needs no rule of its own.
 
 ### Determinism gate
 

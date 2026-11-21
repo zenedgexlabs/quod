@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/sc-hash", "crates/sc-model", "crates/sc-graph", "crates/sc-change"]
+members = ["crates/sc-hash", "crates/sc-model", "crates/sc-graph", "crates/sc-change", "crates/sc-policy"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,6 +17,8 @@ thiserror = "2"
 sc-hash = { path = "crates/sc-hash" }
 sc-model = { path = "crates/sc-model" }
 sc-graph = { path = "crates/sc-graph" }
+sc-change = { path = "crates/sc-change" }
+sc-policy = { path = "crates/sc-policy" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

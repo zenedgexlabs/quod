@@ -36,6 +36,30 @@ pub struct SourceDelta {
     /// True if either version failed to parse cleanly. The delta is then the
     /// conservative "everything changed".
     pub parse_error: bool,
+    /// Entities present at base and absent at head (a subset of `entities`),
+    /// sorted. Used by the test-integrity rules to flag deleted tests.
+    pub removed: Vec<String>,
+    /// Number of skip/xfail markers at base and at head (`pytest.mark.skip`,
+    /// `skipif`, `xfail`, `pytest.skip(`, `unittest.skip`). An increase in a
+    /// test file is an integrity finding.
+    pub skip_markers: (u32, u32),
+}
+
+const SKIP_MARKERS: [&str; 5] = [
+    "mark.skip",
+    "mark.xfail",
+    "pytest.skip(",
+    "pytest.xfail(",
+    "unittest.skip",
+];
+
+fn count_skip_markers(src: Option<&[u8]>) -> u32 {
+    let Some(src) = src else { return 0 };
+    let text = String::from_utf8_lossy(src);
+    SKIP_MARKERS
+        .iter()
+        .map(|m| text.matches(m).count() as u32)
+        .sum()
 }
 
 struct Analysis {
@@ -195,10 +219,17 @@ pub fn diff(old: Option<&[u8]>, new: Option<&[u8]>) -> Result<SourceDelta, Chang
         (Some(x), Some(y)) => x.module != y.module || parse_error,
         _ => true,
     };
+    let removed: Vec<String> = ea
+        .keys()
+        .filter(|k| !eb.contains_key(*k))
+        .cloned()
+        .collect();
     Ok(SourceDelta {
         module_changed,
         entities,
         parse_error,
+        removed,
+        skip_markers: (count_skip_markers(old), count_skip_markers(new)),
     })
 }
 

@@ -10,6 +10,7 @@ pub mod error;
 pub mod graph;
 pub mod ids;
 pub mod journal;
+pub mod names;
 pub mod outcome;
 pub mod version;
 
