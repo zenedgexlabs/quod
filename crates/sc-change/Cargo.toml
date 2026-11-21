@@ -1,0 +1,20 @@
+[package]
+name = "sc-change"
+description = "Skipcert change resolution: git diffs, function-level Python deltas, lockfile deltas"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sc-hash.workspace = true
+thiserror.workspace = true
+toml = "0.9"
+tree-sitter = "0.25"
+tree-sitter-python = "0.23"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
