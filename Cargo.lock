@@ -139,6 +139,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-graph"
+version = "0.1.0"
+dependencies = [
+ "ciborium",
+ "sc-hash",
+ "sc-model",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "sc-hash"
 version = "0.1.0"
 dependencies = [
