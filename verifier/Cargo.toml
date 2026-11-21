@@ -1,0 +1,27 @@
+[package]
+name = "skipcert-verify"
+description = "Independent verifier for Skipcert skip certificates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+# Trusted base: schemas (sc-model), hashing (sc-hash) and .scmap decoding
+# (sc-graph format only). The decision checks here are re-implemented and
+# must NOT call sc-ladder or sc-policy (ADR-006). Those appear only as
+# dev-dependencies, to produce certificates for end-to-end tests.
+[dependencies]
+sc-graph.workspace = true
+sc-hash.workspace = true
+sc-model.workspace = true
+ed25519-dalek = "2"
+serde_json.workspace = true
+
+[dev-dependencies]
+sc-cert.workspace = true
+sc-change.workspace = true
+sc-ladder.workspace = true
+sc-policy.workspace = true
+
+[lints]
+workspace = true
