@@ -14,4 +14,11 @@ Invoke-Step 'fmt'    { cargo fmt --all -- --check }
 Invoke-Step 'clippy' { cargo clippy --all-targets --locked -- -D warnings }
 Invoke-Step 'test'   { cargo test --locked }
 
+$env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    Invoke-Step 'python probe' { Push-Location probes/python; try { uv run --locked -q pytest -q } finally { Pop-Location } }
+} else {
+    Write-Host "`n(skipping python probe: uv not found)"
+}
+
 Write-Host "`nlocal CI passed"

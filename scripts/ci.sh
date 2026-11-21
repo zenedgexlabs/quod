@@ -17,4 +17,12 @@ cargo clippy --all-targets --locked -- -D warnings
 step "test"
 cargo test --locked
 
+export PATH="$HOME/.local/bin:$PATH"
+if command -v uv >/dev/null 2>&1; then
+  step "python probe"
+  (cd probes/python && uv run --locked -q pytest -q)
+else
+  printf '\n(skipping python probe: uv not found)\n'
+fi
+
 printf '\nlocal CI passed\n'

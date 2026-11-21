@@ -1,0 +1,297 @@
+"""Low-level capture: code execution via sys.monitoring, I/O via audit hooks.
+
+Observations go to every *collector* on the active stack. Collectors are
+pushed for a test, for a non-function-scoped fixture's setup, and for a test
+module's import during collection. With the stack empty (plugin start,
+conftest import, session start), observations go to the *root* collector,
+whose changes affect every test (rule R017).
+
+Each code object fires ``PY_START`` once and is then disabled. At every test
+boundary, ``sys.monitoring.restart_events()`` re-enables everything, so each
+test pays for one callback per distinct function it runs. This is the
+technique coverage tools use for per-test contexts.
+"""
+
+from __future__ import annotations
+
+import os
+import site
+import sys
+import sysconfig
+import threading
+from dataclasses import dataclass, field
+from types import CodeType
+
+from .packages import PackageIndex, PackageInfo
+
+FLAG_NETWORK = "network"
+FLAG_SUBPROCESS = "subprocess"
+FLAG_DYNAMIC_IMPORT = "dynamic_import"
+FLAG_C_EXT = "c_ext"
+FLAG_UNTRACED = "untraced"
+
+_SUBPROCESS_EVENTS = frozenset(
+    {"subprocess.Popen", "os.system", "os.posix_spawn", "os.spawn", "os.exec", "os.startfile", "pty.spawn"}
+)
+_LISTING_EVENTS = frozenset({"os.listdir", "os.scandir", "glob.glob", "os.walk"})
+_LOOPBACK_PREFIXES = ("127.", "::1", "localhost", "0:0:0:0:0:0:0:1")
+
+
+@dataclass
+class Collector:
+    """A set of observations."""
+
+    files: set[str] = field(default_factory=set)
+    functions: set[tuple[str, str]] = field(default_factory=set)
+    packages: set[str] = field(default_factory=set)
+    flags: set[str] = field(default_factory=set)
+
+    def merge(self, other: "Collector") -> None:
+        self.files |= other.files
+        self.functions |= other.functions
+        self.packages |= other.packages
+        self.flags |= other.flags
+
+
+def entity_qualname(co_qualname: str) -> str | None:
+    """Maps a runtime ``co_qualname`` to the entity name ``sc-change`` emits.
+
+    Lambdas, comprehensions and generator expressions belong to their
+    enclosing def or class. ``None`` means module level.
+
+    >>> entity_qualname("f.<locals>.<lambda>")
+    'f'
+    >>> entity_qualname("C.m")
+    'C.m'
+    >>> entity_qualname("<lambda>") is None
+    True
+    """
+    parts = co_qualname.split(".")
+    while parts and parts[-1].startswith("<"):
+        parts.pop()
+        if parts and parts[-1] == "<locals>":
+            parts.pop()
+    return ".".join(parts) if parts else None
+
+
+def _norm(path: str) -> str:
+    return os.path.normcase(os.path.realpath(path))
+
+
+def _pyc_to_source(path: str) -> str:
+    """``pkg/__pycache__/mod.cpython-313.pyc`` → ``pkg/mod.py``."""
+    head, tail = os.path.split(path)
+    if os.path.basename(head) == "__pycache__" and tail.endswith(".pyc"):
+        return os.path.join(os.path.dirname(head), tail.split(".", 1)[0] + ".py")
+    return path
+
+
+class Recorder:
+    """Process-wide capture. Only one may be active per process."""
+
+    _active: "Recorder | None" = None
+    _audit_installed = False
+
+    def __init__(self, repo_root: str) -> None:
+        self.repo_root_real = os.path.realpath(repo_root)
+        self.repo_root = os.path.normcase(self.repo_root_real)
+        self._repo_prefix = self.repo_root.rstrip(os.sep) + os.sep
+        self.packages = PackageIndex()
+        self.seen_packages: dict[str, PackageInfo] = {}
+        self.root = Collector()
+        self.stack: list[Collector] = []
+        self._lock = threading.Lock()
+        self._file_cache: dict[str, tuple | None] = {}
+        self._tool_id: int | None = None
+        self._site_prefixes = self._site_dirs()
+        self._own_dir = _norm(os.path.dirname(__file__)) + os.sep
+
+    @staticmethod
+    def _site_dirs() -> tuple[str, ...]:
+        dirs: set[str] = set()
+        for key in ("purelib", "platlib"):
+            p = sysconfig.get_paths().get(key)
+            if p:
+                dirs.add(p)
+        try:
+            dirs.update(site.getsitepackages())
+        except AttributeError:
+            pass
+        user = getattr(site, "getusersitepackages", lambda: None)()
+        if user:
+            dirs.add(user)
+        return tuple(sorted({_norm(d).rstrip(os.sep) + os.sep for d in dirs if d}))
+
+    # Classification --------------------------------------------------------
+
+    def classify_path(self, raw: str) -> tuple | None:
+        """Returns ``("file", rel)``, ``("pkg", name)`` or ``None`` (ignored)."""
+        cached = self._file_cache.get(raw)
+        if cached is not None or raw in self._file_cache:
+            return cached
+        result: tuple | None = None
+        if raw and not raw.startswith("<"):
+            p = _norm(_pyc_to_source(raw))
+            if p.startswith(self._own_dir):
+                result = None
+            elif any(p.startswith(s) for s in self._site_prefixes):
+                info = self.packages.lookup(p)
+                self.seen_packages.setdefault(info.name, info)
+                result = ("pkg", info.name, info.native)
+            elif p.startswith(self._repo_prefix):
+                rel = p[len(self._repo_prefix):].replace(os.sep, "/")
+                # Keep the repository's own spelling of the path (normcase lowercases on Windows).
+                actual = os.path.relpath(os.path.realpath(_pyc_to_source(raw)), self.repo_root_real)
+                result = ("file", actual.replace(os.sep, "/") if not actual.startswith("..") else rel)
+        self._file_cache[raw] = result
+        return result
+
+    def _targets(self) -> list[Collector]:
+        return self.stack if self.stack else [self.root]
+
+    # sys.monitoring -------------------------------------------------------
+
+    def _on_py_start(self, code: CodeType, _offset: int):
+        try:
+            cls = self.classify_path(code.co_filename)
+            if cls is not None:
+                with self._lock:
+                    targets = self._targets()
+                    if cls[0] == "file":
+                        q = entity_qualname(code.co_qualname)
+                        for c in targets:
+                            if q is None:
+                                c.files.add(cls[1])
+                            else:
+                                c.functions.add((cls[1], q))
+                    else:
+                        for c in targets:
+                            c.packages.add(cls[1])
+                            if cls[2]:
+                                c.flags.add(FLAG_C_EXT)
+        except Exception:  # noqa: BLE001 - a probe bug must not break the test run
+            self._mark_untraced()
+        return sys.monitoring.DISABLE
+
+    def _mark_untraced(self) -> None:
+        for c in self._targets():
+            c.flags.add(FLAG_UNTRACED)
+
+    # Audit hook -----------------------------------------------------------
+
+    @staticmethod
+    def _audit_trampoline(event: str, args: tuple) -> None:
+        rec = Recorder._active
+        if rec is not None:
+            rec._on_audit(event, args)
+
+    def _on_audit(self, event: str, args: tuple) -> None:
+        try:
+            if event == "open":
+                path, mode = args[0], args[1]
+                if isinstance(path, int) or path is None:
+                    return
+                if isinstance(mode, str) and any(m in mode for m in "wax") and "+" not in mode:
+                    return  # pure writes are outputs, not inputs
+                cls = self.classify_path(os.fsdecode(path))
+                if cls is not None:
+                    with self._lock:
+                        for c in self._targets():
+                            (c.files if cls[0] == "file" else c.packages).add(cls[1])
+            elif event in _SUBPROCESS_EVENTS:
+                self._flag(FLAG_SUBPROCESS)
+            elif event == "socket.connect":
+                addr = args[1] if len(args) > 1 else None
+                host = addr[0] if isinstance(addr, tuple) and addr else None
+                if isinstance(host, str) and not host.startswith(_LOOPBACK_PREFIXES):
+                    self._flag(FLAG_NETWORK)
+            elif event in _LISTING_EVENTS:
+                target = args[0] if args else None
+                if target is None:
+                    target = "."
+                if isinstance(target, (str, bytes, os.PathLike)):
+                    cls = self.classify_path(os.fsdecode(target))
+                    if cls is not None and cls[0] == "file" and self._listing_by_repo_code():
+                        self._flag(FLAG_DYNAMIC_IMPORT)
+        except Exception:  # noqa: BLE001
+            self._mark_untraced()
+
+    def _listing_by_repo_code(self) -> bool:
+        """True if the nearest non-stdlib caller of a directory listing is
+        repository code.
+
+        The import system (``FileFinder``) and libraries such as pytest list
+        directories for their own bookkeeping. Imports are already traced
+        precisely, so only listings the project's own code performs are
+        discovery hazards.
+        """
+        f = sys._getframe(2)
+        for _ in range(40):
+            if f is None:
+                return False
+            filename = f.f_code.co_filename
+            if filename.startswith("<frozen importlib"):
+                return False
+            cls = self.classify_path(filename)
+            if cls is not None:
+                return cls[0] == "file"
+            f = f.f_back
+        return False
+
+    def _flag(self, flag: str) -> None:
+        # Flags describe tests. Root-scope activity (collection itself lists
+        # directories) must not flag anything.
+        if self.stack:
+            with self._lock:
+                for c in self.stack:
+                    c.flags.add(flag)
+
+    # Lifecycle ------------------------------------------------------------
+
+    def start(self) -> None:
+        if Recorder._active is not None:
+            raise RuntimeError("a Skipcert recorder is already active in this process")
+        mon = sys.monitoring
+        for tool in (3, 4):
+            if mon.get_tool(tool) is None:
+                mon.use_tool_id(tool, "skipcert")
+                self._tool_id = tool
+                break
+        else:
+            raise RuntimeError("no free sys.monitoring tool id (3 and 4 are in use)")
+        mon.register_callback(self._tool_id, mon.events.PY_START, self._on_py_start)
+        mon.set_events(self._tool_id, mon.events.PY_START)
+        Recorder._active = self
+        if not Recorder._audit_installed:
+            sys.addaudithook(Recorder._audit_trampoline)  # cannot be removed; gated by _active
+            Recorder._audit_installed = True
+
+    def stop(self) -> None:
+        if self._tool_id is not None:
+            mon = sys.monitoring
+            mon.set_events(self._tool_id, 0)
+            mon.register_callback(self._tool_id, mon.events.PY_START, None)
+            mon.free_tool_id(self._tool_id)
+            self._tool_id = None
+        Recorder._active = None
+
+    def boundary(self) -> None:
+        """Re-enables all disabled code locations (call at each test start)."""
+        sys.monitoring.restart_events()
+
+    def push(self, c: Collector, fresh: bool = False) -> None:
+        """Pushes a collector. With ``fresh``, re-enables every code location
+        first, so the collector sees code that already ran earlier in this
+        test. Shared (fixture and module) collectors need this: their contents
+        are later attributed to other tests."""
+        if fresh:
+            sys.monitoring.restart_events()
+        with self._lock:
+            self.stack.append(c)
+
+    def pop(self, c: Collector) -> None:
+        with self._lock:
+            if self.stack and self.stack[-1] is c:
+                self.stack.pop()
+            elif c in self.stack:
+                self.stack.remove(c)

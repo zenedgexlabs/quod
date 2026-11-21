@@ -50,6 +50,10 @@ use sc_model::{Ecosystem, NodeKind, TestFlags, names};
 /// Version of the rule catalog. Part of the policy hash.
 pub const CATALOG_VERSION: u32 = 1;
 
+/// Pseudo-package the probe uses for installed files no distribution claims
+/// (must match `skipcert_probe.packages.SITE_PSEUDO_PACKAGE`).
+pub const SITE_PSEUDO_PACKAGE: &str = "__site__";
+
 /// Errors loading a policy.
 #[derive(Debug, thiserror::Error)]
 pub enum PolicyError {
@@ -410,6 +414,16 @@ impl Policy {
                                 });
                             }
                         }
+                        if !pk.is_empty() {
+                            // Installed files no distribution claims are attributed to
+                            // this pseudo-package by the probe. Any dependency change may
+                            // have changed them, so their users re-run.
+                            ev.changed.push(ChangedNode {
+                                kind: NodeKind::ExtPackage,
+                                name: names::package(Ecosystem::Pypi, SITE_PSEUDO_PACKAGE),
+                                fallback_file: None,
+                            });
+                        }
                     }
                 }
                 continue;
@@ -702,8 +716,9 @@ mod tests {
             &FRESH,
         );
         assert!(!ev.runs_everything());
-        assert_eq!(ev.changed[0].name, "pypi:requests");
-        assert_eq!(ev.changed[0].kind, NodeKind::ExtPackage);
+        let names: Vec<&str> = ev.changed.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, vec!["pypi:__site__", "pypi:requests"]);
+        assert!(ev.changed.iter().all(|c| c.kind == NodeKind::ExtPackage));
 
         let bad = LockDelta::Unparseable("x".into());
         let ev = p.evaluate(

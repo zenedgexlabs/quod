@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "skipcert-probe"
+version = "0.1.0"
+description = "pytest plugin that records per-test footprints for Skipcert"
+requires-python = ">=3.12"
+dependencies = ["pytest>=8"]
+license = { text = "Proprietary" }
+
+[project.entry-points.pytest11]
+skipcert = "skipcert_probe.plugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/skipcert_probe"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
