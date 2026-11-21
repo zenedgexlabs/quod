@@ -7,7 +7,30 @@ certificate that an independent verifier can check. Results are shared across
 branches and agents off the same base. The full suite still runs in the
 background, so any missed failure is caught and published.
 
-> Status: **M0 (foundations)**. Schemas and hashing only. Nothing is usable yet.
+> Status: **M1 in progress.** The end-to-end flow works for Python/pytest (record → select → verify). Not yet benchmarked on real repositories.
+
+## Quickstart (Python / pytest)
+
+```sh
+pip install ./probes/python                 # the pytest plugin, into the project's env
+cargo build --release                       # builds `skipcert` and `skipcert-verify`
+
+skipcert keygen --out ci-key.seed           # keep the seed secret; note the printed key id
+
+# On a clean checkout of the base commit (e.g. main, after merge):
+skipcert record --out .skipcert/map.scmap -- python -m pytest
+
+# On a PR (working tree or --head <rev>):
+skipcert select --map .skipcert/map.scmap --key ci-key.seed \
+  --skip-out skip.txt --certs-out certs.jsonl --report-out report.json
+python -m pytest --skipcert-skip=skip.txt   # runs everything not certified as skippable
+
+# Anyone can re-check the skips independently:
+skipcert-verify --certs certs.jsonl --map .skipcert/map.scmap --trusted-key ed25519:<key id>
+```
+
+Agents and local runs use `--advisory` (no key). Advisory certificates are never
+accepted as proof by the verifier.
 
 ## Layout
 

@@ -8,3 +8,4 @@ dist/
 *.scmap
 .env
 .claude/settings.local.json
+*.seed

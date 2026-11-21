@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/sc-hash", "crates/sc-model", "crates/sc-graph", "crates/sc-change", "crates/sc-policy", "crates/sc-ladder", "crates/sc-cert", "verifier"]
+members = ["crates/sc-hash", "crates/sc-model", "crates/sc-graph", "crates/sc-change", "crates/sc-policy", "crates/sc-ladder", "crates/sc-cert", "verifier", "crates/sc-cli"]
 
 [workspace.package]
 version = "0.1.0"

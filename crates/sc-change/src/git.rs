@@ -89,6 +89,15 @@ impl Repo {
         .to_owned())
     }
 
+    /// Number of commits reachable from `to` but not from `from` (`git rev-list --count from..to`).
+    pub fn commits_between(&self, from: &str, to: &str) -> Result<u32, ChangeError> {
+        let range = format!("{from}..{to}");
+        let out = utf8(&run(&self.root, &["rev-list", "--count", &range])?)?;
+        out.trim()
+            .parse()
+            .map_err(|_| ChangeError::Git(format!("unexpected rev-list output {out:?}")))
+    }
+
     /// Merge base of two revisions.
     pub fn merge_base(&self, a: &str, b: &str) -> Result<String, ChangeError> {
         Ok(utf8(&run(&self.root, &["merge-base", a, b])?)?
