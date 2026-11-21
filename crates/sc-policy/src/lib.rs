@@ -38,6 +38,7 @@
 //! | R014 | test | Never-skip (policy glob or marker) |
 //! | R015 | global | Path matches the policy's `run_all_paths` |
 //! | R016 | test | Native code executed and policy is `native_code = "run"` |
+//! | R017 | global (ladder) | A changed node was observed in the root scope (conftest, plugins, startup) |
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::{Deserialize, Serialize};

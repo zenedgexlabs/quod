@@ -235,6 +235,7 @@ Packages with C extensions, or with no RECORD available, are fail-closed: every 
 | R014 | test | Never-skip (policy glob or marker) |
 | R015 | global | Path in the policy's `run_all_paths` |
 | R016 | test | Native code executed and `native_code = "run"` |
+| R017 | global (ladder) | A changed node was observed in the root scope (conftest, plugins, startup) |
 
 Other changed files map to graph nodes, and the inverse index decides who runs:
 - data files map to file nodes;

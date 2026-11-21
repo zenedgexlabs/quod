@@ -332,6 +332,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-ladder"
+version = "0.1.0"
+dependencies = [
+ "sc-change",
+ "sc-graph",
+ "sc-hash",
+ "sc-model",
+ "sc-policy",
+ "thiserror",
+]
+
+[[package]]
 name = "sc-model"
 version = "0.1.0"
 dependencies = [
