@@ -1,0 +1,43 @@
+# Repositories for the conformance replay (experiment E1).
+#
+# Each entry: git URL, branch, packages to install into the replay venv (the
+# probe is always added), pytest arguments, and globs of source files that
+# mutants may be injected into.
+#
+# Chosen for pure-Python packages with fast, offline test suites and active
+# history. Add more freely: the harness has no per-repo code.
+
+[repos.more-itertools]
+url = "https://github.com/more-itertools/more-itertools"
+branch = "master"
+install = ["-e", "."]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["more_itertools/*.py"]
+
+[repos.click]
+url = "https://github.com/pallets/click"
+branch = "main"
+install = ["-e", "."]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/click/*.py"]
+
+[repos.attrs]
+url = "https://github.com/python-attrs/attrs"
+branch = "main"
+install = ["-e", ".", "hypothesis"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/attr/*.py", "src/attrs/*.py"]
+
+[repos.jinja]
+url = "https://github.com/pallets/jinja"
+branch = "main"
+install = ["-e", ".", "trio"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/jinja2/*.py"]
+
+[repos.itsdangerous]
+url = "https://github.com/pallets/itsdangerous"
+branch = "main"
+install = ["-e", ".", "freezegun"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/itsdangerous/*.py"]

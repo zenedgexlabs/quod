@@ -1,0 +1,158 @@
+{
+  "summary": {
+    "repo": "more-itertools",
+    "history": {
+      "steps": 3,
+      "escapes": 0,
+      "baseline_escapes": 0,
+      "skipcert_time_fraction": 0.1008,
+      "baseline_time_fraction": 0.9287,
+      "advantage_vs_baseline": 9.21,
+      "verifier_failures": 0,
+      "full_run_steps": 0
+    },
+    "mutants": {
+      "steps": 3,
+      "escapes": 0,
+      "baseline_escapes": 0,
+      "skipcert_time_fraction": 0.0001,
+      "baseline_time_fraction": 0.9491,
+      "advantage_vs_baseline": 6434.78,
+      "verifier_failures": 0,
+      "full_run_steps": 0,
+      "killed": 3
+    },
+    "gate": {
+      "zero_escapes": true,
+      "two_x_vs_baseline": true,
+      "verifier_clean": true
+    }
+  },
+  "steps": [
+    {
+      "kind": "history",
+      "base": "de8d98968205993aca2bc1361d9036203190d42f",
+      "head": "0fcdde9cce8bfdc3ba5e84711a990a32b74564a4",
+      "tests_total": 771,
+      "total_ms": 21477,
+      "skipcert_skipped": 770,
+      "skipcert_run_ms": 0,
+      "baseline_skipped": 132,
+      "baseline_run_ms": 19960,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "",
+      "extra": {}
+    },
+    {
+      "kind": "history",
+      "base": "0fcdde9cce8bfdc3ba5e84711a990a32b74564a4",
+      "head": "c0ede7fcd50340170bc7f428b7b658f6e767a34c",
+      "tests_total": 772,
+      "total_ms": 19143,
+      "skipcert_skipped": 145,
+      "skipcert_run_ms": 6109,
+      "baseline_skipped": 132,
+      "baseline_run_ms": 17774,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "",
+      "extra": {}
+    },
+    {
+      "kind": "history",
+      "base": "c0ede7fcd50340170bc7f428b7b658f6e767a34c",
+      "head": "e3f79f4fde5f7c107f70a20730b17240a05ba99b",
+      "tests_total": 772,
+      "total_ms": 20375,
+      "skipcert_skipped": 760,
+      "skipcert_run_ms": 40,
+      "baseline_skipped": 132,
+      "baseline_run_ms": 18915,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "",
+      "extra": {}
+    },
+    {
+      "kind": "mutant",
+      "base": "e3f79f4fde5f7c107f70a20730b17240a05ba99b",
+      "head": "mutant1",
+      "tests_total": 772,
+      "total_ms": 18865,
+      "skipcert_skipped": 767,
+      "skipcert_run_ms": 3,
+      "baseline_skipped": 132,
+      "baseline_run_ms": 17466,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [
+        "tests/test_more.py::InterleaveRandomlyTests::test_all_empty",
+        "tests/test_more.py::InterleaveRandomlyTests::test_basic",
+        "tests/test_more.py::InterleaveRandomlyTests::test_some_empty"
+      ],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "more.py:1418: '-' -> '+'",
+      "extra": {
+        "killed": true
+      }
+    },
+    {
+      "kind": "mutant",
+      "base": "e3f79f4fde5f7c107f70a20730b17240a05ba99b",
+      "head": "mutant2",
+      "tests_total": 772,
+      "total_ms": 22075,
+      "skipcert_skipped": 769,
+      "skipcert_run_ms": 4,
+      "baseline_skipped": 132,
+      "baseline_run_ms": 20371,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [
+        "tests/test_more.py::PowersetOfSetsTests::test_baseset",
+        "tests/test_more.py::PowersetOfSetsTests::test_hash_count",
+        "tests/test_more.py::PowersetOfSetsTests::test_simple"
+      ],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "more.py:5197: '+' -> '-'",
+      "extra": {
+        "killed": true
+      }
+    },
+    {
+      "kind": "mutant",
+      "base": "e3f79f4fde5f7c107f70a20730b17240a05ba99b",
+      "head": "mutant3",
+      "tests_total": 772,
+      "total_ms": 20077,
+      "skipcert_skipped": 768,
+      "skipcert_run_ms": 2,
+      "baseline_skipped": 6,
+      "baseline_run_ms": 20076,
+      "escapes": [],
+      "baseline_escapes": [],
+      "newly_failing": [
+        "tests/test_recipes.py::NthCombinationTests::test_basic",
+        "tests/test_recipes.py::NthCombinationTests::test_long"
+      ],
+      "global_triggers": [],
+      "verifier_ok": true,
+      "note": "recipes.py:684: '1' -> '2'",
+      "extra": {
+        "killed": true
+      }
+    }
+  ]
+}
