@@ -96,6 +96,11 @@ enum Cmd {
         /// Print the JSON report to stdout instead of the summary.
         #[arg(long)]
         json: bool,
+        /// Python interpreter of the environment the tests will run in.
+        /// Turns on environment mode for maps recorded by a probe with the
+        /// `py.environment` capability (ADR 012).
+        #[arg(long)]
+        python: Option<PathBuf>,
     },
 }
 
@@ -125,6 +130,7 @@ fn write_map(repo: &Repo, id: &str, commit: &str, captures: &[PathBuf], out: &Pa
         engine: ENGINE_VERSION.to_owned(),
         probes: Vec::new(),
         capabilities: Vec::new(),
+        ..MapMeta::default()
     };
     let graph = ingest(captures, repo.root(), meta)?;
     let (bytes, root) = graph.encode()?;
@@ -224,6 +230,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
             certs_out,
             report_out,
             json,
+            python,
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
             let opts = SelectOptions {
@@ -233,10 +240,17 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 key: key.clone(),
                 advisory: *advisory,
                 repo_id: repo_id(&cli, &repo),
+                python: python.clone(),
             };
             let res = run_select(&repo, &opts)?;
             if let Some(p) = skip_out {
-                let mut text = res.skip_names.join("\n");
+                let lines: Vec<&str> = res
+                    .skip_header
+                    .iter()
+                    .chain(res.skip_names.iter())
+                    .map(String::as_str)
+                    .collect();
+                let mut text = lines.join("\n");
                 if !text.is_empty() {
                     text.push('\n');
                 }

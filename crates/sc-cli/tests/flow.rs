@@ -101,6 +101,7 @@ fn setup_with(capabilities: &[&str]) -> Fixture {
         engine: "test".into(),
         probes: vec![],
         capabilities: vec![],
+        ..MapMeta::default()
     };
     let graph = ingest(&[cap], repo.root(), meta).unwrap();
     assert_eq!(graph.meta().probes, vec!["python-probe/0.1.0".to_string()]);
@@ -131,6 +132,7 @@ fn select(f: &Fixture) -> sc_cli::SelectResult {
             key: Some(f.key.clone()),
             advisory: false,
             repo_id: "acme/app".into(),
+            python: None,
         },
     )
     .unwrap()
@@ -255,6 +257,7 @@ fn advisory_output_is_not_accepted_by_the_verifier() {
             map: f.map.clone(),
             advisory: true,
             repo_id: "acme/app".into(),
+            python: None,
             ..SelectOptions::default()
         },
     )
@@ -315,4 +318,250 @@ fn map_capabilities_are_the_intersection_of_its_captures() {
     fs::write(&old, capture()).unwrap();
     let g = ingest(&[a, old], dir.path(), MapMeta::default()).unwrap();
     assert!(g.meta().capabilities.is_empty());
+}
+
+const H1: &str = "1111111111111111111111111111111111111111111111111111111111111111";
+const H2: &str = "2222222222222222222222222222222222222222222222222222222222222222";
+
+fn recorded_environment() -> serde_json::Value {
+    serde_json::json!({
+        "interpreter.version": "3.13.0",
+        "system.openssl": "OpenSSL 3.0",
+        "dist.requests": "2.31.0 aa",
+        "dist.__site__": "ss",
+    })
+}
+
+/// A map recorded by a `py.environment` probe: test_get reads `API_URL`.
+fn setup_env_mode() -> Fixture {
+    let f = setup_with(&["py.environment", "py.introspection"]);
+    let header = serde_json::json!({
+        "type": "header", "v": 1, "probe": "python-probe/0.3.0",
+        "capabilities": ["py.environment", "py.introspection"],
+        "environment": recorded_environment(),
+        "invocation": {"invocation.args": "[]"},
+        "environment_digest": "envdigest",
+        "invocation_digest": "invdigest",
+    });
+    let cap: Vec<String> = capture()
+        .lines()
+        .enumerate()
+        .map(|(i, l)| {
+            if i == 0 {
+                header.to_string()
+            } else if l.contains("test_get") {
+                l.replace(
+                    r#""flags":[]}"#,
+                    &format!(r#""flags":[],"env":[["API_URL","{H1}"]]}}"#),
+                )
+            } else {
+                l.to_owned()
+            }
+        })
+        .collect();
+    let dir = f.map.parent().unwrap().to_path_buf();
+    let capf = dir.join("capture-env.jsonl");
+    fs::write(&capf, cap.join("\n")).unwrap();
+    let repo = Repo::discover(&f.root).unwrap();
+    let meta = MapMeta {
+        repo: "acme/app".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    let graph = ingest(&[capf], repo.root(), meta).unwrap();
+    assert!(
+        graph
+            .meta()
+            .capabilities
+            .contains(&"py.environment".to_string())
+    );
+    fs::write(&f.map, graph.encode().unwrap().0).unwrap();
+    f
+}
+
+/// A stand-in interpreter that prints a fixed fingerprint.
+fn fake_python(f: &Fixture, environment: serde_json::Value, api_url: &str) -> std::path::PathBuf {
+    let dir = f.map.parent().unwrap();
+    let json = dir.join("fp.json");
+    fs::write(
+        &json,
+        serde_json::json!({"probe": "x", "environment": environment, "env": {"API_URL": api_url}})
+            .to_string(),
+    )
+    .unwrap();
+    if cfg!(windows) {
+        let p = dir.join("python.cmd");
+        fs::write(&p, format!("@type \"{}\"\r\n", json.display())).unwrap();
+        p
+    } else {
+        let p = dir.join("python.sh");
+        fs::write(&p, format!("#!/bin/sh\ncat '{}'\n", json.display())).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&p, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        p
+    }
+}
+
+fn select_with(f: &Fixture, python: Option<std::path::PathBuf>) -> sc_cli::SelectResult {
+    let repo = Repo::discover(&f.root).unwrap();
+    run_select(
+        &repo,
+        &SelectOptions {
+            map: f.map.clone(),
+            head: None,
+            policy: None,
+            key: Some(f.key.clone()),
+            advisory: false,
+            repo_id: "acme/app".into(),
+            python,
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn environment_mode_replaces_ci_rules_and_binds_the_environment() {
+    let f = setup_env_mode();
+    fs::create_dir_all(f.root.join(".github/workflows")).unwrap();
+    fs::write(f.root.join(".github/workflows/tests.yaml"), "on: push\n").unwrap();
+
+    // Path mode: a test workflow changed, so everything runs.
+    assert!(select_with(&f, None).report.global[0].starts_with("R001"));
+
+    // Environment mode, same environment: the workflow edit is irrelevant.
+    let py = fake_python(&f, recorded_environment(), H1);
+    let res = select_with(&f, Some(py));
+    assert!(res.report.global.is_empty(), "{:?}", res.report.global);
+    assert_eq!(run_names(&res), vec!["tests/test_misc.py::test_broken"]);
+    assert_eq!(
+        res.skip_header,
+        vec![
+            "# skipcert-environment envdigest".to_string(),
+            "# skipcert-invocation invdigest".to_string(),
+            format!("# skipcert-env API_URL {H1}"),
+        ]
+    );
+    let graph = FootprintGraph::decode(&fs::read(&f.map).unwrap())
+        .unwrap()
+        .0;
+    let binding = graph.meta().environment_binding();
+    assert!(binding.is_some());
+    assert!(
+        res.certificates
+            .iter()
+            .all(|c| c.body.inputs.environment == binding)
+    );
+    verify_ok(&f, &res);
+}
+
+#[test]
+fn environment_mode_reruns_what_the_environment_change_reaches() {
+    let f = setup_env_mode();
+    // A variable test_get read changed.
+    let res = select_with(&f, Some(fake_python(&f, recorded_environment(), H2)));
+    assert_eq!(
+        run_names(&res),
+        vec![
+            "tests/test_http.py::test_get",
+            "tests/test_misc.py::test_broken"
+        ]
+    );
+    verify_ok(&f, &res);
+
+    // A distribution test_get uses changed.
+    let mut env = recorded_environment();
+    env["dist.requests"] = "2.32.0 bb".into();
+    let res = select_with(&f, Some(fake_python(&f, env, H1)));
+    assert_eq!(
+        run_names(&res),
+        vec![
+            "tests/test_http.py::test_get",
+            "tests/test_misc.py::test_broken"
+        ]
+    );
+
+    // The interpreter changed: everything runs.
+    let mut env = recorded_environment();
+    env["interpreter.version"] = "3.13.1".into();
+    let res = select_with(&f, Some(fake_python(&f, env, H1)));
+    assert!(
+        res.report.global[0].starts_with("R018"),
+        "{:?}",
+        res.report.global
+    );
+    assert_eq!(res.report.skipped, 0);
+}
+
+#[test]
+fn verifier_rejects_a_forged_environment_binding() {
+    let f = setup_env_mode();
+    let mut res = select_with(&f, Some(fake_python(&f, recorded_environment(), H1)));
+    let mut body = res.certificates[0].body.clone();
+    body.inputs.environment = Some(sc_hash::hash_domain(sc_hash::Domain::Blob, b"elsewhere"));
+    body.prev = None;
+    let mut forged = sc_model::Certificate::seal(body).unwrap();
+    f.signer.sign(&mut forged);
+    res.certificates = vec![forged];
+    let (graph, root) = FootprintGraph::decode(&fs::read(&f.map).unwrap()).unwrap();
+    let cfg = VerifyConfig {
+        trusted_keys: vec![f.signer.key_id()],
+        ..VerifyConfig::default()
+    };
+    let report = verify(&res.certificates, &graph, root, &cfg);
+    assert!(
+        report
+            .violations
+            .iter()
+            .any(|v| v.reason.contains("binding: environment")),
+        "{:?}",
+        report.violations
+    );
+}
+
+/// A git-ignored file a test read (generated data, an in-place build) can
+/// change without showing up in any diff.
+#[test]
+fn ignored_observed_files_are_rehashed() {
+    let f = setup();
+    fs::write(f.root.join(".gitignore"), "gen/\n").unwrap();
+    git(&f.root, &["add", "-A"]);
+    git(&f.root, &["commit", "-q", "-m", "ignore gen"]);
+    fs::create_dir_all(f.root.join("gen")).unwrap();
+    fs::write(f.root.join("gen/data.txt"), "v1").unwrap();
+
+    let cap = f.map.parent().unwrap().join("capture-gen.jsonl");
+    fs::write(
+        &cap,
+        capture().replace(
+            r#""files":["tests/test_misc.py"],"functions":[["tests/test_misc.py","test_ok"]]"#,
+            r#""files":["gen/data.txt","tests/test_misc.py"],"functions":[["tests/test_misc.py","test_ok"]]"#,
+        ),
+    )
+    .unwrap();
+    let repo = Repo::discover(&f.root).unwrap();
+    let meta = MapMeta {
+        repo: "acme/app".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    let graph = ingest(&[cap], repo.root(), meta).unwrap();
+    fs::write(&f.map, graph.encode().unwrap().0).unwrap();
+
+    assert!(!run_names(&select(&f)).contains(&"tests/test_misc.py::test_ok".to_string()));
+    fs::write(f.root.join("gen/data.txt"), "v2").unwrap();
+    let res = select(&f);
+    assert!(run_names(&res).contains(&"tests/test_misc.py::test_ok".to_string()));
+    assert!(
+        res.report
+            .changed
+            .contains(&"file:gen/data.txt".to_string()),
+        "{:?}",
+        res.report.changed
+    );
+    verify_ok(&f, &res);
 }

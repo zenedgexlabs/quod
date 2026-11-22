@@ -39,6 +39,7 @@
 //! | R015 | global | Path matches the policy's `run_all_paths` |
 //! | R016 | test | Native code executed and policy is `native_code = "run"` |
 //! | R017 | global (ladder) | A changed node was observed in the root scope (conftest, plugins, startup) |
+//! | R018 | global (environment mode) | The interpreter, system libraries or process-level environment differ from the recorded fingerprint (ADR 012) |
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::{Deserialize, Serialize};
@@ -330,11 +331,43 @@ impl Evaluation {
 }
 
 /// Context the change set alone doesn't carry.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EvalContext {
     /// Commits between the footprint map's base and the change base, if known.
     /// `None` means unknown, which fails closed.
     pub map_commits_behind: Option<u32>,
+    /// Environment mode (ADR 012): how the target environment differs from
+    /// the one the map was recorded in. `None` means path mode.
+    pub environment: Option<EnvironmentDelta>,
+}
+
+/// How the target environment differs from the recorded one (ADR 012).
+///
+/// In environment mode the environment is observed instead of inferred from
+/// file paths: CI configuration (R001), runtime pins (R003), non-pytest
+/// sections of root configuration (R002) and lockfiles no longer trigger
+/// anything by themselves, because whatever they change reaches the tests
+/// only through what is compared here.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct EnvironmentDelta {
+    /// Fingerprint keys outside `dist.*` that differ (added, removed or
+    /// changed), sorted. Any entry triggers R018.
+    pub differing: Vec<String>,
+    /// Distributions (normalised names) that differ, sorted.
+    pub dists: Vec<String>,
+    /// Environment variables (`*` is the whole environment) whose value
+    /// differs from the recorded one, sorted.
+    pub env_vars: Vec<String>,
+}
+
+/// pytest's own configuration sections. In environment mode these are the
+/// only root-configuration sections that trigger R002 (the plugin also
+/// re-checks the invocation fingerprint at session start).
+fn pytest_section(section: &str) -> bool {
+    section == "tool.pytest"
+        || section.starts_with("tool.pytest.")
+        || section == "pytest"
+        || section == "tool:pytest"
 }
 
 /// Per-test rule outcome.
@@ -444,13 +477,47 @@ impl Policy {
         }
     }
 
+    /// R002 for a root configuration file in environment mode.
+    fn root_config_rule_env(config: Option<&ConfigDelta>) -> Option<String> {
+        match config {
+            None => Some("configuration file changed".into()),
+            Some(ConfigDelta::Unparseable(e)) => {
+                Some(format!("configuration could not be parsed: {e}"))
+            }
+            Some(ConfigDelta::Sections(sections)) => {
+                let relevant: Vec<&str> = sections
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|s| pytest_section(s))
+                    .collect();
+                (!relevant.is_empty())
+                    .then(|| format!("pytest configuration changed: {}", relevant.join(", ")))
+            }
+        }
+    }
+
     fn global_rule(
         &self,
         path: &str,
         config: Option<&ConfigDelta>,
+        env_mode: bool,
     ) -> Option<(&'static str, String)> {
         if self.policy_files.is_match(path) {
             Some(("R004", "Skipcert policy changed".into()))
+        } else if env_mode {
+            // noxfile.py defines sessions (installs, commands), whose effect
+            // is observed through the environment and invocation.
+            if self.test_config.is_match(path) && path != "noxfile.py" {
+                Some(("R002", "test-runner configuration changed".into()))
+            } else if ROOT_CONFIG_FILES.contains(&path) {
+                Self::root_config_rule_env(config).map(|d| ("R002", d))
+            } else if self.build.is_match(path) {
+                Some(("R005", "build-affecting input changed".into()))
+            } else if self.run_all.is_match(path) {
+                Some(("R015", "path is in run_all_paths".into()))
+            } else {
+                None
+            }
         } else if self.ci.is_match(path) || self.test_workflows.is_match(path) {
             Some((
                 "R001",
@@ -473,12 +540,44 @@ impl Policy {
 
     /// Evaluates a change set.
     pub fn evaluate(&self, cs: &ChangeSet, ctx: &EvalContext) -> Evaluation {
+        let env = ctx.environment.as_ref();
         let mut ev = Evaluation {
-            rules_checked: vec![
-                "R001", "R002", "R003", "R004", "R005", "R006", "R007", "R015",
-            ],
+            rules_checked: if env.is_some() {
+                vec!["R002", "R004", "R005", "R007", "R015", "R018"]
+            } else {
+                vec![
+                    "R001", "R002", "R003", "R004", "R005", "R006", "R007", "R015",
+                ]
+            },
             ..Evaluation::default()
         };
+
+        if let Some(env) = env {
+            if !env.differing.is_empty() {
+                ev.global.push(Trigger {
+                    rule: "R018",
+                    path: None,
+                    detail: format!(
+                        "environment differs from the recorded one: {}",
+                        env.differing.join(", ")
+                    ),
+                });
+            }
+            for d in &env.dists {
+                ev.changed.push(ChangedNode {
+                    kind: NodeKind::ExtPackage,
+                    name: names::package(Ecosystem::Pypi, d),
+                    fallback_file: None,
+                });
+            }
+            for v in &env.env_vars {
+                ev.changed.push(ChangedNode {
+                    kind: NodeKind::EnvVar,
+                    name: v.clone(),
+                    fallback_file: None,
+                });
+            }
+        }
 
         match ctx.map_commits_behind {
             Some(n) if n <= self.config.max_staleness => {}
@@ -504,7 +603,8 @@ impl Policy {
                 paths.push(old);
             }
             for p in &paths {
-                if let Some((rule, detail)) = self.global_rule(p, fd.config.as_ref()) {
+                if let Some((rule, detail)) = self.global_rule(p, fd.config.as_ref(), env.is_some())
+                {
                     ev.global.push(Trigger {
                         rule,
                         path: Some((*p).to_owned()),
@@ -513,6 +613,11 @@ impl Policy {
                 }
             }
 
+            // In environment mode the installed distributions are compared
+            // directly, so a lockfile edit by itself changes nothing.
+            if fd.lock.is_some() && env.is_some() {
+                continue;
+            }
             if let Some(lock) = &fd.lock {
                 match lock {
                     LockDelta::Unparseable(e) => ev.global.push(Trigger {
@@ -708,6 +813,7 @@ mod tests {
 
     const FRESH: EvalContext = EvalContext {
         map_commits_behind: Some(0),
+        environment: None,
     };
 
     #[test]
@@ -926,7 +1032,8 @@ mod tests {
             p.evaluate(
                 &empty,
                 &EvalContext {
-                    map_commits_behind: None
+                    map_commits_behind: None,
+                    environment: None,
                 }
             )
             .runs_everything()
@@ -935,7 +1042,8 @@ mod tests {
             p.evaluate(
                 &empty,
                 &EvalContext {
-                    map_commits_behind: Some(101)
+                    map_commits_behind: Some(101),
+                    environment: None,
                 }
             )
             .runs_everything()
@@ -944,7 +1052,8 @@ mod tests {
             !p.evaluate(
                 &empty,
                 &EvalContext {
-                    map_commits_behind: Some(100)
+                    map_commits_behind: Some(100),
+                    environment: None,
                 }
             )
             .runs_everything()
@@ -1100,6 +1209,120 @@ mod tests {
         assert!(
             Policy::from_toml("[policy]\nbogus = 1\n").is_err(),
             "unknown fields are rejected"
+        );
+    }
+
+    fn env_mode(delta: EnvironmentDelta) -> EvalContext {
+        EvalContext {
+            map_commits_behind: Some(0),
+            environment: Some(delta),
+        }
+    }
+
+    /// ADR 012: with the environment observed, files that can only change
+    /// the environment don't trigger anything by themselves.
+    #[test]
+    fn environment_mode_drops_path_based_environment_rules() {
+        let p = Policy::default_policy();
+        let same = env_mode(EnvironmentDelta::default());
+        for path in [
+            ".github/workflows/tests.yaml",
+            ".github/actions/setup/action.yml",
+            ".gitlab-ci.yml",
+            ".python-version",
+            "noxfile.py",
+        ] {
+            let ev = p.evaluate(&cs(vec![fd(path, FileStatus::Modified, None, None)]), &same);
+            assert!(ev.global.is_empty(), "{path}: {:?}", ev.global);
+        }
+        for (path, sections) in [
+            ("tox.ini", vec!["testenv", "tox"]),
+            (
+                "pyproject.toml",
+                vec![
+                    "tool.tox",
+                    "tool.uv",
+                    "project.version",
+                    "dependency-groups",
+                ],
+            ),
+            ("setup.cfg", vec!["metadata", "options"]),
+        ] {
+            let d = with_config(
+                path,
+                ConfigDelta::Sections(sections.iter().map(|s| (*s).to_owned()).collect()),
+            );
+            assert!(p.evaluate(&cs(vec![d]), &same).global.is_empty(), "{path}");
+        }
+        // A lockfile edit alone changes nothing: installed distributions are
+        // compared directly.
+        let lock = fd(
+            "uv.lock",
+            FileStatus::Modified,
+            None,
+            Some(LockDelta::Unparseable("x".into())),
+        );
+        let ev = p.evaluate(&cs(vec![lock]), &same);
+        assert!(ev.global.is_empty() && ev.changed.is_empty());
+        assert!(ev.rules_checked.contains(&"R018") && !ev.rules_checked.contains(&"R001"));
+    }
+
+    #[test]
+    fn environment_mode_keeps_test_runner_configuration() {
+        let p = Policy::default_policy();
+        let same = env_mode(EnvironmentDelta::default());
+        for (path, section) in [
+            ("pyproject.toml", "tool.pytest"),
+            ("pytest.ini", "pytest"),
+            ("setup.cfg", "tool:pytest"),
+            ("tox.ini", "pytest"),
+        ] {
+            let d = with_config(path, ConfigDelta::Sections(vec![section.into()]));
+            let ev = p.evaluate(&cs(vec![d]), &same);
+            assert_eq!(ev.global.first().map(|t| t.rule), Some("R002"), "{path}");
+        }
+        let bad = with_config("pyproject.toml", ConfigDelta::Unparseable("x".into()));
+        assert_eq!(p.evaluate(&cs(vec![bad]), &same).global[0].rule, "R002");
+        for path in ["tests/conftest.py", "skipcert.toml", "ext/fast.c"] {
+            let ev = p.evaluate(&cs(vec![fd(path, FileStatus::Modified, None, None)]), &same);
+            assert!(!ev.global.is_empty(), "{path}");
+        }
+    }
+
+    #[test]
+    fn environment_differences_become_r018_or_changed_nodes() {
+        let p = Policy::default_policy();
+        let ev = p.evaluate(
+            &cs(vec![]),
+            &env_mode(EnvironmentDelta {
+                differing: vec!["interpreter.version".into()],
+                ..EnvironmentDelta::default()
+            }),
+        );
+        assert_eq!(ev.global[0].rule, "R018");
+        assert!(ev.global[0].detail.contains("interpreter.version"));
+
+        let ev = p.evaluate(
+            &cs(vec![]),
+            &env_mode(EnvironmentDelta {
+                differing: vec![],
+                dists: vec!["requests".into(), "__site__".into()],
+                env_vars: vec!["API_URL".into()],
+            }),
+        );
+        assert!(!ev.runs_everything());
+        let got: Vec<(NodeKind, &str)> = ev
+            .changed
+            .iter()
+            .map(|c| (c.kind, c.name.as_str()))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                (NodeKind::ExtPackage, "pypi:__site__"),
+                (NodeKind::ExtPackage, "pypi:requests"),
+                (NodeKind::EnvVar, "API_URL"),
+            ]
         );
     }
 }

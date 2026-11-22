@@ -3,7 +3,7 @@
 //! Kept separate from `main.rs` so the whole record → select → verify flow is
 //! testable without a Python interpreter.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -16,15 +16,24 @@ use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Repo};
 use sc_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use sc_hash::{Digest, hash_file};
 use sc_ladder::{RunReason, SelectInput, Selection, select};
-use sc_model::version::CAP_PY_INTROSPECTION;
+use sc_model::version::{CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
 use sc_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
-use sc_policy::{EvalContext, Evaluation, Policy};
+use sc_policy::{EnvironmentDelta, EvalContext, Evaluation, Policy};
 
 /// Engine version recorded in maps and certificates.
 pub const ENGINE_VERSION: &str = concat!("skipcert/", env!("CARGO_PKG_VERSION"));
 
 /// Capture protocol version this build understands.
 pub const CAPTURE_VERSION: u32 = 1;
+
+/// A capture's (environment, invocation, environment digest, invocation
+/// digest).
+type CaptureFingerprint = (
+    BTreeMap<String, String>,
+    BTreeMap<String, String>,
+    String,
+    String,
+);
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -34,6 +43,14 @@ enum Record {
         probe: String,
         #[serde(default)]
         capabilities: Vec<String>,
+        #[serde(default)]
+        environment: BTreeMap<String, String>,
+        #[serde(default)]
+        invocation: BTreeMap<String, String>,
+        #[serde(default)]
+        environment_digest: String,
+        #[serde(default)]
+        invocation_digest: String,
     },
     Package {
         name: String,
@@ -50,11 +67,15 @@ enum Record {
         functions: Vec<(String, String)>,
         packages: Vec<String>,
         flags: Vec<String>,
+        #[serde(default)]
+        env: Vec<(String, String)>,
     },
     Root {
         files: Vec<String>,
         functions: Vec<(String, String)>,
         packages: Vec<String>,
+        #[serde(default)]
+        env: Vec<(String, String)>,
     },
 }
 
@@ -99,6 +120,15 @@ impl Ingest<'_> {
         )
     }
 
+    fn env(&mut self, name: &str, value_hash: &str) -> NodeId {
+        self.b.node(
+            NodeKind::EnvVar,
+            name,
+            Digest::from_hex(value_hash).ok(),
+            None,
+        )
+    }
+
     fn package(&mut self, name: &str) -> NodeId {
         let hash = self.package_hashes.get(name).copied().flatten();
         self.b.node(
@@ -122,6 +152,9 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
     // Capabilities every capture declares. A map is only as capable as its
     // least capable capture.
     let mut capabilities: Option<BTreeSet<String>> = None;
+    // Environment fingerprints of every capture. They must all agree;
+    // otherwise the map can't vouch for one environment.
+    let mut fingerprints: BTreeSet<CaptureFingerprint> = BTreeSet::new();
     for path in captures {
         let reader = BufReader::new(
             File::open(path).with_context(|| format!("opening {}", path.display()))?,
@@ -139,7 +172,17 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     v,
                     probe,
                     capabilities: caps,
+                    environment,
+                    invocation,
+                    environment_digest,
+                    invocation_digest,
                 } => {
+                    fingerprints.insert((
+                        environment.clone(),
+                        invocation.clone(),
+                        environment_digest.clone(),
+                        invocation_digest.clone(),
+                    ));
                     if *v != CAPTURE_VERSION {
                         bail!(
                             "{}: capture protocol v{v} is not supported (expected v{CAPTURE_VERSION})",
@@ -168,7 +211,19 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
         }
     }
     meta.probes.sort();
-    meta.capabilities = capabilities.unwrap_or_default().into_iter().collect();
+    let mut capabilities = capabilities.unwrap_or_default();
+    match fingerprints.into_iter().collect::<Vec<_>>().as_slice() {
+        [(env, inv, env_d, inv_d)] if !env.is_empty() && !env_d.is_empty() && !inv_d.is_empty() => {
+            meta.environment = env.clone();
+            meta.invocation = inv.clone();
+            meta.environment_digest = env_d.clone();
+            meta.invocation_digest = inv_d.clone();
+        }
+        _ => {
+            capabilities.remove(CAP_PY_ENVIRONMENT);
+        }
+    }
+    meta.capabilities = capabilities.into_iter().collect();
 
     // Phase 2: build the graph. Package hashes first, so nodes carry them.
     let mut st = Ingest {
@@ -197,6 +252,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 functions,
                 packages,
                 flags,
+                env,
             } => {
                 let mut f = TestFlags::default();
                 for fl in &flags {
@@ -220,11 +276,16 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     let n = st.package(p);
                     st.b.observe(t, n);
                 }
+                for (name, h) in &env {
+                    let n = st.env(name, h);
+                    st.b.observe(t, n);
+                }
             }
             Record::Root {
                 files,
                 functions,
                 packages,
+                env,
             } => {
                 for file in &files {
                     let n = st.file(file);
@@ -236,6 +297,10 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 }
                 for p in &packages {
                     let n = st.package(p);
+                    st.b.observe_root(n);
+                }
+                for (name, h) in &env {
+                    let n = st.env(name, h);
                     st.b.observe_root(n);
                 }
             }
@@ -259,6 +324,116 @@ pub struct SelectOptions {
     pub advisory: bool,
     /// Repository identifier recorded in certificates.
     pub repo_id: String,
+    /// Python interpreter of the target environment. With a map recorded by
+    /// a `py.environment` probe, this turns on environment mode (ADR 012).
+    pub python: Option<PathBuf>,
+}
+
+#[derive(Deserialize)]
+struct Fingerprint {
+    environment: BTreeMap<String, String>,
+    env: BTreeMap<String, String>,
+}
+
+/// Runs the probe's fingerprint command in the target environment.
+fn fingerprint(python: &Path, env_names: &[String]) -> Result<Fingerprint> {
+    let mut cmd = std::process::Command::new(python);
+    cmd.args(["-m", "skipcert_probe", "fingerprint"]);
+    for n in env_names {
+        cmd.arg("--env").arg(n);
+    }
+    let out = cmd
+        .output()
+        .with_context(|| format!("running {} -m skipcert_probe fingerprint", python.display()))?;
+    if !out.status.success() {
+        bail!(
+            "fingerprint command failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    serde_json::from_slice(&out.stdout).context("parsing the fingerprint")
+}
+
+/// Compares the recorded environment with the target one.
+fn environment_delta(graph: &FootprintGraph, current: &Fingerprint) -> EnvironmentDelta {
+    let recorded = &graph.meta().environment;
+    let mut delta = EnvironmentDelta::default();
+    let keys: BTreeSet<&String> = recorded.keys().chain(current.environment.keys()).collect();
+    for k in keys {
+        if recorded.get(k) == current.environment.get(k) {
+            continue;
+        }
+        match k.strip_prefix("dist.") {
+            Some(d) => delta.dists.push(d.to_owned()),
+            None => delta.differing.push(k.clone()),
+        }
+    }
+    for i in 0..graph.node_count() as u32 {
+        let n = NodeId(i);
+        let node = graph.node(n);
+        if node.kind != NodeKind::EnvVar {
+            continue;
+        }
+        let name = graph.node_name(n);
+        let now = current.env.get(name).and_then(|h| Digest::from_hex(h).ok());
+        if now.is_none() || now != node.hash {
+            delta.env_vars.push(name.to_owned());
+        }
+    }
+    delta
+}
+
+/// Observed repository files git doesn't track at the base (generated
+/// sources, extensions built in place, test data written by a setup step)
+/// can change without appearing in any diff. They are re-hashed against the
+/// content recorded in the map, and a difference is a changed file.
+fn untracked_changes(
+    repo: &Repo,
+    graph: &FootprintGraph,
+    base: &str,
+    change: &ChangeSet,
+    evaluation: &mut Evaluation,
+) -> Result<()> {
+    let tracked = repo.tracked_files(base)?;
+    let in_change: BTreeSet<&str> = change
+        .files
+        .iter()
+        .flat_map(|f| [Some(f.change.path.as_str()), f.change.old_path.as_deref()])
+        .flatten()
+        .collect();
+    let mut added = false;
+    for i in 0..graph.node_count() as u32 {
+        let n = NodeId(i);
+        let node = graph.node(n);
+        if node.kind != NodeKind::File {
+            continue;
+        }
+        let path = graph.node_name(n);
+        if tracked.contains(path) || in_change.contains(path) {
+            continue;
+        }
+        if hash_file(repo.root().join(path)).ok() != node.hash {
+            evaluation.changed.push(sc_policy::ChangedNode {
+                kind: NodeKind::File,
+                name: path.to_owned(),
+                fallback_file: None,
+            });
+            added = true;
+        }
+    }
+    if added {
+        evaluation.changed.sort();
+        evaluation.changed.dedup();
+    }
+    Ok(())
+}
+
+fn env_var_names(graph: &FootprintGraph) -> Vec<String> {
+    (0..graph.node_count() as u32)
+        .map(NodeId)
+        .filter(|n| graph.node(*n).kind == NodeKind::EnvVar)
+        .map(|n| graph.node_name(n).to_owned())
+        .collect()
 }
 
 /// One test that must run, for reports.
@@ -307,6 +482,9 @@ pub struct SelectResult {
     pub certificates: Vec<Certificate>,
     /// Names of skipped tests (the `--skipcert-skip` file content).
     pub skip_names: Vec<String>,
+    /// Header lines for the skip file, checked by the plugin (environment
+    /// mode only).
+    pub skip_header: Vec<String>,
     /// The report.
     pub report: Report,
     /// The raw selection.
@@ -372,12 +550,32 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     )?;
     let behind = repo.commits_between(&base, &change.head).ok();
     let policy = load_policy(repo, opts.policy.as_deref())?;
-    let evaluation = policy.evaluate(
+    let env_mode = opts.python.is_some()
+        && graph
+            .meta()
+            .capabilities
+            .iter()
+            .any(|c| c == CAP_PY_ENVIRONMENT);
+    let environment = match (&opts.python, env_mode) {
+        (Some(py), true) => Some(environment_delta(
+            &graph,
+            &fingerprint(py, &env_var_names(&graph))?,
+        )),
+        _ => None,
+    };
+    let mut evaluation = policy.evaluate(
         &change,
         &EvalContext {
             map_commits_behind: behind,
+            environment,
         },
     );
+    untracked_changes(repo, &graph, &base, &change, &mut evaluation)?;
+    let binding = if env_mode {
+        graph.meta().environment_binding()
+    } else {
+        None
+    };
 
     let signer = match (&opts.key, opts.advisory) {
         (Some(k), _) => Some(Ed25519Signer::from_seed_hex(
@@ -397,6 +595,7 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         evaluation: &evaluation,
         change: &change,
         advisory,
+        environment: binding,
     })?;
 
     let mut certificates: Vec<Certificate> =
@@ -409,6 +608,35 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         .iter()
         .map(|(t, _)| graph.test_name(*t).to_owned())
         .collect();
+    // Conditions the pytest plugin re-checks before deselecting anything:
+    // the environment and invocation the map was recorded in, and the
+    // environment variables skipped tests (or the root scope) read.
+    let mut skip_header = Vec::new();
+    if binding.is_some() && !selection.skipped.is_empty() {
+        let meta = graph.meta();
+        skip_header.push(format!(
+            "# skipcert-environment {}",
+            meta.environment_digest
+        ));
+        skip_header.push(format!("# skipcert-invocation {}", meta.invocation_digest));
+        let mut vars: BTreeMap<String, Digest> = BTreeMap::new();
+        let nodes = selection
+            .skipped
+            .iter()
+            .flat_map(|(t, _)| graph.footprint(*t).collect::<Vec<_>>())
+            .chain(graph.root_nodes());
+        for n in nodes {
+            let node = graph.node(n);
+            if node.kind == NodeKind::EnvVar {
+                if let Some(h) = node.hash {
+                    vars.insert(graph.node_name(n).to_owned(), h);
+                }
+            }
+        }
+        for (name, h) in vars {
+            skip_header.push(format!("# skipcert-env {name} {}", h.to_hex()));
+        }
+    }
     let skipped_ms = selection
         .skipped
         .iter()
@@ -452,6 +680,7 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     Ok(SelectResult {
         certificates,
         skip_names,
+        skip_header,
         report,
         selection,
         evaluation,

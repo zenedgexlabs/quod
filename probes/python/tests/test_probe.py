@@ -7,12 +7,14 @@ so the suite starts only two inner pytest processes.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import textwrap
 
 import pytest
 
+from skipcert_probe import fingerprint
 from skipcert_probe.capture import entity_qualname
 from skipcert_probe.packages import SITE_PSEUDO_PACKAGE, normalize_name
 
@@ -158,6 +160,25 @@ def test_partial():
     assert list(inspect.signature(functools.partial(handler, 1)).parameters) == ["b"]
 """
 
+TEST_ENV = """
+import os
+
+def test_env_read():
+    assert os.environ.get("SKIPCERT_T_A") == "1"
+    assert "SKIPCERT_T_MISSING" not in os.environ
+
+def test_env_written(monkeypatch):
+    monkeypatch.setenv("SKIPCERT_T_B", "x")
+    assert os.environ["SKIPCERT_T_B"] == "x"
+
+def test_env_iter():
+    assert len(dict(os.environ)) > 0
+"""
+
+ENV = {**os.environ, "SKIPCERT_T_A": "1"}
+ENV.pop("SKIPCERT_T_MISSING", None)
+ENV.pop("SKIPCERT_T_B", None)
+
 
 def _pytest(d, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -165,6 +186,7 @@ def _pytest(d, *args: str) -> subprocess.CompletedProcess:
         cwd=d,
         capture_output=True,
         text=True,
+        env=ENV,
     )
 
 
@@ -182,6 +204,7 @@ def project_dir(tmp_path_factory):
     (d / "tests" / "test_sys.py").write_text(textwrap.dedent(TEST_SYS))
     (d / "tests" / "test_cache.py").write_text(textwrap.dedent(TEST_CACHE))
     (d / "tests" / "test_intro.py").write_text(textwrap.dedent(TEST_INTRO))
+    (d / "tests" / "test_env.py").write_text(textwrap.dedent(TEST_ENV))
     (d / "conftest.py").write_text("import app.util\n")
     return d
 
@@ -203,9 +226,9 @@ def fns(rec: dict) -> set[tuple[str, str]]:
 
 def test_header_and_names(captured):
     res, recs, tests, _ = captured
-    assert "16 passed" in res.stdout
+    assert "19 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
-    assert recs[0]["capabilities"] == ["py.introspection"]
+    assert recs[0]["capabilities"] == ["py.environment", "py.introspection"]
     assert recs[-1]["type"] == "root"
     assert set(tests) >= {
         "tests/test_pay.py::test_charge",
@@ -288,7 +311,7 @@ def test_skip_file_deselects_named_tests(project_dir):
     skip.write_text("tests/test_pay.py::test_charge\ntests/test_pay.py::test_param[2]\n")
     res = _pytest(project_dir, f"--skipcert-skip={skip}")
     assert res.returncode == 0, res.stdout + res.stderr
-    assert "14 passed, 2 deselected" in res.stdout
+    assert "17 passed, 2 deselected" in res.stdout
 
 
 @pytest.mark.parametrize(
@@ -329,3 +352,80 @@ def test_introspection_counts_as_use(captured, test, entity):
 def test_introspection_is_not_a_global_use(captured):
     _, _, tests, _ = captured
     assert ("app/api.py", "handler") not in fns(tests["tests/test_pay.py::test_charge"])
+
+
+def env_of(rec: dict) -> dict[str, str]:
+    return dict(map(tuple, rec["env"]))
+
+
+def test_environment_and_invocation_fingerprints(captured):
+    _, recs, _, _ = captured
+    h = recs[0]
+    env = h["environment"]
+    assert env["interpreter.version"] == sys.version
+    assert "dist.pytest" in env and "dist.__site__" in env
+    assert all(k.split(".")[0] in {"interpreter", "system", "process_env", "dist"} for k in env)
+    args = json.loads(h["invocation"]["invocation.args"])
+    assert not any(a.startswith("--skipcert") for a in args)
+    assert "-p" in args  # the rest of the command line is kept
+
+
+def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir):
+    _, recs, _, _ = captured
+    out = subprocess.run(
+        [sys.executable, "-m", "skipcert_probe", "fingerprint", "--env", "SKIPCERT_T_A", "--env", "NOPE_X"],
+        cwd=project_dir,
+        capture_output=True,
+        text=True,
+        env=ENV,
+        check=True,
+    )
+    fp = json.loads(out.stdout)
+    assert fp["environment"] == recs[0]["environment"]
+    assert fp["env"] == {"SKIPCERT_T_A": fingerprint.env_value_hash("1"), "NOPE_X": fingerprint.env_value_hash(None)}
+
+
+def test_environment_reads_are_recorded_per_test(captured):
+    _, _, tests, _ = captured
+    read = env_of(tests["tests/test_env.py::test_env_read"])
+    assert read["SKIPCERT_T_A"] == fingerprint.env_value_hash("1")
+    assert read["SKIPCERT_T_MISSING"] == fingerprint.env_value_hash(None)
+    assert "*" not in read
+    # A key the test wrote itself is in-process state, not an input.
+    assert "SKIPCERT_T_B" not in env_of(tests["tests/test_env.py::test_env_written"])
+    assert "*" in env_of(tests["tests/test_env.py::test_env_iter"])
+    assert "SKIPCERT_T_A" not in env_of(tests["tests/test_pay.py::test_charge"])
+
+
+def _skip_file(project_dir, *header: str):
+    skip = project_dir / "skip-checked.txt"
+    skip.write_text("\n".join([*header, "tests/test_pay.py::test_charge"]) + "\n")
+    return skip
+
+
+def test_skip_file_checks_pass_when_everything_matches(captured, project_dir):
+    _, recs, _, _ = captured
+    h = recs[0]
+    skip = _skip_file(
+        project_dir,
+        f"# skipcert-environment {fingerprint.digest(h['environment'])}",
+        f"# skipcert-invocation {fingerprint.digest(h['invocation'])}",
+        f"# skipcert-env SKIPCERT_T_A {fingerprint.env_value_hash('1')}",
+    )
+    res = _pytest(project_dir, f"--skipcert-skip={skip}")
+    assert "18 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
+
+
+@pytest.mark.parametrize(
+    ("line", "why"),
+    [
+        ("# skipcert-environment 00", "environment differs"),
+        ("# skipcert-invocation 00", "invocation"),
+        ("# skipcert-env SKIPCERT_T_A " + fingerprint.env_value_hash("2"), "SKIPCERT_T_A differs"),
+        ("# skipcert-something new", "unknown"),
+    ],
+)
+def test_skip_file_mismatch_runs_everything(project_dir, line, why):
+    res = _pytest(project_dir, f"--skipcert-skip={_skip_file(project_dir, line)}")
+    assert "19 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
+    assert why in res.stderr

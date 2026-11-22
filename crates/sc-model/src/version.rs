@@ -16,3 +16,8 @@ pub const JOURNAL_VERSION: u32 = 1;
 /// is recorded as a use of the introspected function. Python header
 /// splitting is sound only for maps whose captures all declare it.
 pub const CAP_PY_INTROSPECTION: &str = "py.introspection";
+
+/// Probe capability: captures carry environment and invocation fingerprints
+/// and per-test environment variable reads, which turns on environment mode
+/// in `skipcert select --python` (ADR 012).
+pub const CAP_PY_ENVIRONMENT: &str = "py.environment";

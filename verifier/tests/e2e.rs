@@ -82,6 +82,7 @@ fn signed_run(
         &cs,
         &EvalContext {
             map_commits_behind: Some(0),
+            environment: None,
         },
     );
     let sel = select(&SelectInput {
@@ -93,6 +94,7 @@ fn signed_run(
         evaluation: &ev,
         change: &cs,
         advisory,
+        environment: None,
     })
     .unwrap();
     let mut certs: Vec<Certificate> = sel.skipped.into_iter().map(|(_, c)| c).collect();

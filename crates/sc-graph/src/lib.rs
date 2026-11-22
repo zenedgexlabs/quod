@@ -25,7 +25,7 @@
 //! copying. Loading validates every bound and every hash, and checks that the
 //! inverse index is exactly the transpose of the forward one.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -73,6 +73,39 @@ pub struct MapMeta {
     /// only on these. Maps written before capabilities existed have none.
     #[serde(default)]
     pub capabilities: Vec<String>,
+    /// Environment fingerprint the captures were recorded in (ADR 012).
+    /// Empty without the `py.environment` capability.
+    #[serde(default)]
+    pub environment: BTreeMap<String, String>,
+    /// Invocation fingerprint (pytest arguments and ini configuration).
+    #[serde(default)]
+    pub invocation: BTreeMap<String, String>,
+    /// The probe's digests of `environment` and `invocation`, which the pytest
+    /// plugin recomputes at session start (skip-file header).
+    #[serde(default)]
+    pub environment_digest: String,
+    /// See `environment_digest`.
+    #[serde(default)]
+    pub invocation_digest: String,
+}
+
+impl MapMeta {
+    /// Digest binding certificates to the recorded environment and
+    /// invocation. `None` when the map has no environment fingerprint.
+    pub fn environment_binding(&self) -> Option<Digest> {
+        if self.environment.is_empty() {
+            return None;
+        }
+        sc_hash::hash_value(
+            sc_hash::Domain::Blob,
+            &(
+                "skipcert v1 environment binding",
+                &self.environment,
+                &self.invocation,
+            ),
+        )
+        .ok()
+    }
 }
 
 /// A node as stored in the graph.
@@ -759,6 +792,7 @@ mod tests {
             engine: "0.1.0".into(),
             probes: vec!["python-probe/0.1.0".into()],
             capabilities: vec!["py.introspection".into()],
+            ..MapMeta::default()
         });
         let t_a = StableTestId::derive("tests/test_a.py", "test_a", "");
         let t_b = StableTestId::derive("tests/test_b.py", "test_b", "");

@@ -76,6 +76,8 @@ pub struct SelectInput<'a> {
     /// True outside a trusted CI identity (sandbox, local). Advisory
     /// certificates never license a skip in CI (ADR-004).
     pub advisory: bool,
+    /// Environment mode: the map's environment binding (ADR 012).
+    pub environment: Option<Digest>,
 }
 
 /// The selection result.
@@ -201,6 +203,7 @@ pub fn select(input: &SelectInput<'_>) -> Result<Selection, LadderError> {
         policy: input.policy.hash(),
         engine: input.engine.to_owned(),
         lock_delta: lock_digest(input.change)?,
+        environment: input.environment,
     };
     let mut rules_passed: Vec<String> = input
         .evaluation
@@ -366,6 +369,7 @@ mod tests {
             &cs,
             &EvalContext {
                 map_commits_behind: Some(0),
+                environment: None,
             },
         );
         let sel = select(&SelectInput {
@@ -377,6 +381,7 @@ mod tests {
             evaluation: &ev,
             change: &cs,
             advisory,
+            environment: None,
         })
         .unwrap();
         (g, sel)
@@ -450,6 +455,7 @@ mod tests {
             &cs,
             &EvalContext {
                 map_commits_behind: Some(0),
+                environment: None,
             },
         );
         ev.global.clear();
@@ -462,6 +468,7 @@ mod tests {
             evaluation: &ev,
             change: &cs,
             advisory: false,
+            environment: None,
         })
         .unwrap();
         assert!(sel.skipped.is_empty());
@@ -481,6 +488,7 @@ mod tests {
             &cs,
             &EvalContext {
                 map_commits_behind: Some(0),
+                environment: None,
             },
         );
         ev.global.push(Trigger {
@@ -497,6 +505,7 @@ mod tests {
             evaluation: &ev,
             change: &cs,
             advisory: false,
+            environment: None,
         })
         .unwrap();
         assert!(sel.skipped.is_empty());

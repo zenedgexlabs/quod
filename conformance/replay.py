@@ -166,15 +166,23 @@ def build_map(ws: Workspace, cap: Path, tag: str) -> Path:
     return out
 
 
+# Environment mode (ADR 012): select fingerprints the replay venv. Every step
+# runs in that one venv, so the comparison is exact for the harness.
+ENV_MODE = True
+
+
 def select(ws: Workspace, map_path: Path, tag: str) -> dict:
     skip, certs, report = (ws.artifacts / f"{tag}.{s}" for s in ("skip.txt", "certs.jsonl", "report.json"))
+    env_args = ["--python", ws.python] if ENV_MODE else []
     sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
-        "--skip-out", skip, "--certs-out", certs, "--report-out", report])
+        "--skip-out", skip, "--certs-out", certs, "--report-out", report, *env_args])
     v = sh([VERIFY, "--certs", certs, "--map", map_path, "--trusted-key", ws.key_id], check=False)
     rep = json.loads(report.read_text(encoding="utf-8"))
     rep["verifier_ok"] = v.returncode == 0
     rep["verifier_output"] = v.stdout.strip().splitlines()[-1] if v.stdout.strip() else v.stderr.strip()
-    rep["skip_names"] = [line for line in skip.read_text(encoding="utf-8").splitlines() if line]
+    rep["skip_names"] = [
+        line for line in skip.read_text(encoding="utf-8").splitlines() if line and not line.startswith("#")
+    ]
     return rep
 
 
@@ -420,6 +428,7 @@ def main() -> int:
     ap.add_argument("--python", default="3.13")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--work", type=Path, default=ROOT / "conformance" / ".work")
+    ap.add_argument("--path-mode", action="store_true", help="select without --python (path-based rules)")
     args = ap.parse_args()
 
     cfg = tomllib.loads((ROOT / "conformance" / "repos.toml").read_text(encoding="utf-8"))["repos"][args.repo]
@@ -427,9 +436,12 @@ def main() -> int:
         if shutil.which(tool) is None:
             print(f"{tool} is required on PATH", file=sys.stderr)
             return 2
+    global ENV_MODE
+    ENV_MODE = not args.path_mode
     ws = setup(args.repo, cfg, args.work / args.repo, args.python)
     steps = replay(ws, args.commits, args.mutants, args.seed)
     summary = summarize(args.repo, steps)
+    summary["mode"] = "environment" if ENV_MODE else "path"
     results = ROOT / "conformance" / "results"
     results.mkdir(exist_ok=True)
     (results / f"{args.repo}.json").write_text(

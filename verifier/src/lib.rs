@@ -9,7 +9,8 @@
 //! 2. authority: a valid Ed25519 signature by a trusted key, and the
 //!    certificate isn't advisory;
 //! 3. binding: the certificate cites this exact map (and, optionally, an
-//!    expected policy hash);
+//!    expected policy hash), and in environment mode the map's recorded
+//!    environment;
 //! 4. decision: the test is in the map, has no flag that forbids skipping,
 //!    and none of the changed nodes in the evidence is in the test's
 //!    footprint or in the root scope.
@@ -192,6 +193,15 @@ pub fn verify(
                 "binding: certificate cites map {} but verifying against {}",
                 b.inputs.map, map_root
             ));
+        }
+        if let Some(env) = b.inputs.environment {
+            // Environment mode (ADR 012): the skip assumed the target
+            // environment matched the one this map was recorded in.
+            if graph.meta().environment_binding() != Some(env) {
+                fail(format!(
+                    "binding: environment {env} is not the map's recorded environment"
+                ));
+            }
         }
         if let Some(expected) = cfg.expected_policy {
             if b.inputs.policy != expected {

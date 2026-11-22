@@ -212,6 +212,7 @@ mod tests {
                 policy: hash_domain(Domain::Policy, b"p"),
                 engine: "0.1.0".into(),
                 lock_delta: None,
+                environment: None,
             },
             evidence: Evidence::default(),
             trace: Traceability::default(),

@@ -56,6 +56,12 @@ pub struct PinnedInputs {
     pub engine: String,
     /// Hash of the lockfile delta, if dependencies changed.
     pub lock_delta: Option<Digest>,
+    /// Environment mode (ADR 012): the map's environment binding, which the
+    /// target environment matched (outside changed distributions and
+    /// variables). Absent in path mode, so path-mode certificates hash as
+    /// before.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub environment: Option<Digest>,
 }
 
 /// The evidence behind the decision.
@@ -239,6 +245,7 @@ mod tests {
                 policy: hash_domain(Domain::Policy, b"policy"),
                 engine: "0.1.0".into(),
                 lock_delta: None,
+                environment: None,
             },
             evidence: Evidence {
                 changed_nodes: vec!["file:src/billing.py".into()],

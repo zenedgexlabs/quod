@@ -7,18 +7,22 @@ Options:
     Under pytest-xdist each worker writes ``PATH.<worker id>``.
 ``--skipcert-skip PATH``
     Deselect the tests named in PATH (one test name per line), as produced
-    by ``skipcert select``. Every test not listed runs.
+    by ``skipcert select``. Every test not listed runs. Header lines
+    (``# skipcert-environment D``, ``# skipcert-invocation D``,
+    ``# skipcert-env NAME H``) are checked against this process first. On
+    any mismatch nothing is deselected (ADR 012).
 ``--skipcert-root DIR``
     Repository root (default: ``git rev-parse --show-toplevel``, else rootdir).
 
 Capture protocol v1 (one JSON object per line):
 
-- ``header``: probe ID, protocol version, capabilities, Python version, repository root.
+- ``header``: probe ID, protocol version, capabilities, Python version,
+  repository root, environment and invocation fingerprints.
 - ``package``: name, version, native, dist_hash. Emitted once per package,
   before its first use.
 - ``test``: name, path, qual, params, outcome, duration_ms, files,
-  functions (``[path, qualname]``), packages, flags.
-- ``root``: root-scope files, functions and packages (conftest, plugins,
+  functions (``[path, qualname]``), packages, flags, env (``[name, hash]``).
+- ``root``: root-scope files, functions, packages and env (conftest, plugins,
   session start). Emitted last.
 
 Attribution rules (what makes skips sound):
@@ -41,7 +45,7 @@ from typing import IO
 
 import pytest
 
-from . import CAPABILITIES, CAPTURE_VERSION, PROBE_ID
+from . import CAPABILITIES, CAPTURE_VERSION, PROBE_ID, fingerprint
 from .capture import Collector, Recorder
 
 _STATE: "_State | None" = None
@@ -130,6 +134,8 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
     out = open(path, "w", encoding="utf-8", newline="\n")  # noqa: SIM115 - closed at session end
     recorder = Recorder(root)
     _STATE = _State(recorder, out)
+    env_fp = fingerprint.environment(recorder.packages)
+    inv_fp = fingerprint.invocation(early_config)
     _STATE.emit(
         {
             "type": "header",
@@ -139,6 +145,10 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
             "python": sys.version.split()[0],
             "implementation": sys.implementation.name,
             "repo_root": root.replace(os.sep, "/"),
+            "environment": env_fp,
+            "invocation": inv_fp,
+            "environment_digest": fingerprint.digest(env_fp),
+            "invocation_digest": fingerprint.digest(inv_fp),
         }
     )
     recorder.start()
@@ -166,6 +176,7 @@ def pytest_sessionfinish(session: pytest.Session) -> None:
             "files": sorted(root.files),
             "functions": sorted([list(f) for f in root.functions]),
             "packages": sorted(root.packages),
+            "env": sorted([list(e) for e in root.env.items()]),
         }
     )
     st.out.close()
@@ -249,6 +260,7 @@ def _emit_test(st: _State, item: pytest.Item, own: Collector) -> None:
             "functions": sorted([list(f) for f in total.functions]),
             "packages": sorted(total.packages),
             "flags": sorted(total.flags),
+            "env": sorted([list(e) for e in total.env.items()]),
         }
     )
 
@@ -272,8 +284,19 @@ def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config
     path = config.getoption("skipcert_skip")
     if not path:
         return
+    skip: set[str] = set()
+    checks: list[tuple[str, ...]] = []
     with open(path, encoding="utf-8") as f:
-        skip = {line.strip() for line in f if line.strip()}
+        for line in f:
+            line = line.strip()
+            if line.startswith("# skipcert-"):
+                checks.append(tuple(line[len("# skipcert-"):].split()))
+            elif line and not line.startswith("#"):
+                skip.add(line)
+    problem = _check_skip_file(config, checks)
+    if problem:
+        sys.stderr.write(f"skipcert: not skipping any tests: {problem}\n")
+        return
     root = _repo_root(str(config.invocation_params.dir), config.getoption("skipcert_root"))
     keep, drop = [], []
     for item in items:
@@ -281,3 +304,27 @@ def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config
     if drop:
         config.hook.pytest_deselected(items=drop)
         items[:] = keep
+
+
+def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> str | None:
+    """Re-checks the conditions the certificates assumed, in this process.
+    Returns the first mismatch, or ``None``."""
+    env_fp: dict[str, str] | None = None
+    for c in checks:
+        kind, args = c[0], c[1:]
+        if kind == "environment" and len(args) == 1:
+            if env_fp is None:
+                env_fp = fingerprint.environment()
+            if fingerprint.digest(env_fp) != args[0]:
+                return "the environment differs from the one the map was recorded in"
+        elif kind == "invocation" and len(args) == 1:
+            if fingerprint.digest(fingerprint.invocation(config)) != args[0]:
+                return "the pytest invocation or ini configuration differs from the recorded one"
+        elif kind == "env" and len(args) == 2:
+            name, expected = args
+            actual = fingerprint.environ_hash() if name == "*" else fingerprint.env_value_hash(os.environ.get(name))
+            if actual != expected:
+                return f"environment variable {name} differs"
+        else:
+            return f"unknown skip-file check: {' '.join(c)}"
+    return None

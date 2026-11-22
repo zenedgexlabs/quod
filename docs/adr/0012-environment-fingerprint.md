@@ -1,6 +1,6 @@
 # ADR 012: Environment fingerprinting replaces path-based environment rules
 
-Status: Proposed
+Status: Accepted (engine 0.1, python-probe 0.3)
 
 ## Context
 
@@ -86,10 +86,12 @@ In environment mode:
 
 ### 4. Binding and runtime enforcement
 
-- **Certificates.** `PinnedInputs` gains `environment` (the digest of the
-  select-time fingerprint) and `invocation` (the map's invocation digest).
-  This bumps `CERT_VERSION` to 2. The verifier checks that both equal the
-  map's.
+- **Certificates.** `PinnedInputs` gains an optional `environment`: the
+  map's environment binding, a hash of the recorded environment and
+  invocation fingerprints. The target environment matched it, apart from
+  changed distributions and variables. It is omitted in path mode, so
+  path-mode certificates hash exactly as before and `CERT_VERSION` stays 1.
+  The verifier checks the binding against the map.
 - **Skip file.** It gains header lines `# skipcert-environment <digest>` and
   `# skipcert-invocation <digest>`, plus `# skipcert-env NAME HASH` for the
   `env:` nodes of skipped tests. At session start, the pytest plugin

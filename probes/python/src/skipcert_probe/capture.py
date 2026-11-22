@@ -45,12 +45,16 @@ class Collector:
     functions: set[tuple[str, str]] = field(default_factory=set)
     packages: set[str] = field(default_factory=set)
     flags: set[str] = field(default_factory=set)
+    # Environment variables read from outside the process: name -> value hash.
+    # ``*`` is the whole environment (iteration).
+    env: dict[str, str] = field(default_factory=dict)
 
     def merge(self, other: "Collector") -> None:
         self.files |= other.files
         self.functions |= other.functions
         self.packages |= other.packages
         self.flags |= other.flags
+        self.env.update(other.env)
 
 
 def entity_qualname(co_qualname: str) -> str | None:
@@ -215,6 +219,121 @@ class IntrospectionTracker:
         self._orig.clear()
 
 
+class EnvTracker:
+    """Records reads of ``os.environ`` as ``env:NAME`` observations.
+
+    ``os._Environ.__getitem__`` is the one path behind ``os.environ[k]``,
+    ``.get``, ``in`` and ``os.getenv``. Iteration (``keys``, ``items``,
+    ``copy``, ``dict(os.environ)``, ``len``) depends on the whole environment,
+    recorded as ``env:*``. A key the process itself wrote (fixtures,
+    ``monkeypatch``, test runners) is in-process state, not an input, so later
+    reads of it aren't recorded. Writes made before recording started are
+    treated as inputs, which is conservative.
+
+    ``monkeypatch.setenv``/``delenv`` read the old value only to restore it
+    later, so the key is marked written before that read.
+    """
+
+    def __init__(self, note) -> None:
+        self._note = note
+        self.written: set[str] = set()
+        self._orig: dict[str, object] = {}
+        self._mp: list[tuple[type, str, object]] = []
+
+    def install(self) -> None:
+        if self._orig:
+            return
+        from .fingerprint import env_key, env_value_hash, environ_hash
+
+        cls = type(os.environ)
+        note, written, environ = self._note, self.written, os.environ
+        orig = {n: cls.__dict__[n] for n in ("__getitem__", "__setitem__", "__delitem__", "__iter__", "__len__")}
+        self._orig = orig
+
+        def __getitem__(self, key):
+            if self is environ:
+                try:
+                    k = env_key(key)
+                    if k not in written:
+                        try:
+                            value = orig["__getitem__"](self, key)
+                        except KeyError:
+                            note(k, env_value_hash(None))
+                            raise
+                        note(k, env_value_hash(value))
+                        return value
+                except KeyError:
+                    raise
+                except Exception:  # noqa: BLE001 - never break the test run
+                    pass
+            return orig["__getitem__"](self, key)
+
+        def __setitem__(self, key, value):
+            if self is environ:
+                written.add(env_key(key))
+            return orig["__setitem__"](self, key, value)
+
+        def __delitem__(self, key):
+            if self is environ:
+                written.add(env_key(key))
+            return orig["__delitem__"](self, key)
+
+        def whole(self):
+            if self is environ:
+                try:
+                    data = {k: v for k, v in self._data.items()}
+                    note("*", environ_hash({self.decodekey(k): self.decodevalue(v) for k, v in data.items()}))
+                except Exception:  # noqa: BLE001
+                    pass
+
+        def __iter__(self):
+            whole(self)
+            return orig["__iter__"](self)
+
+        def __len__(self):
+            whole(self)
+            return orig["__len__"](self)
+
+        try:
+            from _pytest.monkeypatch import MonkeyPatch
+
+            for meth in ("setenv", "delenv"):
+                orig_mp = MonkeyPatch.__dict__[meth]
+                self._mp.append((MonkeyPatch, meth, orig_mp))
+                setattr(MonkeyPatch, meth, _marking_written(orig_mp, written, env_key))
+        except (ImportError, KeyError):
+            pass
+
+        for name, f in (
+            ("__getitem__", __getitem__),
+            ("__setitem__", __setitem__),
+            ("__delitem__", __delitem__),
+            ("__iter__", __iter__),
+            ("__len__", __len__),
+        ):
+            setattr(cls, name, f)
+
+    def uninstall(self) -> None:
+        cls = type(os.environ)
+        for name, f in self._orig.items():
+            setattr(cls, name, f)
+        self._orig = {}
+        for owner, meth, f in reversed(self._mp):
+            setattr(owner, meth, f)
+        self._mp.clear()
+
+
+def _marking_written(orig, written: set[str], env_key):
+    def wrapper(self, name, *args, **kwargs):
+        try:
+            written.add(env_key(str(name)))
+        except Exception:  # noqa: BLE001
+            pass
+        return orig(self, name, *args, **kwargs)
+
+    return wrapper
+
+
 def _noting(orig, note):
     def wrapper(obj, *args, **kwargs):
         note(obj)
@@ -294,13 +413,14 @@ class Recorder:
         self.seen_packages: dict[str, PackageInfo] = {}
         self.root = Collector()
         self.stack: list[Collector] = []
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._file_cache: dict[str, tuple | None] = {}
         self._tool_id: int | None = None
         self._site_prefixes = self._site_dirs()
         self._own_dir = _norm(os.path.dirname(__file__)) + os.sep
         self.caches = CacheTracker()
         self.introspection = IntrospectionTracker(self._on_introspect)
+        self.environ = EnvTracker(self._on_env)
 
     @staticmethod
     def _site_dirs() -> tuple[str, ...]:
@@ -357,6 +477,11 @@ class Recorder:
                 self._record_code(f.__code__)
         except Exception:  # noqa: BLE001 - a probe bug must not break the test run
             self._mark_untraced()
+
+    def _on_env(self, name: str, value_hash: str) -> None:
+        with self._lock:
+            for c in self._targets():
+                c.env.setdefault(name, value_hash)
 
     def _record_code(self, code: CodeType) -> None:
         try:
@@ -470,6 +595,7 @@ class Recorder:
         Recorder._active = self
         self.caches.install()
         self.introspection.install()
+        self.environ.install()
         if not Recorder._audit_installed:
             sys.addaudithook(Recorder._audit_trampoline)  # cannot be removed; gated by _active
             Recorder._audit_installed = True
@@ -483,6 +609,7 @@ class Recorder:
             self._tool_id = None
         self.caches.uninstall()
         self.introspection.uninstall()
+        self.environ.uninstall()
         Recorder._active = None
 
     def boundary(self) -> None:

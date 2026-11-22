@@ -159,6 +159,19 @@ impl Repo {
         Ok(Some(run(&self.root, &["cat-file", "blob", &spec])?))
     }
 
+    /// Every path tracked at `rev`.
+    pub fn tracked_files(
+        &self,
+        rev: &str,
+    ) -> Result<std::collections::BTreeSet<String>, ChangeError> {
+        let out = run(&self.root, &["ls-tree", "-r", "-z", "--name-only", rev])?;
+        Ok(out
+            .split(|b| *b == 0)
+            .filter(|p| !p.is_empty())
+            .map(|p| String::from_utf8_lossy(p).into_owned())
+            .collect())
+    }
+
     /// Contents of `path` in the working tree, or `None` if absent.
     pub fn read_worktree(&self, path: &str) -> Result<Option<Vec<u8>>, ChangeError> {
         match std::fs::read(self.root.join(path)) {
