@@ -192,7 +192,20 @@ fn emit_definition(
         emit(b, src, &inner_scope, &mut own, entities);
     }
     own.push(')');
-    entities.insert(qual, hash_domain(Domain::Entity, own.as_bytes()));
+    let own_hash = hash_domain(Domain::Entity, own.as_bytes());
+    // The same qualified name can be defined several times in one scope
+    // (if/else or try/except branches, @overload stubs, redefinitions). At
+    // runtime they all share one co_qualname, so the entity must cover every
+    // definition, in source order. Otherwise a change to an earlier one is
+    // masked by a later one.
+    entities
+        .entry(qual)
+        .and_modify(|prev| {
+            let mut buf = prev.as_bytes().to_vec();
+            buf.extend_from_slice(own_hash.as_bytes());
+            *prev = hash_domain(Domain::Entity, &buf);
+        })
+        .or_insert(own_hash);
 }
 
 /// Computes the delta between `old` and `new`. `None` means the file is
@@ -295,6 +308,28 @@ mod tests {
 
         let dec = d("@a\ndef f():\n    pass\n", "@b\ndef f():\n    pass\n");
         assert!(dec.module_changed);
+    }
+
+    /// Regression for a conformance escape (jinja `async_variant`): two
+    /// `is_async` definitions in if/else branches share a qualified name, and a
+    /// change to the first one was masked by the second.
+    #[test]
+    fn duplicate_qualnames_cover_every_definition() {
+        let old = "def deco(flag):\n    if flag:\n        def is_async(a):\n            return a[0]\n    else:\n        def is_async(a):\n            return a[2]\n    return is_async\n";
+        let first = old.replacen("a[0]", "a[1]", 1);
+        let delta = d(old, &first);
+        assert!(!delta.module_changed);
+        assert_eq!(delta.entities, vec!["deco.<locals>.is_async"]);
+
+        let second = old.replacen("a[2]", "a[3]", 1);
+        assert_eq!(d(old, &second).entities, vec!["deco.<locals>.is_async"]);
+
+        // try/except redefinition at module level
+        let old_mod = "try:\n    def f():\n        return 1\nexcept ImportError:\n    def f():\n        return 2\n";
+        assert_eq!(
+            d(old_mod, &old_mod.replacen("return 1", "return 9", 1)).entities,
+            vec!["f"]
+        );
     }
 
     #[test]
