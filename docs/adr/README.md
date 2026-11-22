@@ -16,6 +16,7 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [008](0008-retention-classes.md) | Accepted | Separate retention for working and evidence data | Regulated use without bloating working storage |
 | [009](0009-l2-gated.md) | Accepted | L2 value witnesses excluded from the MVP and gated by experiment E3 | Complexity is justified only by measured headroom |
 | [010](0010-offline-first.md) | Accepted | Offline-first selection; control-plane calls are opportunistic | Agent sandboxes without network, and air-gapped sites |
+| [011](0011-def-header-splitting.md) | Accepted | Split `def` headers by what the enclosing scope evaluates; gated on the probe's `py.introspection` capability | Method-header edits made whole classes root-scope changes (click, E1 run 3) |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.

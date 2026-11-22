@@ -108,6 +108,56 @@ def test_lambda():
     assert f() == 1
 """
 
+APP_API = """
+from functools import wraps
+
+def handler(a, b=1) -> int:
+    return a
+
+def deco(f):
+    @wraps(f)
+    def inner(*args, **kwargs):
+        return f(*args, **kwargs)
+    return inner
+
+@deco
+def wrapped(x: int = 3):
+    return x
+
+class Model:
+    def __init__(self, x: int = 0):
+        self.x = x
+
+    def method(self, y=2):
+        return y
+"""
+
+TEST_INTRO = """
+import functools
+import inspect
+import typing
+
+from app.api import Model, handler, wrapped
+
+def test_signature():
+    assert list(inspect.signature(handler).parameters) == ["a", "b"]
+
+def test_hints():
+    assert typing.get_type_hints(handler)["return"] is int
+
+def test_wrapped():
+    assert "x" in inspect.signature(wrapped).parameters
+
+def test_class():
+    assert "x" in inspect.signature(Model).parameters
+
+def test_bound():
+    assert "y" in inspect.signature(object.__new__(Model).method).parameters
+
+def test_partial():
+    assert list(inspect.signature(functools.partial(handler, 1)).parameters) == ["b"]
+"""
+
 
 def _pytest(d, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -126,10 +176,12 @@ def project_dir(tmp_path_factory):
     (d / "app" / "billing.py").write_text(textwrap.dedent(APP_BILLING))
     (d / "app" / "util.py").write_text(textwrap.dedent(APP_UTIL))
     (d / "app" / "primes.py").write_text(textwrap.dedent(APP_PRIMES))
+    (d / "app" / "api.py").write_text(textwrap.dedent(APP_API))
     (d / "tests").mkdir()
     (d / "tests" / "test_pay.py").write_text(textwrap.dedent(TEST_PAY))
     (d / "tests" / "test_sys.py").write_text(textwrap.dedent(TEST_SYS))
     (d / "tests" / "test_cache.py").write_text(textwrap.dedent(TEST_CACHE))
+    (d / "tests" / "test_intro.py").write_text(textwrap.dedent(TEST_INTRO))
     (d / "conftest.py").write_text("import app.util\n")
     return d
 
@@ -151,8 +203,9 @@ def fns(rec: dict) -> set[tuple[str, str]]:
 
 def test_header_and_names(captured):
     res, recs, tests, _ = captured
-    assert "10 passed" in res.stdout
+    assert "16 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
+    assert recs[0]["capabilities"] == ["py.introspection"]
     assert recs[-1]["type"] == "root"
     assert set(tests) >= {
         "tests/test_pay.py::test_charge",
@@ -235,7 +288,7 @@ def test_skip_file_deselects_named_tests(project_dir):
     skip.write_text("tests/test_pay.py::test_charge\ntests/test_pay.py::test_param[2]\n")
     res = _pytest(project_dir, f"--skipcert-skip={skip}")
     assert res.returncode == 0, res.stdout + res.stderr
-    assert "8 passed, 2 deselected" in res.stdout
+    assert "14 passed, 2 deselected" in res.stdout
 
 
 @pytest.mark.parametrize(
@@ -253,3 +306,26 @@ def test_skip_file_deselects_named_tests(project_dir):
 )
 def test_entity_qualname(qual, expected):
     assert entity_qualname(qual) == expected
+
+
+@pytest.mark.parametrize(
+    ("test", "entity"),
+    [
+        ("test_signature", "handler"),
+        ("test_hints", "handler"),
+        ("test_wrapped", "wrapped"),
+        ("test_class", "Model.__init__"),
+        ("test_bound", "Model.method"),
+        ("test_partial", "handler"),
+    ],
+)
+def test_introspection_counts_as_use(captured, test, entity):
+    """A test that inspects a signature without calling the function still
+    depends on its header (parameter names, defaults, annotations)."""
+    _, _, tests, _ = captured
+    assert ("app/api.py", entity) in fns(tests[f"tests/test_intro.py::{test}"])
+
+
+def test_introspection_is_not_a_global_use(captured):
+    _, _, tests, _ = captured
+    assert ("app/api.py", "handler") not in fns(tests["tests/test_pay.py::test_charge"])

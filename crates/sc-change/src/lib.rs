@@ -24,7 +24,7 @@ use sc_hash::Digest;
 pub use config::{ConfigDelta, ConfigKind};
 pub use git::{FileChange, FileStatus, Repo};
 pub use lock::{LockDelta, LockKind, PackageChange, PkgPin};
-pub use python::SourceDelta;
+pub use python::{DiffOptions, SourceDelta};
 
 /// Errors from change resolution.
 #[derive(Debug, thiserror::Error)]
@@ -48,6 +48,8 @@ pub struct ChangeOptions {
     /// Head revision. `None` compares against the working tree, including
     /// staged, unstaged and untracked files.
     pub head: Option<String>,
+    /// How Python sources are compared.
+    pub python: python::DiffOptions,
 }
 
 /// Analysis attached to one changed file.
@@ -103,7 +105,7 @@ pub fn compute(repo: &Repo, opts: &ChangeOptions) -> Result<ChangeSet, ChangeErr
         };
 
         let source = if change.path.ends_with(".py") || old_path.ends_with(".py") {
-            let mut delta = python::diff(old.as_deref(), new.as_deref())?;
+            let mut delta = python::diff_with(old.as_deref(), new.as_deref(), opts.python)?;
             // A rename changes the module's import path even when the content
             // is identical, so importers of the old path are affected.
             if change.status == FileStatus::Renamed {
@@ -188,6 +190,7 @@ mod tests {
             &ChangeOptions {
                 base: "HEAD".into(),
                 head: None,
+                python: DiffOptions::default(),
             },
         )
         .unwrap();
@@ -232,6 +235,7 @@ mod tests {
             &ChangeOptions {
                 base: "HEAD~1".into(),
                 head: Some("HEAD".into()),
+                python: DiffOptions::default(),
             },
         )
         .unwrap();

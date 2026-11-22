@@ -124,6 +124,7 @@ fn write_map(repo: &Repo, id: &str, commit: &str, captures: &[PathBuf], out: &Pa
         base_commit: repo.rev_parse(commit)?,
         engine: ENGINE_VERSION.to_owned(),
         probes: Vec::new(),
+        capabilities: Vec::new(),
     };
     let graph = ingest(captures, repo.root(), meta)?;
     let (bytes, root) = graph.encode()?;

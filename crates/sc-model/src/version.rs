@@ -10,3 +10,9 @@ pub const OUTCOME_KEY_VERSION: u32 = 1;
 pub const CERT_VERSION: u32 = 1;
 /// Journal event schema version.
 pub const JOURNAL_VERSION: u32 = 1;
+
+/// Probe capability: signature and annotation introspection
+/// (`inspect.signature`, `typing.get_type_hints`, `inspect.get_annotations`)
+/// is recorded as a use of the introspected function. Python header
+/// splitting is sound only for maps whose captures all declare it.
+pub const CAP_PY_INTROSPECTION: &str = "py.introspection";

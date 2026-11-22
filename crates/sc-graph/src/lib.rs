@@ -68,6 +68,11 @@ pub struct MapMeta {
     pub engine: String,
     /// Probe identifiers and versions, e.g. `python-probe/0.1.0`.
     pub probes: Vec<String>,
+    /// Capabilities every capture in the map declared, sorted (for example
+    /// [`sc_model::version::CAP_PY_INTROSPECTION`]). Change analysis may rely
+    /// only on these. Maps written before capabilities existed have none.
+    #[serde(default)]
+    pub capabilities: Vec<String>,
 }
 
 /// A node as stored in the graph.
@@ -753,6 +758,7 @@ mod tests {
             base_commit: "abc".into(),
             engine: "0.1.0".into(),
             probes: vec!["python-probe/0.1.0".into()],
+            capabilities: vec!["py.introspection".into()],
         });
         let t_a = StableTestId::derive("tests/test_a.py", "test_a", "");
         let t_b = StableTestId::derive("tests/test_b.py", "test_b", "");

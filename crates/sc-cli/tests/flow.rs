@@ -33,8 +33,16 @@ fn git(dir: &Path, args: &[&str]) {
 const BILLING: &str = "def charge(x):\n    return x * 2\n\ndef refund(x):\n    return -x\n";
 
 fn capture() -> String {
+    capture_with(&[])
+}
+
+fn capture_with(capabilities: &[&str]) -> String {
+    let header = format!(
+        r#"{{"type":"header","v":1,"probe":"python-probe/0.1.0","capabilities":{},"python":"3.13.0","implementation":"cpython","repo_root":"/r"}}"#,
+        serde_json::to_string(capabilities).unwrap()
+    );
     [
-        r#"{"type":"header","v":1,"probe":"python-probe/0.1.0","python":"3.13.0","implementation":"cpython","repo_root":"/r"}"#,
+        header.as_str(),
         r#"{"type":"package","name":"requests","version":"2.31.0","native":false,"dist_hash":"0000000000000000000000000000000000000000000000000000000000000001"}"#,
         r#"{"type":"test","name":"tests/test_pay.py::test_charge","path":"tests/test_pay.py","qual":"test_charge","params":"","outcome":"passed","duration_ms":1200,"files":["app/billing.py","tests/test_pay.py"],"functions":[["app/billing.py","charge"],["tests/test_pay.py","test_charge"]],"packages":[],"flags":[]}"#,
         r#"{"type":"test","name":"tests/test_http.py::test_get","path":"tests/test_http.py","qual":"test_get","params":"","outcome":"passed","duration_ms":800,"files":["tests/test_http.py"],"functions":[["tests/test_http.py","test_get"]],"packages":["requests"],"flags":[]}"#,
@@ -54,6 +62,10 @@ struct Fixture {
 }
 
 fn setup() -> Fixture {
+    setup_with(&[])
+}
+
+fn setup_with(capabilities: &[&str]) -> Fixture {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("repo");
     fs::create_dir_all(root.join("app")).unwrap();
@@ -81,13 +93,14 @@ fn setup() -> Fixture {
     git(&root, &["commit", "-q", "-m", "base"]);
 
     let cap = dir.path().join("capture.jsonl");
-    fs::write(&cap, capture()).unwrap();
+    fs::write(&cap, capture_with(capabilities)).unwrap();
     let repo = Repo::discover(&root).unwrap();
     let meta = MapMeta {
         repo: "acme/app".into(),
         base_commit: repo.rev_parse("HEAD").unwrap(),
         engine: "test".into(),
         probes: vec![],
+        capabilities: vec![],
     };
     let graph = ingest(&[cap], repo.root(), meta).unwrap();
     assert_eq!(graph.meta().probes, vec!["python-probe/0.1.0".to_string()]);
@@ -268,4 +281,38 @@ fn missing_key_without_advisory_is_an_error() {
         },
     );
     assert!(err.is_err());
+}
+
+/// A new keyword parameter with a constant default on a function no test
+/// executed. With the introspection capability the header change belongs to
+/// `refund` alone. Without it, the module changed and importers re-run.
+#[test]
+fn header_split_requires_the_introspection_capability() {
+    let edit = BILLING.replace("def refund(x):", "def refund(x, fee=0):");
+
+    let old = setup();
+    fs::write(old.root.join("app/billing.py"), &edit).unwrap();
+    assert!(run_names(&select(&old)).contains(&"tests/test_pay.py::test_charge".to_string()));
+
+    let new = setup_with(&["py.introspection"]);
+    fs::write(new.root.join("app/billing.py"), &edit).unwrap();
+    let res = select(&new);
+    assert_eq!(run_names(&res), vec!["tests/test_misc.py::test_broken"]);
+    verify_ok(&new, &res);
+}
+
+#[test]
+fn map_capabilities_are_the_intersection_of_its_captures() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = dir.path().join("a.jsonl");
+    let b = dir.path().join("b.jsonl");
+    fs::write(&a, capture_with(&["py.introspection", "x.other"])).unwrap();
+    fs::write(&b, capture_with(&["py.introspection"])).unwrap();
+    let g = ingest(&[a.clone(), b], dir.path(), MapMeta::default()).unwrap();
+    assert_eq!(g.meta().capabilities, vec!["py.introspection".to_string()]);
+
+    let old = dir.path().join("old.jsonl");
+    fs::write(&old, capture()).unwrap();
+    let g = ingest(&[a, old], dir.path(), MapMeta::default()).unwrap();
+    assert!(g.meta().capabilities.is_empty());
 }

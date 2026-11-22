@@ -13,7 +13,7 @@ Options:
 
 Capture protocol v1 (one JSON object per line):
 
-- ``header``: probe ID, protocol version, Python version, repository root.
+- ``header``: probe ID, protocol version, capabilities, Python version, repository root.
 - ``package``: name, version, native, dist_hash. Emitted once per package,
   before its first use.
 - ``test``: name, path, qual, params, outcome, duration_ms, files,
@@ -41,7 +41,7 @@ from typing import IO
 
 import pytest
 
-from . import CAPTURE_VERSION, PROBE_ID
+from . import CAPABILITIES, CAPTURE_VERSION, PROBE_ID
 from .capture import Collector, Recorder
 
 _STATE: "_State | None" = None
@@ -135,6 +135,7 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
             "type": "header",
             "v": CAPTURE_VERSION,
             "probe": PROBE_ID,
+            "capabilities": list(CAPABILITIES),
             "python": sys.version.split()[0],
             "implementation": sys.implementation.name,
             "repo_root": root.replace(os.sep, "/"),

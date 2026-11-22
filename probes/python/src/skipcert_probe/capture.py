@@ -20,7 +20,7 @@ import sys
 import sysconfig
 import threading
 from dataclasses import dataclass, field
-from types import CodeType
+from types import CodeType, FunctionType, MethodType
 
 from .packages import PackageIndex, PackageInfo
 
@@ -156,6 +156,118 @@ class CacheTracker:
         self._properties.clear()
 
 
+class IntrospectionTracker:
+    """Records signature and annotation introspection as a use of the function.
+
+    Parameter names, constant defaults and lazy annotations of a ``def`` only
+    change the function object, so ``sc-change`` attributes them to the
+    function itself (header splitting). Code that *calls* the function is
+    recorded by ``PY_START``. Code that only *inspects* it (``inspect.signature``
+    to build a CLI or an API schema, ``typing.get_type_hints`` for validation)
+    runs none of its code, so it is recorded here instead: the introspected
+    function counts as used by the current test, fixture or root scope.
+
+    ``inspect._signature_from_callable`` is the one path behind
+    ``inspect.signature``, ``Signature.from_callable`` and
+    ``inspect.getfullargspec``. It is looked up as a module global at call
+    time, so the patch also covers callers that imported ``signature`` before
+    recording started. ``typing.get_type_hints`` and ``inspect.get_annotations``
+    (also ``annotationlib.get_annotations`` on 3.14) are patched as module
+    attributes, so references bound before recording started aren't covered.
+    Reading ``__annotations__``, ``__defaults__`` or ``__code__`` directly isn't
+    recorded. That is a documented assumption.
+    """
+
+    def __init__(self, note) -> None:
+        self._note = note
+        self._orig: list[tuple[object, str, object]] = []
+
+    def install(self) -> None:
+        import inspect
+        import typing
+
+        if self._orig:
+            return
+        note = self._note
+        targets = [(inspect, "_signature_from_callable"), (inspect, "get_annotations"), (typing, "get_type_hints")]
+        try:
+            import annotationlib  # Python 3.14+
+
+            targets.append((annotationlib, "get_annotations"))
+        except ImportError:
+            pass
+        for module, name in targets:
+            orig = getattr(module, name, None)
+            if orig is None:
+                continue
+
+            wrapper = _noting(orig, note)
+            wrapper.__name__ = getattr(orig, "__name__", name)
+            wrapper.__qualname__ = getattr(orig, "__qualname__", name)
+            wrapper.__doc__ = getattr(orig, "__doc__", None)
+            wrapper.__wrapped__ = orig
+            self._orig.append((module, name, orig))
+            setattr(module, name, wrapper)
+
+    def uninstall(self) -> None:
+        for module, name, orig in reversed(self._orig):
+            setattr(module, name, orig)
+        self._orig.clear()
+
+
+def _noting(orig, note):
+    def wrapper(obj, *args, **kwargs):
+        note(obj)
+        return orig(obj, *args, **kwargs)
+
+    return wrapper
+
+
+def _introspected_functions(obj) -> list[FunctionType]:
+    """The Python functions whose headers introspecting ``obj`` reads.
+
+    Only plain attribute lookups that can't run user code are used: no
+    ``getattr`` on arbitrary objects (mocks and proxies answer anything).
+    """
+    import functools
+
+    out: list[FunctionType] = []
+    for _ in range(32):
+        if isinstance(obj, MethodType):
+            obj = obj.__func__
+        elif isinstance(obj, functools.partial):
+            obj = obj.func
+        elif isinstance(obj, (staticmethod, classmethod)):
+            obj = obj.__func__
+        else:
+            break
+    if isinstance(obj, FunctionType):
+        out.append(obj)
+        # Follow the ``functools.wraps`` chain, as ``inspect.signature`` does.
+        seen = {id(obj)}
+        w = obj.__dict__.get("__wrapped__")
+        while isinstance(w, FunctionType) and id(w) not in seen and len(out) < 32:
+            out.append(w)
+            seen.add(id(w))
+            w = w.__dict__.get("__wrapped__")
+    elif isinstance(obj, type):
+        # A class's signature comes from ``__new__``/``__init__`` (or a
+        # metaclass ``__call__``); its type hints from the class bodies.
+        for name in ("__init__", "__new__"):
+            for klass in obj.__mro__:
+                f = klass.__dict__.get(name)
+                if isinstance(f, staticmethod):
+                    f = f.__func__
+                if f is not None:
+                    if isinstance(f, FunctionType):
+                        out.append(f)
+                    break
+        call = type(obj).__dict__.get("__call__")
+        if isinstance(call, FunctionType):
+            out.append(call)
+    return out
+
+
 def _norm(path: str) -> str:
     return os.path.normcase(os.path.realpath(path))
 
@@ -188,6 +300,7 @@ class Recorder:
         self._site_prefixes = self._site_dirs()
         self._own_dir = _norm(os.path.dirname(__file__)) + os.sep
         self.caches = CacheTracker()
+        self.introspection = IntrospectionTracker(self._on_introspect)
 
     @staticmethod
     def _site_dirs() -> tuple[str, ...]:
@@ -235,6 +348,17 @@ class Recorder:
     # sys.monitoring -------------------------------------------------------
 
     def _on_py_start(self, code: CodeType, _offset: int):
+        self._record_code(code)
+        return sys.monitoring.DISABLE
+
+    def _on_introspect(self, obj) -> None:
+        try:
+            for f in _introspected_functions(obj):
+                self._record_code(f.__code__)
+        except Exception:  # noqa: BLE001 - a probe bug must not break the test run
+            self._mark_untraced()
+
+    def _record_code(self, code: CodeType) -> None:
         try:
             cls = self.classify_path(code.co_filename)
             if cls is not None:
@@ -254,7 +378,6 @@ class Recorder:
                                 c.flags.add(FLAG_C_EXT)
         except Exception:  # noqa: BLE001 - a probe bug must not break the test run
             self._mark_untraced()
-        return sys.monitoring.DISABLE
 
     def _mark_untraced(self) -> None:
         for c in self._targets():
@@ -346,6 +469,7 @@ class Recorder:
         mon.set_events(self._tool_id, mon.events.PY_START)
         Recorder._active = self
         self.caches.install()
+        self.introspection.install()
         if not Recorder._audit_installed:
             sys.addaudithook(Recorder._audit_trampoline)  # cannot be removed; gated by _active
             Recorder._audit_installed = True
@@ -358,6 +482,7 @@ class Recorder:
             mon.free_tool_id(self._tool_id)
             self._tool_id = None
         self.caches.uninstall()
+        self.introspection.uninstall()
         Recorder._active = None
 
     def boundary(self) -> None:

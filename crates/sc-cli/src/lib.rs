@@ -3,7 +3,7 @@
 //! Kept separate from `main.rs` so the whole record → select → verify flow is
 //! testable without a Python interpreter.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -12,10 +12,11 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use sc_cert::{Ed25519Signer, Signer};
-use sc_change::{ChangeOptions, ChangeSet, Repo};
+use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Repo};
 use sc_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use sc_hash::{Digest, hash_file};
 use sc_ladder::{RunReason, SelectInput, Selection, select};
+use sc_model::version::CAP_PY_INTROSPECTION;
 use sc_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
 use sc_policy::{EvalContext, Evaluation, Policy};
 
@@ -31,6 +32,8 @@ enum Record {
     Header {
         v: u32,
         probe: String,
+        #[serde(default)]
+        capabilities: Vec<String>,
     },
     Package {
         name: String,
@@ -116,6 +119,9 @@ impl Ingest<'_> {
 pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Result<FootprintGraph> {
     // Phase 1: parse and validate every capture file, collecting probe IDs.
     let mut records = Vec::new();
+    // Capabilities every capture declares. A map is only as capable as its
+    // least capable capture.
+    let mut capabilities: Option<BTreeSet<String>> = None;
     for path in captures {
         let reader = BufReader::new(
             File::open(path).with_context(|| format!("opening {}", path.display()))?,
@@ -129,7 +135,11 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
             let rec: Record = serde_json::from_str(&line)
                 .with_context(|| format!("{}:{}: invalid capture record", path.display(), i + 1))?;
             match &rec {
-                Record::Header { v, probe } => {
+                Record::Header {
+                    v,
+                    probe,
+                    capabilities: caps,
+                } => {
                     if *v != CAPTURE_VERSION {
                         bail!(
                             "{}: capture protocol v{v} is not supported (expected v{CAPTURE_VERSION})",
@@ -137,6 +147,11 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                         );
                     }
                     saw_header = true;
+                    let caps: BTreeSet<String> = caps.iter().cloned().collect();
+                    capabilities = Some(match capabilities.take() {
+                        None => caps,
+                        Some(prev) => prev.intersection(&caps).cloned().collect(),
+                    });
                     if !meta.probes.contains(probe) {
                         meta.probes.push(probe.clone());
                     }
@@ -153,6 +168,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
         }
     }
     meta.probes.sort();
+    meta.capabilities = capabilities.unwrap_or_default().into_iter().collect();
 
     // Phase 2: build the graph. Package hashes first, so nodes carry them.
     let mut st = Ingest {
@@ -343,6 +359,15 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         &ChangeOptions {
             base: base.clone(),
             head: opts.head.clone(),
+            python: DiffOptions {
+                // Splitting `def` headers is sound only if the probe recorded
+                // signature introspection as a use of the function.
+                split_headers: graph
+                    .meta()
+                    .capabilities
+                    .iter()
+                    .any(|c| c == CAP_PY_INTROSPECTION),
+            },
         },
     )?;
     let behind = repo.commits_between(&base, &change.head).ok();

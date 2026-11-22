@@ -15,6 +15,24 @@
 //! statement moved in or out of a block by re-indentation is a change, while
 //! whitespace, comments and line breaks inside brackets are not. Line endings
 //! are normalised CRLF→LF, matching Python's universal-newline source reading.
+//!
+//! # Header splitting
+//!
+//! With [`DiffOptions::split_headers`], an undecorated `def` contributes to
+//! the enclosing stream only what the enclosing scope actually *evaluates*:
+//! the binding (name, `async`), type parameters, default values that aren't
+//! side-effect free, and annotations unless the module has
+//! `from __future__ import annotations`. Parameter names, side-effect-free
+//! defaults (literals, plain names, displays of those) and lazy annotations
+//! only change the function object itself. Their effect is visible only to
+//! code that calls the function (it runs, so the probe records it) or
+//! introspects it (`inspect.signature`, `typing.get_type_hints`, which a
+//! probe with the `py.introspection` capability records as a use).
+//!
+//! A decorated `def` keeps its whole header in the enclosing stream, because
+//! the decorator receives the function object at definition time and may
+//! inspect it. Without the option, headers are never split, which is what a
+//! map recorded by an older probe requires.
 
 use std::collections::BTreeMap;
 
@@ -62,10 +80,29 @@ fn count_skip_markers(src: Option<&[u8]>) -> u32 {
         .sum()
 }
 
+/// How to compute Python deltas.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DiffOptions {
+    /// Attribute parameter names, side-effect-free defaults and lazy
+    /// annotations of undecorated `def`s to the function rather than the
+    /// enclosing scope (see the module docs). Only sound when the footprint
+    /// map was recorded by a probe that records signature introspection.
+    pub split_headers: bool,
+}
+
 struct Analysis {
     module: Digest,
     entities: BTreeMap<String, Digest>,
     had_error: bool,
+}
+
+/// Per-file analysis context.
+struct Cx<'a> {
+    src: &'a [u8],
+    split_headers: bool,
+    /// `from __future__ import annotations`: annotations are stored as
+    /// strings, never evaluated at definition time.
+    lazy_annotations: bool,
 }
 
 fn parser() -> Result<Parser, ChangeError> {
@@ -89,15 +126,30 @@ fn normalize(src: &[u8]) -> Vec<u8> {
     out
 }
 
-fn analyze(src: &[u8]) -> Result<Analysis, ChangeError> {
+fn has_future_annotations(root: Node<'_>, src: &[u8]) -> bool {
+    let mut cursor = root.walk();
+    root.children(&mut cursor).any(|c| {
+        let mut cur = c.walk();
+        c.kind() == "future_import_statement"
+            && c.children_by_field_name("name", &mut cur)
+                .any(|n| &src[n.byte_range()] == b"annotations")
+    })
+}
+
+fn analyze(src: &[u8], opts: DiffOptions) -> Result<Analysis, ChangeError> {
     let src = normalize(src);
     let tree = parser()?
         .parse(&src, None)
         .ok_or_else(|| ChangeError::Parser("parse returned no tree".into()))?;
     let root = tree.root_node();
+    let cx = Cx {
+        src: &src,
+        split_headers: opts.split_headers,
+        lazy_annotations: has_future_annotations(root, &src),
+    };
     let mut entities = BTreeMap::new();
     let mut module = String::new();
-    emit(root, &src, "", &mut module, &mut entities);
+    emit(root, &cx, "", &mut module, &mut entities);
     Ok(Analysis {
         module: hash_domain(Domain::Entity, module.as_bytes()),
         entities,
@@ -121,7 +173,7 @@ fn emit_leaf(text: &[u8], out: &mut String) {
 /// placeholder, and their own streams are recorded in `entities`.
 fn emit(
     node: Node<'_>,
-    src: &[u8],
+    cx: &Cx<'_>,
     scope: &str,
     out: &mut String,
     entities: &mut BTreeMap<String, Digest>,
@@ -131,11 +183,11 @@ fn emit(
         return;
     }
     if is_definition(kind) {
-        emit_definition(node, src, scope, out, entities);
+        emit_definition(node, cx, scope, out, entities);
         return;
     }
     if node.child_count() == 0 {
-        emit_leaf(&src[node.byte_range()], out);
+        emit_leaf(&cx.src[node.byte_range()], out);
         return;
     }
     out.push('(');
@@ -143,14 +195,91 @@ fn emit(
     out.push(' ');
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        emit(child, src, scope, out, entities);
+        emit(child, cx, scope, out, entities);
     }
     out.push_str(") ");
 }
 
+/// True if evaluating `node` can't run code or raise: literals, plain names,
+/// and tuple/list/set/dict displays of those. Attribute access, calls,
+/// subscripts and operators on non-literals can (descriptors, `__getattr__`,
+/// operator overloads), so they aren't.
+fn side_effect_free(node: Node<'_>) -> bool {
+    fn named(n: Node<'_>) -> Vec<Node<'_>> {
+        let mut c = n.walk();
+        n.named_children(&mut c)
+            .filter(|ch| ch.kind() != "comment")
+            .collect()
+    }
+    match node.kind() {
+        "integer" | "float" | "true" | "false" | "none" | "ellipsis" | "identifier" => true,
+        // Plain strings only: an f-string's interpolations are expressions.
+        "string" => named(node).iter().all(|c| c.kind() != "interpolation"),
+        "concatenated_string" => named(node).into_iter().all(side_effect_free),
+        "parenthesized_expression" => named(node).into_iter().all(side_effect_free),
+        "unary_operator" => node
+            .child_by_field_name("argument")
+            .is_some_and(|a| matches!(a.kind(), "integer" | "float")),
+        "tuple" | "list" | "set" | "dictionary" => named(node).into_iter().all(side_effect_free),
+        "pair" => named(node).into_iter().all(side_effect_free),
+        _ => false,
+    }
+}
+
+/// The part of an undecorated `def` header the enclosing scope evaluates.
+fn effective_function_header(
+    node: Node<'_>,
+    cx: &Cx<'_>,
+    scope: &str,
+    entities: &mut BTreeMap<String, Digest>,
+) -> String {
+    let mut out = String::from("(function_binding ");
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        match child.kind() {
+            "async" => out.push_str("async "),
+            "identifier"
+                if Some(child.id()) == node.child_by_field_name("name").map(|n| n.id()) =>
+            {
+                emit_leaf(&cx.src[child.byte_range()], &mut out);
+            }
+            // PEP 695 type parameters create objects at definition time.
+            "type_parameter" => emit(child, cx, scope, &mut out, entities),
+            _ => {}
+        }
+    }
+    if let Some(params) = node.child_by_field_name("parameters") {
+        let mut pc = params.walk();
+        for p in params.named_children(&mut pc) {
+            if let Some(v) = p.child_by_field_name("value") {
+                if !side_effect_free(v) {
+                    out.push_str("(default ");
+                    emit(v, cx, scope, &mut out, entities);
+                    out.push_str(") ");
+                }
+            }
+            if let Some(t) = p.child_by_field_name("type") {
+                if !cx.lazy_annotations {
+                    out.push_str("(annotation ");
+                    emit(t, cx, scope, &mut out, entities);
+                    out.push_str(") ");
+                }
+            }
+        }
+    }
+    if let Some(r) = node.child_by_field_name("return_type") {
+        if !cx.lazy_annotations {
+            out.push_str("(returns ");
+            emit(r, cx, scope, &mut out, entities);
+            out.push_str(") ");
+        }
+    }
+    out
+}
+
 fn emit_definition(
     node: Node<'_>,
-    src: &[u8],
+    cx: &Cx<'_>,
     scope: &str,
     out: &mut String,
     entities: &mut BTreeMap<String, Digest>,
@@ -158,12 +287,12 @@ fn emit_definition(
     let kind = node.kind();
     let name = node
         .child_by_field_name("name")
-        .map(|n| String::from_utf8_lossy(&src[n.byte_range()]).into_owned())
+        .map(|n| String::from_utf8_lossy(&cx.src[n.byte_range()]).into_owned())
         .unwrap_or_else(|| "<anonymous>".into());
     let qual = format!("{scope}{name}");
     let body = node.child_by_field_name("body");
 
-    // Header, shared by the enclosing stream and the entity's own stream.
+    // Full header, part of the entity's own stream.
     let mut header = String::new();
     header.push('(');
     header.push_str(kind);
@@ -171,12 +300,20 @@ fn emit_definition(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if Some(child.id()) != body.map(|b| b.id()) {
-            emit(child, src, scope, &mut header, entities);
+            emit(child, cx, scope, &mut header, entities);
         }
     }
 
-    // Enclosing scope: header plus a placeholder for the body.
-    out.push_str(&header);
+    // Enclosing scope: what it evaluates of the header, plus a placeholder
+    // for the body.
+    let decorated = node
+        .parent()
+        .is_some_and(|p| p.kind() == "decorated_definition");
+    if cx.split_headers && kind == "function_definition" && !decorated {
+        out.push_str(&effective_function_header(node, cx, scope, entities));
+    } else {
+        out.push_str(&header);
+    }
     out.push_str("<body:");
     out.push_str(&qual);
     out.push_str(">) ");
@@ -189,7 +326,7 @@ fn emit_definition(
     };
     let mut own = header;
     if let Some(b) = body {
-        emit(b, src, &inner_scope, &mut own, entities);
+        emit(b, cx, &inner_scope, &mut own, entities);
     }
     own.push(')');
     let own_hash = hash_domain(Domain::Entity, own.as_bytes());
@@ -208,11 +345,20 @@ fn emit_definition(
         .or_insert(own_hash);
 }
 
-/// Computes the delta between `old` and `new`. `None` means the file is
-/// absent on that side (added or deleted).
+/// Computes the delta between `old` and `new`, without header splitting.
+/// `None` means the file is absent on that side (added or deleted).
 pub fn diff(old: Option<&[u8]>, new: Option<&[u8]>) -> Result<SourceDelta, ChangeError> {
-    let a = old.map(analyze).transpose()?;
-    let b = new.map(analyze).transpose()?;
+    diff_with(old, new, DiffOptions::default())
+}
+
+/// [`diff`] with explicit options.
+pub fn diff_with(
+    old: Option<&[u8]>,
+    new: Option<&[u8]>,
+    opts: DiffOptions,
+) -> Result<SourceDelta, ChangeError> {
+    let a = old.map(|s| analyze(s, opts)).transpose()?;
+    let b = new.map(|s| analyze(s, opts)).transpose()?;
     let parse_error =
         a.as_ref().is_some_and(|x| x.had_error) || b.as_ref().is_some_and(|x| x.had_error);
 
@@ -372,5 +518,98 @@ mod tests {
         let deleted = diff(Some(b"def f():\n    pass\n"), None).unwrap();
         assert!(deleted.module_changed);
         assert_eq!(deleted.entities, vec!["f"]);
+    }
+
+    fn ds(old: &str, new: &str) -> SourceDelta {
+        diff_with(
+            Some(old.as_bytes()),
+            Some(new.as_bytes()),
+            DiffOptions {
+                split_headers: true,
+            },
+        )
+        .unwrap()
+    }
+
+    /// From conformance (click): adding a keyword parameter with a constant
+    /// default to a method changed the class entity, which the conftest's
+    /// import put in the root scope, so every test re-ran.
+    #[test]
+    fn split_headers_keep_parameters_and_constant_defaults_local() {
+        let old = "class C:\n    def m(self, a=1, b=None):\n        return a\n";
+        for new in [
+            old.replace("a=1", "a=2"),
+            old.replace("b=None", "b=None, c=()"),
+            old.replace("b=None", "bb=None"),
+            old.replace("a=1", "a=-1"),
+            old.replace("b=None", "b={'k': (1, 'x')}"),
+            old.replace("b=None", "b=SENTINEL"),
+        ] {
+            let split = ds(old, &new);
+            assert!(!split.module_changed, "{new}");
+            assert_eq!(split.entities, vec!["C.m"], "{new}");
+            // Without splitting, the class body changes too.
+            assert_eq!(d(old, &new).entities, vec!["C", "C.m"], "{new}");
+        }
+        let module_level = ds("def f(a=1):\n    pass\n", "def f(a=2):\n    pass\n");
+        assert!(!module_level.module_changed);
+        assert_eq!(module_level.entities, vec!["f"]);
+    }
+
+    #[test]
+    fn split_headers_drop_only_lazy_annotations() {
+        let lazy = "from __future__ import annotations\nclass C:\n    def m(self, x: int) -> C:\n        return self\n";
+        let changed = lazy
+            .replace("-> C", "-> t.Self")
+            .replace("x: int", "x: str");
+        assert_eq!(ds(lazy, &changed).entities, vec!["C.m"]);
+
+        // Without the future import, annotations are evaluated by the
+        // class body.
+        let eager = lazy.replace("from __future__ import annotations\n", "");
+        let eager_changed = changed.replace("from __future__ import annotations\n", "");
+        assert_eq!(ds(&eager, &eager_changed).entities, vec!["C", "C.m"]);
+        // A future import of something else doesn't make annotations lazy.
+        let other = eager.replace("class C", "from __future__ import division\nclass C");
+        let other_changed =
+            eager_changed.replace("class C", "from __future__ import division\nclass C");
+        assert_eq!(ds(&other, &other_changed).entities, vec!["C", "C.m"]);
+    }
+
+    #[test]
+    fn split_headers_keep_evaluated_parts_in_the_enclosing_scope() {
+        let base = "def f(a=1):\n    pass\n";
+        for new in [
+            "def f(a=make()):\n    pass\n",
+            "def f(a=x.y):\n    pass\n",
+            "def f(a=x[0]):\n    pass\n",
+            "def f(a=f\"{x}\"):\n    pass\n",
+            "def f(a=1 + x):\n    pass\n",
+            "def f(a=lambda: 1):\n    pass\n",
+            "async def f(a=1):\n    pass\n",
+            "def g(a=1):\n    pass\n",
+        ] {
+            assert!(ds(base, new).module_changed, "{new}");
+        }
+        // A changed non-constant default stays an enclosing-scope change.
+        assert!(
+            ds(
+                "def f(a=make(1)):\n    pass\n",
+                "def f(a=make(2)):\n    pass\n"
+            )
+            .module_changed
+        );
+        // Decorators receive the function object and may inspect its
+        // signature, so a decorated header is never split.
+        let dec = ds("@d\ndef f(a=1):\n    pass\n", "@d\ndef f(a=2):\n    pass\n");
+        assert!(dec.module_changed);
+        // Adding or removing a method changes the class namespace.
+        let added = ds(
+            "class C:\n    def m(self):\n        pass\n",
+            "class C:\n    def m(self):\n        pass\n    def n(self):\n        pass\n",
+        );
+        assert_eq!(added.entities, vec!["C", "C.n"]);
+        // Class headers (bases, keywords) are always evaluated.
+        assert!(ds("class C(A):\n    pass\n", "class C(B):\n    pass\n").module_changed);
     }
 }
