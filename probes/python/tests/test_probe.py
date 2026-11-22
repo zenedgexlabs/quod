@@ -182,7 +182,7 @@ ENV.pop("SKIPCERT_T_B", None)
 
 def _pytest(d, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", f"--skipcert-root={d}", *args],
+        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-W", "error::DeprecationWarning", f"--skipcert-root={d}", *args],
         cwd=d,
         capture_output=True,
         text=True,

@@ -134,21 +134,31 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
     out = open(path, "w", encoding="utf-8", newline="\n")  # noqa: SIM115 - closed at session end
     recorder = Recorder(root)
     _STATE = _State(recorder, out)
-    env_fp = fingerprint.environment(recorder.packages)
-    inv_fp = fingerprint.invocation(early_config)
+    capabilities = list(CAPABILITIES)
+    try:
+        env_fp = fingerprint.environment(recorder.packages)
+        inv_fp = fingerprint.invocation(early_config)
+        fingerprints = {
+            "environment": env_fp,
+            "invocation": inv_fp,
+            "environment_digest": fingerprint.digest(env_fp),
+            "invocation_digest": fingerprint.digest(inv_fp),
+        }
+    except Exception as e:  # noqa: BLE001 - a probe bug must not break the test run
+        # Without fingerprints the map falls back to path mode.
+        sys.stderr.write(f"skipcert: no environment fingerprint ({type(e).__name__}: {e})\n")
+        capabilities.remove("py.environment")
+        fingerprints = {}
     _STATE.emit(
         {
             "type": "header",
             "v": CAPTURE_VERSION,
             "probe": PROBE_ID,
-            "capabilities": list(CAPABILITIES),
+            "capabilities": capabilities,
             "python": sys.version.split()[0],
             "implementation": sys.implementation.name,
             "repo_root": root.replace(os.sep, "/"),
-            "environment": env_fp,
-            "invocation": inv_fp,
-            "environment_digest": fingerprint.digest(env_fp),
-            "invocation_digest": fingerprint.digest(inv_fp),
+            **fingerprints,
         }
     )
     recorder.start()
@@ -293,7 +303,10 @@ def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config
                 checks.append(tuple(line[len("# skipcert-"):].split()))
             elif line and not line.startswith("#"):
                 skip.add(line)
-    problem = _check_skip_file(config, checks)
+    try:
+        problem = _check_skip_file(config, checks)
+    except Exception as e:  # noqa: BLE001 - can't confirm the conditions: don't skip
+        problem = f"could not check the skip file ({type(e).__name__}: {e})"
     if problem:
         sys.stderr.write(f"skipcert: not skipping any tests: {problem}\n")
         return

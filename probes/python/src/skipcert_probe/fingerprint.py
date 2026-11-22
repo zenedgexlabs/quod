@@ -24,6 +24,7 @@ import os
 import platform
 import sys
 import time
+import warnings
 
 from .packages import SITE_PSEUDO_PACKAGE, PackageIndex
 
@@ -184,7 +185,13 @@ def invocation(config) -> dict[str, str]:
             out["invocation.inifile"] = str(inipath)
     else:
         out["invocation.inifile"] = ""
-    inicfg = getattr(config, "inicfg", {}) or {}
+    # ``Config.inicfg`` is deprecated (pytest 9) and warns, which suites
+    # running with ``-W error`` turn into an error.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        inicfg = getattr(config, "inicfg", None)
+    if inicfg is None:
+        inicfg = getattr(config, "_inicfg", None) or {}
     for k in sorted(inicfg):
         v = inicfg[k]
         v = getattr(v, "value", v)  # pytest >= 8.4 wraps values
