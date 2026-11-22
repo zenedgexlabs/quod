@@ -214,16 +214,38 @@ class Step:
     global_triggers: list[str]
     verifier_ok: bool
     note: str = ""
+    # File-level baseline that also obeys Skipcert's global policy triggers
+    # (runs everything whenever Skipcert's policy does): the fair comparison.
+    policy_baseline_skipped: int = 0
+    policy_baseline_run_ms: int = 0
+    # Escapes split by cause: a dependency escape fails when run alone (Skipcert
+    # missed a real dependency); a victim passes alone and fails only through
+    # state other failing tests left behind.
+    dependency_escapes: list[str] = field(default_factory=list)
+    victim_escapes: list[str] = field(default_factory=list)
+    # True if the change caused regressions and *none* of them was selected:
+    # the bad change would have merged green.
+    change_escape: bool = False
     extra: dict = field(default_factory=dict)
 
 
-def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fail, note="") -> Step:
+def fails_alone(ws: "Workspace", name: str) -> bool:
+    r = sh([ws.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", name], cwd=ws.repo, check=False)
+    return r.returncode != 0
+
+
+def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fail, ws, note="") -> Step:
+    """Computes metrics. Must be called with the head state (commit or mutant)
+    still in the working tree, because escapes are re-run in isolation."""
     skipped = set(rep["skip_names"])
     baseline_skip = file_level_skips(base_tests, base_changed)
+    policy_baseline_skip = set() if rep["global"] else baseline_skip
     dur = {n: t["duration_ms"] for n, t in head_tests.items()}
     total = sum(dur.values())
     passed_at_base = {n for n, t in base_tests.items() if t["outcome"] == "passed"}
     regressions = real_fail & passed_at_base
+    escapes = sorted(skipped & regressions)
+    dependency = [n for n in escapes if fails_alone(ws, n)]
     return Step(
         kind=kind,
         base=base,
@@ -234,7 +256,12 @@ def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fa
         skipcert_run_ms=total - sum(dur.get(n, 0) for n in skipped),
         baseline_skipped=len(baseline_skip & set(head_tests)),
         baseline_run_ms=total - sum(dur.get(n, 0) for n in baseline_skip),
-        escapes=sorted(skipped & regressions),
+        policy_baseline_skipped=len(policy_baseline_skip & set(head_tests)),
+        policy_baseline_run_ms=total - sum(dur.get(n, 0) for n in policy_baseline_skip),
+        escapes=escapes,
+        dependency_escapes=dependency,
+        victim_escapes=[n for n in escapes if n not in dependency],
+        change_escape=bool(regressions) and regressions <= skipped,
         baseline_escapes=sorted(baseline_skip & regressions),
         newly_failing=sorted(regressions),
         global_triggers=rep["global"],
@@ -304,12 +331,12 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
             changed = changed_files(ws, base)
             head_tests, _, _ = run_suite(ws, f"h{i}-head")
             real = nonflaky_failures(ws, failing(head_tests) - failing(base_tests))
-            steps.append(measure("history", base, head, base_tests, head_tests, rep, changed, real))
+            steps.append(measure("history", base, head, base_tests, head_tests, rep, changed, real, ws))
         except Exception as e:  # noqa: BLE001 - record and continue (e.g. a commit that doesn't build)
             log(f"  step skipped: {str(e).splitlines()[0]}")
             continue
         s = steps[-1]
-        log(f"  skipcert ran {s.tests_total - s.skipcert_skipped}/{s.tests_total} tests, escapes={len(s.escapes)}, verifier={'ok' if s.verifier_ok else 'FAIL'}")
+        log(f"  skipcert ran {s.tests_total - s.skipcert_skipped}/{s.tests_total} tests, escapes={len(s.dependency_escapes)} dep + {len(s.victim_escapes)} victim, verifier={'ok' if s.verifier_ok else 'FAIL'}")
 
     if n_mutants:
         rng = random.Random(seed)
@@ -334,10 +361,10 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
                 changed = changed_files(ws, base)
                 head_tests, _, _ = run_suite(ws, f"m{made}-head")
                 real = failing(head_tests) - failing(base_tests)
-                step = measure("mutant", base, f"mutant{made}", base_tests, head_tests, rep, changed, real, note=desc)
+                step = measure("mutant", base, f"mutant{made}", base_tests, head_tests, rep, changed, real, ws, note=desc)
                 step.extra["killed"] = bool(real)
                 steps.append(step)
-                log(f"  killed={bool(real)} ran {step.tests_total - step.skipcert_skipped}/{step.tests_total}, escapes={len(step.escapes)}")
+                log(f"  killed={bool(real)} ran {step.tests_total - step.skipcert_skipped}/{step.tests_total}, escapes={len(step.dependency_escapes)} dep + {len(step.victim_escapes)} victim, change_escape={step.change_escape}")
             finally:
                 ws.checkout(base)
     return steps
@@ -351,25 +378,36 @@ def summarize(name: str, steps: list[Step]) -> dict:
         total = sum(s.total_ms for s in ss) or 1
         sk = sum(s.skipcert_run_ms for s in ss)
         bl = sum(s.baseline_run_ms for s in ss)
+        pbl = sum(s.policy_baseline_run_ms for s in ss)
         return {
             "steps": len(ss),
             "escapes": sum(len(s.escapes) for s in ss),
+            "dependency_escapes": sum(len(s.dependency_escapes) for s in ss),
+            "victim_escapes": sum(len(s.victim_escapes) for s in ss),
+            "change_escapes": sum(s.change_escape for s in ss),
             "baseline_escapes": sum(len(s.baseline_escapes) for s in ss),
             "skipcert_time_fraction": round(sk / total, 4),
             "baseline_time_fraction": round(bl / total, 4),
+            "policy_baseline_time_fraction": round(pbl / total, 4),
             "advantage_vs_baseline": round(bl / sk, 2) if sk else None,
+            "advantage_vs_policy_baseline": round(pbl / sk, 2) if sk else None,
             "verifier_failures": sum(not s.verifier_ok for s in ss),
             "full_run_steps": sum(bool(s.global_triggers) for s in ss),
         }
 
     out = {"repo": name, "history": agg(hist), "mutants": agg(muts)}
     out["mutants"]["killed"] = sum(bool(s.extra.get("killed")) for s in muts)
-    escapes = out["history"]["escapes"] + out["mutants"]["escapes"]
+    both = (out["history"], out["mutants"])
     adv = out["history"]["advantage_vs_baseline"]
+    padv = out["history"]["advantage_vs_policy_baseline"]
     out["gate"] = {
-        "zero_escapes": escapes == 0,
+        # Soundness: no missed dependency and no bad change merged green.
+        # Order-dependent victims are reported but don't fail the gate.
+        "zero_dependency_escapes": sum(a["dependency_escapes"] for a in both) == 0,
+        "zero_change_escapes": sum(a["change_escapes"] for a in both) == 0,
+        "verifier_clean": sum(a["verifier_failures"] for a in both) == 0,
         "two_x_vs_baseline": adv is not None and adv >= 2.0,
-        "verifier_clean": out["history"]["verifier_failures"] + out["mutants"]["verifier_failures"] == 0,
+        "two_x_vs_policy_baseline": padv is not None and padv >= 2.0,
     }
     return out
 
@@ -398,7 +436,8 @@ def main() -> int:
         json.dumps({"summary": summary, "steps": [asdict(s) for s in steps]}, indent=2), encoding="utf-8"
     )
     print(json.dumps(summary, indent=2))
-    return 0 if summary["gate"]["zero_escapes"] else 1
+    g = summary["gate"]
+    return 0 if g["zero_dependency_escapes"] and g["zero_change_escapes"] and g["verifier_clean"] else 1
 
 
 if __name__ == "__main__":

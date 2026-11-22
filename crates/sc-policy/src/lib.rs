@@ -22,8 +22,8 @@
 //!
 //! | ID | Scope | Meaning |
 //! |---|---|---|
-//! | R001 | global | CI configuration changed |
-//! | R002 | global | Test-runner configuration changed (conftest, pytest.ini, pyproject, tox, jest/vitest config) |
+//! | R001 | global | CI configuration that runs the tests changed (single-file CI configs, composite actions, GitHub workflows matching `test_workflows`) |
+//! | R002 | global | Test-runner configuration changed: conftest.py anywhere, root noxfile.py, jest/vitest config, or a test-relevant section of the root pyproject.toml / setup.cfg / tox.ini / pytest.ini |
 //! | R003 | global | Runtime version pin changed (.python-version, .nvmrc, ...) |
 //! | R004 | global | Skipcert policy changed |
 //! | R005 | global | Build-affecting input changed (setup.py, C/Cython sources, native binaries, .pth, sitecustomize) |
@@ -43,12 +43,12 @@
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::{Deserialize, Serialize};
 
-use sc_change::{ChangeSet, FileStatus, LockDelta};
+use sc_change::{ChangeSet, ConfigDelta, FileStatus, LockDelta};
 use sc_hash::{Digest, Domain, hash_value};
 use sc_model::{Ecosystem, NodeKind, TestFlags, names};
 
 /// Version of the rule catalog. Part of the policy hash.
-pub const CATALOG_VERSION: u32 = 1;
+pub const CATALOG_VERSION: u32 = 2;
 
 /// Pseudo-package the probe uses for installed files no distribution claims
 /// (must match `skipcert_probe.packages.SITE_PSEUDO_PACKAGE`).
@@ -101,6 +101,14 @@ pub struct PolicyConfig {
     pub test_paths: Vec<String>,
     /// Native-code handling.
     pub native_code: NativeCode,
+    /// GitHub workflow globs that run the tests. Changes to other workflows
+    /// (publishing, docs, security scanners) can't change test outcomes in the
+    /// job where selection runs, so they don't trigger R001.
+    pub test_workflows: Vec<String>,
+    /// Extra configuration sections to treat as irrelevant to test outcomes,
+    /// on top of the built-in list (linters, formatters, docs metadata).
+    /// Entries ending in `*` match by prefix.
+    pub irrelevant_config_sections: Vec<String>,
 }
 
 impl Default for PolicyConfig {
@@ -117,6 +125,14 @@ impl Default for PolicyConfig {
                 "**/conftest.py".into(),
             ],
             native_code: NativeCode::TrustPackageHash,
+            test_workflows: vec![
+                ".github/workflows/*test*".into(),
+                ".github/workflows/ci.y*ml".into(),
+                ".github/workflows/ci-*".into(),
+                ".github/workflows/main.y*ml".into(),
+                ".github/workflows/build.y*ml".into(),
+            ],
+            irrelevant_config_sections: Vec::new(),
         }
     }
 }
@@ -128,8 +144,9 @@ struct PolicyFile {
     policy: PolicyConfig,
 }
 
+/// CI configuration that always triggers R001: single-file CI systems and
+/// composite actions, whose test steps can't be told apart by file name.
 const CI_PATHS: &[&str] = &[
-    ".github/workflows/**",
     ".github/actions/**",
     ".gitlab-ci.yml",
     ".gitlab/**",
@@ -139,16 +156,78 @@ const CI_PATHS: &[&str] = &[
     "Jenkinsfile",
     "bitbucket-pipelines.yml",
 ];
+/// Test-runner configuration that always triggers R002 when changed.
 const TEST_CONFIG_PATHS: &[&str] = &[
     "**/conftest.py",
-    "**/pytest.ini",
-    "**/pyproject.toml",
-    "**/tox.ini",
-    "**/setup.cfg",
-    "**/noxfile.py",
+    "noxfile.py",
     "**/jest.config.*",
     "**/vitest.config.*",
 ];
+
+/// Root configuration files that trigger R002 only when a test-relevant
+/// section changes. The same names elsewhere (example projects, fixtures)
+/// are ordinary data files.
+const ROOT_CONFIG_FILES: &[&str] = &["pyproject.toml", "setup.cfg", "tox.ini", "pytest.ini"];
+
+/// Configuration sections that can't change test outcomes: linters,
+/// formatters, type checkers, coverage reporting, docs and package metadata.
+/// Everything else (`tool.pytest`, `project.version`, dependencies,
+/// `build-system`, `[testenv]`, ...) is treated as relevant.
+const IRRELEVANT_CONFIG_SECTIONS: &[&str] = &[
+    "tool.ruff",
+    "tool.mypy",
+    "tool.pyright",
+    "tool.black",
+    "tool.isort",
+    "tool.codespell",
+    "tool.coverage",
+    "tool.towncrier",
+    "tool.bumpversion",
+    "tool.bumpver",
+    "tool.flake8",
+    "tool.pylint",
+    "tool.docformatter",
+    "tool.check-manifest",
+    "tool.check-wheel-contents",
+    "tool.cibuildwheel",
+    "tool.pyproject-fmt",
+    "tool.interrogate",
+    "tool.vulture",
+    "tool.commitizen",
+    "tool.semantic_release",
+    "tool.pydocstyle",
+    "tool.typos",
+    "tool.zizmor",
+    "project.urls",
+    "project.description",
+    "project.readme",
+    "project.keywords",
+    "project.classifiers",
+    "project.authors",
+    "project.maintainers",
+    "project.license",
+    "project.license-files",
+    "flake8",
+    "mypy",
+    "mypy-*",
+    "isort",
+    "pycodestyle",
+    "pydocstyle",
+    "coverage:*",
+    "bdist_wheel",
+    "sdist",
+    "check-manifest",
+    "codespell",
+    "pylint",
+    "yapf",
+];
+
+fn section_matches(section: &str, pattern: &str) -> bool {
+    match pattern.strip_suffix('*') {
+        Some(prefix) => section.starts_with(prefix),
+        None => section == pattern,
+    }
+}
 const RUNTIME_PATHS: &[&str] = &[
     "**/.python-version",
     "**/runtime.txt",
@@ -273,6 +352,7 @@ pub struct Policy {
     config: PolicyConfig,
     hash: Digest,
     ci: GlobSet,
+    test_workflows: GlobSet,
     test_config: GlobSet,
     runtime: GlobSet,
     policy_files: GlobSet,
@@ -290,6 +370,8 @@ impl Policy {
             &mut config.run_all_paths,
             &mut config.never_skip,
             &mut config.test_paths,
+            &mut config.test_workflows,
+            &mut config.irrelevant_config_sections,
         ] {
             list.sort();
             list.dedup();
@@ -298,6 +380,7 @@ impl Policy {
         Ok(Self {
             hash,
             ci: globset(CI_PATHS)?,
+            test_workflows: globset(&config.test_workflows)?,
             test_config: globset(TEST_CONFIG_PATHS)?,
             runtime: globset(RUNTIME_PATHS)?,
             policy_files: globset(POLICY_PATHS)?,
@@ -331,19 +414,58 @@ impl Policy {
         &self.config
     }
 
-    fn global_rule(&self, path: &str) -> Option<(&'static str, &'static str)> {
+    fn irrelevant_section(&self, section: &str) -> bool {
+        IRRELEVANT_CONFIG_SECTIONS
+            .iter()
+            .any(|p| section_matches(section, p))
+            || self
+                .config
+                .irrelevant_config_sections
+                .iter()
+                .any(|p| section_matches(section, p))
+    }
+
+    /// For a root configuration file, the reason R002 fires, if it does.
+    fn root_config_rule(&self, config: Option<&ConfigDelta>) -> Option<String> {
+        match config {
+            None => Some("configuration file changed".into()),
+            Some(ConfigDelta::Unparseable(e)) => {
+                Some(format!("configuration could not be parsed: {e}"))
+            }
+            Some(ConfigDelta::Sections(sections)) => {
+                let relevant: Vec<&str> = sections
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|s| !self.irrelevant_section(s))
+                    .collect();
+                (!relevant.is_empty())
+                    .then(|| format!("test-relevant sections changed: {}", relevant.join(", ")))
+            }
+        }
+    }
+
+    fn global_rule(
+        &self,
+        path: &str,
+        config: Option<&ConfigDelta>,
+    ) -> Option<(&'static str, String)> {
         if self.policy_files.is_match(path) {
-            Some(("R004", "Skipcert policy changed"))
-        } else if self.ci.is_match(path) {
-            Some(("R001", "CI configuration changed"))
+            Some(("R004", "Skipcert policy changed".into()))
+        } else if self.ci.is_match(path) || self.test_workflows.is_match(path) {
+            Some((
+                "R001",
+                "CI configuration that runs the tests changed".into(),
+            ))
         } else if self.test_config.is_match(path) {
-            Some(("R002", "test-runner configuration changed"))
+            Some(("R002", "test-runner configuration changed".into()))
+        } else if ROOT_CONFIG_FILES.contains(&path) {
+            self.root_config_rule(config).map(|d| ("R002", d))
         } else if self.runtime.is_match(path) {
-            Some(("R003", "runtime version pin changed"))
+            Some(("R003", "runtime version pin changed".into()))
         } else if self.build.is_match(path) {
-            Some(("R005", "build-affecting input changed"))
+            Some(("R005", "build-affecting input changed".into()))
         } else if self.run_all.is_match(path) {
-            Some(("R015", "path is in run_all_paths"))
+            Some(("R015", "path is in run_all_paths".into()))
         } else {
             None
         }
@@ -382,11 +504,11 @@ impl Policy {
                 paths.push(old);
             }
             for p in &paths {
-                if let Some((rule, detail)) = self.global_rule(p) {
+                if let Some((rule, detail)) = self.global_rule(p, fd.config.as_ref()) {
                     ev.global.push(Trigger {
                         rule,
                         path: Some((*p).to_owned()),
-                        detail: detail.into(),
+                        detail,
                     });
                 }
             }
@@ -571,6 +693,7 @@ mod tests {
             },
             source,
             lock,
+            config: None,
         }
     }
 
@@ -662,6 +785,137 @@ mod tests {
             );
             assert_eq!(ev.global.first().map(|t| t.rule), Some(rule), "{path}");
         }
+    }
+
+    fn with_config(path: &str, config: ConfigDelta) -> FileDetail {
+        let mut d = fd(path, FileStatus::Modified, None, None);
+        d.config = Some(config);
+        d
+    }
+
+    #[test]
+    fn only_test_workflows_trigger_r001() {
+        let p = Policy::default_policy();
+        for path in [
+            ".github/workflows/tests.yaml",
+            ".github/workflows/ci.yml",
+            ".gitlab-ci.yml",
+            ".github/actions/setup/action.yml",
+        ] {
+            let ev = p.evaluate(
+                &cs(vec![fd(path, FileStatus::Modified, None, None)]),
+                &FRESH,
+            );
+            assert_eq!(ev.global.first().map(|t| t.rule), Some("R001"), "{path}");
+        }
+        for path in [
+            ".github/workflows/publish.yaml",
+            ".github/workflows/codeql-analysis.yml",
+            ".github/workflows/zizmor.yml",
+        ] {
+            let ev = p.evaluate(
+                &cs(vec![fd(path, FileStatus::Modified, None, None)]),
+                &FRESH,
+            );
+            assert!(!ev.runs_everything(), "{path}");
+        }
+        let custom =
+            Policy::from_toml("[policy]\ntest_workflows = [\".github/workflows/publish.yaml\"]\n")
+                .unwrap();
+        let ev = custom.evaluate(
+            &cs(vec![fd(
+                ".github/workflows/publish.yaml",
+                FileStatus::Modified,
+                None,
+                None,
+            )]),
+            &FRESH,
+        );
+        assert!(ev.runs_everything());
+    }
+
+    #[test]
+    fn root_config_sections_decide_r002() {
+        let p = Policy::default_policy();
+        let sections =
+            |v: &[&str]| ConfigDelta::Sections(v.iter().map(|s| (*s).to_owned()).collect());
+
+        let lint = p.evaluate(
+            &cs(vec![with_config(
+                "pyproject.toml",
+                sections(&["tool.ruff", "project.urls"]),
+            )]),
+            &FRESH,
+        );
+        assert!(
+            !lint.runs_everything(),
+            "lint/metadata edits are irrelevant"
+        );
+        assert_eq!(
+            lint.changed[0].name, "pyproject.toml",
+            "still a data-file change"
+        );
+
+        for relevant in [
+            "tool.pytest",
+            "project.version",
+            "project.dependencies",
+            "build-system",
+            "testenv",
+        ] {
+            let ev = p.evaluate(
+                &cs(vec![with_config(
+                    "pyproject.toml",
+                    sections(&["tool.ruff", relevant]),
+                )]),
+                &FRESH,
+            );
+            assert_eq!(
+                ev.global.first().map(|t| t.rule),
+                Some("R002"),
+                "{relevant}"
+            );
+        }
+        let ini = p.evaluate(
+            &cs(vec![with_config(
+                "tox.ini",
+                sections(&["flake8", "mypy-foo", "coverage:run"]),
+            )]),
+            &FRESH,
+        );
+        assert!(!ini.runs_everything());
+
+        let broken = p.evaluate(
+            &cs(vec![with_config(
+                "setup.cfg",
+                ConfigDelta::Unparseable("x".into()),
+            )]),
+            &FRESH,
+        );
+        assert!(broken.runs_everything());
+
+        let example = p.evaluate(
+            &cs(vec![with_config(
+                "examples/demo/pyproject.toml",
+                sections(&["tool.pytest"]),
+            )]),
+            &FRESH,
+        );
+        assert!(
+            !example.runs_everything(),
+            "only the root config configures the runner"
+        );
+
+        let extra = Policy::from_toml("[policy]\nirrelevant_config_sections = [\"tool.hatch*\"]\n")
+            .unwrap();
+        let ev = extra.evaluate(
+            &cs(vec![with_config(
+                "pyproject.toml",
+                sections(&["tool.hatch.version"]),
+            )]),
+            &FRESH,
+        );
+        assert!(!ev.runs_everything());
     }
 
     #[test]

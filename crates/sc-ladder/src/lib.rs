@@ -354,6 +354,7 @@ mod tests {
                 skip_markers: (0, 0),
             }),
             lock: None,
+            config: None,
         }
     }
 
@@ -522,6 +523,7 @@ mod tests {
                 old: pin("1"),
                 new: pin("2"),
             }])),
+            config: None,
         };
         let (g, sel) = run_select(vec![lock], false);
         assert_eq!(

@@ -14,12 +14,14 @@
 //! widen, skip) is the job of `sc-policy` and `sc-ladder`. Anything it can't
 //! analyse is reported as such and never silently dropped.
 
+pub mod config;
 pub mod git;
 pub mod lock;
 pub mod python;
 
 use sc_hash::Digest;
 
+pub use config::{ConfigDelta, ConfigKind};
 pub use git::{FileChange, FileStatus, Repo};
 pub use lock::{LockDelta, LockKind, PackageChange, PkgPin};
 pub use python::SourceDelta;
@@ -57,6 +59,8 @@ pub struct FileDetail {
     pub source: Option<SourceDelta>,
     /// Package delta, for recognised lockfiles.
     pub lock: Option<LockDelta>,
+    /// Section delta, for recognised configuration files.
+    pub config: Option<ConfigDelta>,
 }
 
 /// The resolved change.
@@ -111,10 +115,13 @@ pub fn compute(repo: &Repo, opts: &ChangeOptions) -> Result<ChangeSet, ChangeErr
         };
         let lock =
             lock::lock_kind(&change.path).map(|k| lock::delta(k, old.as_deref(), new.as_deref()));
+        let config = config::config_kind(&change.path)
+            .map(|k| config::delta(k, old.as_deref(), new.as_deref()));
         files.push(FileDetail {
             change,
             source,
             lock,
+            config,
         });
     }
     files.sort_by(|a, b| a.change.path.cmp(&b.change.path));

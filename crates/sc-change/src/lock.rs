@@ -128,6 +128,12 @@ fn parse(kind: LockKind, text: &str) -> Result<BTreeMap<String, PkgPin>, String>
     }
 }
 
+pub(crate) fn canonical(v: &toml::Value) -> String {
+    let mut s = String::new();
+    canon(v, &mut s);
+    s
+}
+
 fn canon(v: &toml::Value, out: &mut String) {
     match v {
         toml::Value::Table(t) => {

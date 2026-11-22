@@ -75,6 +75,7 @@ fn signed_run(
                 skip_markers: (0, 0),
             }),
             lock: None,
+            config: None,
         }],
     };
     let ev = policy.evaluate(
