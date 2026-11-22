@@ -52,8 +52,32 @@ SKIPCERT = ROOT / "target" / "release" / f"skipcert{EXE}"
 VERIFY = ROOT / "target" / "release" / f"skipcert-verify{EXE}"
 
 
-def sh(cmd: list, cwd: Path | None = None, check: bool = True, env: dict | None = None) -> subprocess.CompletedProcess:
-    res = subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True, text=True, env=env)
+class SuiteTimeout(RuntimeError):
+    """A command ran past its timeout (a mutant that makes the suite hang)."""
+
+
+def _kill_tree(proc: subprocess.Popen) -> None:
+    # The venv's python.exe on Windows is a launcher with a child process,
+    # so killing only the direct child would leave the suite running.
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+    else:
+        proc.kill()
+
+
+def sh(
+    cmd: list, cwd: Path | None = None, check: bool = True, env: dict | None = None, timeout: float | None = None
+) -> subprocess.CompletedProcess:
+    proc = subprocess.Popen(
+        [str(c) for c in cmd], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+    )
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        proc.communicate()
+        raise SuiteTimeout(f"timed out after {timeout:.0f}s: {' '.join(map(str, cmd))}") from None
+    res = subprocess.CompletedProcess(proc.args, proc.returncode, out, err)
     if check and res.returncode != 0:
         raise RuntimeError(f"command failed ({res.returncode}): {' '.join(map(str, cmd))}\n{res.stdout[-3000:]}\n{res.stderr[-3000:]}")
     return res
@@ -126,13 +150,15 @@ def read_capture(path: Path) -> tuple[dict, list[dict]]:
     return tests, recs
 
 
-def run_suite(ws: Workspace, tag: str, extra: list[str] | None = None) -> tuple[dict, list[dict], Path]:
+def run_suite(
+    ws: Workspace, tag: str, extra: list[str] | None = None, timeout: float | None = None
+) -> tuple[dict, list[dict], Path]:
     """Runs the full suite with the probe recording. Returns (tests by name, records, capture path)."""
     cap = ws.artifacts / f"{tag}.jsonl"
     for old in ws.artifacts.glob(cap.name + "*"):
         old.unlink()
     args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--skipcert-record={cap}", f"--skipcert-root={ws.repo}", *(extra or [])]
-    sh(args, cwd=ws.repo, check=False)
+    sh(args, cwd=ws.repo, check=False, timeout=timeout)
     if not cap.exists():
         raise RuntimeError(f"no capture produced for {tag}; the suite may not have started")
     tests, recs = read_capture(cap)
@@ -350,7 +376,12 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
         rng = random.Random(seed)
         base = commits[-1]
         ws.checkout(base)
+        t0 = time.monotonic()
         base_tests, _, cap = run_suite(ws, "m-base")
+        # A mutant can make the suite loop forever (`==` -> `!=` in a loop
+        # condition). Such a mutant is detected, but its run can't be
+        # measured, so it is discarded and another one drawn.
+        suite_timeout = max(120.0, 10 * (time.monotonic() - t0))
         map_path = build_map(ws, cap, "m")
         files = sorted({p for pat in ws.cfg["mutate"] for p in ws.repo.glob(pat) if p.is_file()})
         attempts = 0
@@ -367,7 +398,12 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
             try:
                 rep = select(ws, map_path, f"m{made}")
                 changed = changed_files(ws, base)
-                head_tests, _, _ = run_suite(ws, f"m{made}-head")
+                try:
+                    head_tests, _, _ = run_suite(ws, f"m{made}-head", timeout=suite_timeout)
+                except SuiteTimeout as e:
+                    log(f"  discarded (suite hangs under this mutant): {e}")
+                    made -= 1
+                    continue
                 real = failing(head_tests) - failing(base_tests)
                 step = measure("mutant", base, f"mutant{made}", base_tests, head_tests, rep, changed, real, ws, note=desc)
                 step.extra["killed"] = bool(real)
