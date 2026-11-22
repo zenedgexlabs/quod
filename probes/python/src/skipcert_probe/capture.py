@@ -74,6 +74,88 @@ def entity_qualname(co_qualname: str) -> str | None:
     return ".".join(parts) if parts else None
 
 
+class CacheTracker:
+    """Clears ``functools`` caches at every test boundary during recording.
+
+    A cached function hit from an earlier test executes no Python code, so the
+    probe can't see that the test depends on it. A change to the function then
+    goes unnoticed, which is unsound. Clearing ``lru_cache``/``cache`` wrappers
+    and ``cached_property`` values before each test makes every test recompute,
+    and therefore record, what it uses.
+
+    ``functools.lru_cache``, ``functools.cache`` and ``functools.cached_property``
+    are replaced by registering equivalents before project code is imported
+    (the recorder starts before the initial conftests load). Caches created
+    earlier, by already-imported third-party or stdlib modules, aren't tracked.
+    Their code is covered by package and interpreter identity instead.
+
+    Hand-written memo dictionaries aren't tracked. The probe assumes tests
+    don't depend on state left behind by other tests except through these
+    caches. The post-merge audit is what catches violations.
+    """
+
+    def __init__(self) -> None:
+        self._wrappers: list = []
+        self._properties: list[tuple[object, str]] = []
+        self._orig: tuple | None = None
+
+    def install(self) -> None:
+        import functools
+
+        if self._orig is not None:
+            return
+        orig_lru, orig_cache, orig_cp = functools.lru_cache, functools.cache, functools.cached_property
+        self._orig = (orig_lru, orig_cache, orig_cp)
+        wrappers, properties = self._wrappers, self._properties
+
+        def lru_cache(maxsize=128, typed=False):
+            if callable(maxsize) and not isinstance(maxsize, bool):
+                w = orig_lru(maxsize, typed)  # used bare: @lru_cache
+                wrappers.append(w)
+                return w
+            deco = orig_lru(maxsize, typed)
+
+            def register(fn):
+                w = deco(fn)
+                wrappers.append(w)
+                return w
+
+            return register
+
+        def cache(user_function):
+            return lru_cache(maxsize=None)(user_function)
+
+        class cached_property(orig_cp):  # noqa: N801 - keeps the stdlib name
+            def __get__(self, instance, owner=None):
+                value = super().__get__(instance, owner)
+                if instance is not None:
+                    properties.append((instance, self.attrname))
+                return value
+
+        cached_property.__module__ = "functools"
+        functools.lru_cache, functools.cache, functools.cached_property = lru_cache, cache, cached_property
+
+    def uninstall(self) -> None:
+        import functools
+
+        if self._orig is not None:
+            functools.lru_cache, functools.cache, functools.cached_property = self._orig
+            self._orig = None
+
+    def clear(self) -> None:
+        for w in self._wrappers:
+            try:
+                w.cache_clear()
+            except Exception:  # noqa: BLE001
+                pass
+        for instance, name in self._properties:
+            try:
+                instance.__dict__.pop(name, None)
+            except Exception:  # noqa: BLE001
+                pass
+        self._properties.clear()
+
+
 def _norm(path: str) -> str:
     return os.path.normcase(os.path.realpath(path))
 
@@ -105,6 +187,7 @@ class Recorder:
         self._tool_id: int | None = None
         self._site_prefixes = self._site_dirs()
         self._own_dir = _norm(os.path.dirname(__file__)) + os.sep
+        self.caches = CacheTracker()
 
     @staticmethod
     def _site_dirs() -> tuple[str, ...]:
@@ -262,6 +345,7 @@ class Recorder:
         mon.register_callback(self._tool_id, mon.events.PY_START, self._on_py_start)
         mon.set_events(self._tool_id, mon.events.PY_START)
         Recorder._active = self
+        self.caches.install()
         if not Recorder._audit_installed:
             sys.addaudithook(Recorder._audit_trampoline)  # cannot be removed; gated by _active
             Recorder._audit_installed = True
@@ -273,10 +357,13 @@ class Recorder:
             mon.register_callback(self._tool_id, mon.events.PY_START, None)
             mon.free_tool_id(self._tool_id)
             self._tool_id = None
+        self.caches.uninstall()
         Recorder._active = None
 
     def boundary(self) -> None:
-        """Re-enables all disabled code locations (call at each test start)."""
+        """Starts a test: clears tracked caches so the test recomputes (and
+        records) what it uses, then re-enables all disabled code locations."""
+        self.caches.clear()
         sys.monitoring.restart_events()
 
     def push(self, c: Collector, fresh: bool = False) -> None:

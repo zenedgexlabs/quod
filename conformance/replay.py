@@ -96,7 +96,7 @@ def setup(name: str, cfg: dict, work: Path, python_version: str) -> Workspace:
         log(f"creating venv (python {python_version})")
         sh(["uv", "venv", "-q", "--python", python_version, venv])
     py = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    sh(["uv", "pip", "install", "-q", "--python", py, ROOT / "probes" / "python", "pytest"])
+    sh(["uv", "pip", "install", "-q", "--python", py, "--reinstall-package", "skipcert-probe", ROOT / "probes" / "python", "pytest"])
     sh(["uv", "pip", "install", "-q", "--python", py, *cfg["install"]], cwd=repo)
 
     if not SKIPCERT.exists() or not VERIFY.exists():

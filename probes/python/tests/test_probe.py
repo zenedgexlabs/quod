@@ -60,6 +60,38 @@ class TestC:
         assert True
 """
 
+APP_PRIMES = """
+from functools import cache, cached_property, lru_cache
+
+def helper(n):
+    return n % 2
+
+@lru_cache
+def cached(n):
+    return helper(n)
+
+@cache
+def cached2(n):
+    return n + 1
+
+class Box:
+    @cached_property
+    def value(self):
+        return helper(3)
+
+BOX = Box()
+"""
+
+TEST_CACHE = """
+from app.primes import BOX, cached, cached2
+
+def test_warm():
+    assert cached(3) == 1 and cached2(1) == 2 and BOX.value == 1
+
+def test_hit():
+    assert cached(3) == 1 and cached2(1) == 2 and BOX.value == 1
+"""
+
 TEST_SYS = """
 import os
 import subprocess
@@ -93,9 +125,11 @@ def project_dir(tmp_path_factory):
     (d / "app" / "__init__.py").write_text("")
     (d / "app" / "billing.py").write_text(textwrap.dedent(APP_BILLING))
     (d / "app" / "util.py").write_text(textwrap.dedent(APP_UTIL))
+    (d / "app" / "primes.py").write_text(textwrap.dedent(APP_PRIMES))
     (d / "tests").mkdir()
     (d / "tests" / "test_pay.py").write_text(textwrap.dedent(TEST_PAY))
     (d / "tests" / "test_sys.py").write_text(textwrap.dedent(TEST_SYS))
+    (d / "tests" / "test_cache.py").write_text(textwrap.dedent(TEST_CACHE))
     (d / "conftest.py").write_text("import app.util\n")
     return d
 
@@ -117,7 +151,7 @@ def fns(rec: dict) -> set[tuple[str, str]]:
 
 def test_header_and_names(captured):
     res, recs, tests, _ = captured
-    assert "8 passed" in res.stdout
+    assert "10 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
     assert recs[-1]["type"] == "root"
     assert set(tests) >= {
@@ -164,6 +198,19 @@ def test_behaviour_flags(captured):
     assert tests["tests/test_pay.py::test_charge"]["flags"] == [], "imports must not look like discovery"
 
 
+def test_cache_hits_still_record_the_cached_function(captured):
+    """Regression for a conformance escape (more-itertools, lru_cache).
+
+    test_warm fills the caches. test_hit gets cache hits that execute no Python
+    code, so without cache clearing its footprint would miss the cached
+    functions, and a change to them would wrongly skip it.
+    """
+    _, _, tests, _ = captured
+    hit = fns(tests["tests/test_cache.py::test_hit"])
+    for q in ("cached", "cached2", "helper", "Box.value"):
+        assert ("app/primes.py", q) in hit, q
+
+
 def test_lambdas_map_to_enclosing_entity(captured):
     _, _, tests, _ = captured
     f = fns(tests["tests/test_sys.py::test_lambda"])
@@ -188,7 +235,7 @@ def test_skip_file_deselects_named_tests(project_dir):
     skip.write_text("tests/test_pay.py::test_charge\ntests/test_pay.py::test_param[2]\n")
     res = _pytest(project_dir, f"--skipcert-skip={skip}")
     assert res.returncode == 0, res.stdout + res.stderr
-    assert "6 passed, 2 deselected" in res.stdout
+    assert "8 passed, 2 deselected" in res.stdout
 
 
 @pytest.mark.parametrize(
