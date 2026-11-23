@@ -41,3 +41,33 @@ branch = "main"
 install = ["-e", ".", "freezegun"]
 pytest = ["tests", "-q", "-p", "no:cacheprovider"]
 mutate = ["src/itsdangerous/*.py"]
+
+# Larger, widely used projects (added after run 5).
+
+[repos.rich]
+url = "https://github.com/Textualize/rich"
+branch = "master"
+install = ["-e", ".", "attrs"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["rich/*.py"]
+
+[repos.requests]
+url = "https://github.com/psf/requests"
+branch = "main"
+install = ["-e", ".[socks]", "-r", "requirements-dev.txt"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/requests/*.py"]
+
+[repos.httpx]
+url = "https://github.com/encode/httpx"
+branch = "master"
+install = ["-r", "requirements.txt"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["httpx/*.py", "httpx/_transports/*.py"]
+
+[repos.pydantic]
+url = "https://github.com/pydantic/pydantic"
+branch = "main"
+install = ["-e", ".", "--group", "testing"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider", "--ignore=tests/mypy", "--ignore=tests/benchmarks"]
+mutate = ["pydantic/*.py", "pydantic/_internal/*.py"]
