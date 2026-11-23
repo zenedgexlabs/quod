@@ -352,18 +352,28 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
     ws.git("fetch", "-q", "origin", branch, check=False)
     commits = ws.git("log", "--first-parent", "--format=%H", f"-n{n_commits + 1}", f"origin/{branch}").stdout.split()[::-1]
     steps: list[Step] = []
+    # No suite run may block the replay forever (a hung test, a resumed
+    # machine): history runs get 10x the slowest run so far, at least 15 min.
+    slowest = 90.0
+
+    def timed_suite(tag: str):
+        nonlocal slowest
+        t0 = time.monotonic()
+        out = run_suite(ws, tag, timeout=max(900.0, 10 * slowest))
+        slowest = max(slowest, time.monotonic() - t0)
+        return out
 
     for i in range(1, len(commits)):
         base, head = commits[i - 1], commits[i]
         log(f"[{ws.name}] history {i}/{len(commits) - 1}: {base[:8]} -> {head[:8]}")
         try:
             ws.checkout(base)
-            base_tests, _, cap = run_suite(ws, f"h{i}-base")
+            base_tests, _, cap = timed_suite(f"h{i}-base")
             map_path = build_map(ws, cap, f"h{i}")
             ws.checkout(head)
             rep = select(ws, map_path, f"h{i}")
             changed = changed_files(ws, base)
-            head_tests, _, _ = run_suite(ws, f"h{i}-head")
+            head_tests, _, _ = timed_suite(f"h{i}-head")
             real = nonflaky_failures(ws, failing(head_tests) - failing(base_tests))
             steps.append(measure("history", base, head, base_tests, head_tests, rep, changed, real, ws))
         except Exception as e:  # noqa: BLE001 - record and continue (e.g. a commit that doesn't build)
