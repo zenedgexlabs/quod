@@ -46,7 +46,7 @@ mutate = ["src/itsdangerous/*.py"]
 
 [repos.rich]
 url = "https://github.com/Textualize/rich"
-branch = "master"
+branch = "main"
 install = ["-e", ".", "attrs"]
 pytest = ["tests", "-q", "-p", "no:cacheprovider"]
 mutate = ["rich/*.py"]
