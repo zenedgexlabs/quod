@@ -12,7 +12,7 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use sc_cert::{Ed25519Signer, Signer};
-use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Repo};
+use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Language, LineMap, Repo};
 use sc_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use sc_hash::{Digest, hash_file};
 use sc_ladder::{RunReason, SelectInput, Selection, select};
@@ -69,6 +69,8 @@ enum Record {
         flags: Vec<String>,
         #[serde(default)]
         env: Vec<(String, String)>,
+        #[serde(default)]
+        lines: Vec<(String, Vec<(u32, u32)>)>,
     },
     Root {
         files: Vec<String>,
@@ -76,6 +78,8 @@ enum Record {
         packages: Vec<String>,
         #[serde(default)]
         env: Vec<(String, String)>,
+        #[serde(default)]
+        lines: Vec<(String, Vec<(u32, u32)>)>,
     },
 }
 
@@ -97,9 +101,46 @@ struct Ingest<'a> {
     root: &'a Path,
     file_hashes: HashMap<String, Option<Digest>>,
     package_hashes: HashMap<String, Option<Digest>>,
+    /// Line maps of recorded source files (ADR 013). `None`: no entity spec
+    /// for the language, or the file couldn't be read or parsed, so lines
+    /// observe the file node.
+    line_maps: HashMap<String, Option<LineMap>>,
 }
 
 impl Ingest<'_> {
+    /// Nodes observed by executing `ranges` of `path`: the innermost entity
+    /// of each line, and the file node for module-level lines.
+    fn lines(&mut self, path: &str, ranges: &[(u32, u32)]) -> Vec<NodeId> {
+        let name = names::file(path);
+        if !self.line_maps.contains_key(&name) {
+            let map = Language::from_path(&name).and_then(|lang| {
+                let src = std::fs::read(self.root.join(&name)).ok()?;
+                LineMap::new(lang, &src).ok()
+            });
+            self.line_maps.insert(name.clone(), map);
+        }
+        let resolved = self.line_maps[&name].as_ref().map(|m| {
+            let (ents, module) = m.resolve(ranges);
+            (
+                ents.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                module,
+            )
+        });
+        let mut out = Vec::new();
+        match resolved {
+            Some((ents, module)) => {
+                for q in &ents {
+                    out.push(self.function(&name, q));
+                }
+                if module || ents.is_empty() {
+                    out.push(self.file(&name));
+                }
+            }
+            None => out.push(self.file(&name)),
+        }
+        out
+    }
+
     fn file(&mut self, rel: &str) -> NodeId {
         let name = names::file(rel);
         let root = self.root;
@@ -231,6 +272,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
         root: repo_root,
         file_hashes: HashMap::new(),
         package_hashes: HashMap::new(),
+        line_maps: HashMap::new(),
     };
     for rec in &records {
         if let Record::Package { name, dist_hash } = rec {
@@ -253,6 +295,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 packages,
                 flags,
                 env,
+                lines,
             } => {
                 let mut f = TestFlags::default();
                 for fl in &flags {
@@ -280,12 +323,18 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     let n = st.env(name, h);
                     st.b.observe(t, n);
                 }
+                for (path, ranges) in &lines {
+                    for n in st.lines(path, ranges) {
+                        st.b.observe(t, n);
+                    }
+                }
             }
             Record::Root {
                 files,
                 functions,
                 packages,
                 env,
+                lines,
             } => {
                 for file in &files {
                     let n = st.file(file);
@@ -302,6 +351,11 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 for (name, h) in &env {
                     let n = st.env(name, h);
                     st.b.observe_root(n);
+                }
+                for (path, ranges) in &lines {
+                    for n in st.lines(path, ranges) {
+                        st.b.observe_root(n);
+                    }
                 }
             }
         }

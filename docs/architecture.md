@@ -221,10 +221,10 @@ Packages with C extensions, or with no RECORD available, are fail-closed: every 
 |---|---|---|
 | R001 | global | CI configuration changed |
 | R002 | global | Test-runner configuration changed (conftest, pytest.ini, pyproject, tox, setup.cfg, jest/vitest config) |
-| R003 | global | Runtime version pin changed (.python-version, .nvmrc, ...) |
+| R003 | global | Runtime version pin changed (.python-version, .nvmrc, rust-toolchain, ...; non-Python pins also in environment mode) |
 | R004 | global | Skipcert policy changed |
-| R005 | global | Build-affecting input changed (setup.py, C/Cython sources, native binaries, .pth, sitecustomize) |
-| R006 | global | Lockfile unparseable, or requirement options (index, includes, editables) changed |
+| R005 | global | Build-affecting input changed (setup.py, build.rs, C/Cython sources, native binaries, .pth, sitecustomize) |
+| R006 | global | Lockfile unparseable, requirement options (index, includes, editables) changed, or a dependency manifest of an ecosystem without a delta parser changed (package.json, go.sum, Cargo.lock, Gradle, ...; ADR 013) |
 | R007 | global | Map staleness unknown or above `max_staleness` |
 | R008 | test | Dynamic import / eval with non-constant input observed |
 | R009 | test | Network contacted without a declared stub |

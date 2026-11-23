@@ -16,6 +16,7 @@
 
 pub mod config;
 pub mod git;
+pub mod lang;
 pub mod lock;
 pub mod python;
 
@@ -23,6 +24,7 @@ use sc_hash::Digest;
 
 pub use config::{ConfigDelta, ConfigKind};
 pub use git::{FileChange, FileStatus, Repo};
+pub use lang::{Language, LineMap};
 pub use lock::{LockDelta, LockKind, PackageChange, PkgPin};
 pub use python::{DiffOptions, SourceDelta};
 
@@ -104,8 +106,12 @@ pub fn compute(repo: &Repo, opts: &ChangeOptions) -> Result<ChangeSet, ChangeErr
             },
         };
 
-        let source = if change.path.ends_with(".py") || old_path.ends_with(".py") {
-            let mut delta = python::diff_with(old.as_deref(), new.as_deref(), opts.python)?;
+        let language = Language::from_path(&change.path).or_else(|| Language::from_path(old_path));
+        let source = if let Some(lang) = language {
+            let mut delta = match lang {
+                Language::Python => python::diff_with(old.as_deref(), new.as_deref(), opts.python)?,
+                _ => lang::diff(lang, old.as_deref(), new.as_deref())?,
+            };
             // A rename changes the module's import path even when the content
             // is identical, so importers of the old path are affected.
             if change.status == FileStatus::Renamed {
