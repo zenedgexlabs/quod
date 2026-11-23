@@ -25,4 +25,11 @@ else
   printf '\n(skipping python probe: uv not found)\n'
 fi
 
+if command -v npm >/dev/null 2>&1; then
+  step "js probe"
+  (cd probes/js && npm ci --silent && npm test --silent)
+else
+  printf '\n(skipping js probe: npm not found)\n'
+fi
+
 printf '\nlocal CI passed\n'

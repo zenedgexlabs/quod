@@ -192,8 +192,6 @@ const TEST_CONFIG_PATHS: &[&str] = &[
 /// in both modes, until the ecosystem's adapter reports package nodes.
 const FOREIGN_DEPENDENCY_PATHS: &[&str] = &[
     "**/package.json",
-    "**/package-lock.json",
-    "**/npm-shrinkwrap.json",
     "**/pnpm-lock.yaml",
     "**/pnpm-workspace.yaml",
     "**/yarn.lock",
@@ -699,7 +697,12 @@ impl Policy {
 
             // In environment mode the installed distributions are compared
             // directly, so a lockfile edit by itself changes nothing.
-            if fd.lock.is_some() && env.is_some() {
+            let lock_eco = match sc_change::lock::lock_kind(path).map(|k| k.ecosystem()) {
+                Some("npm") => Ecosystem::Npm,
+                _ => Ecosystem::Pypi,
+            };
+            // (Environment mode observes Python distributions, not npm.)
+            if fd.lock.is_some() && env.is_some() && lock_eco == Ecosystem::Pypi {
                 continue;
             }
             if let Some(lock) = &fd.lock {
@@ -720,12 +723,12 @@ impl Policy {
                             } else {
                                 ev.changed.push(ChangedNode {
                                     kind: NodeKind::ExtPackage,
-                                    name: names::package(Ecosystem::Pypi, &c.name),
+                                    name: names::package(lock_eco, &c.name),
                                     fallback_file: None,
                                 });
                             }
                         }
-                        if !pk.is_empty() {
+                        if !pk.is_empty() && lock_eco == Ecosystem::Pypi {
                             // Installed files no distribution claims are attributed to
                             // this pseudo-package by the probe. Any dependency change may
                             // have changed them, so their users re-run.
@@ -968,7 +971,7 @@ mod tests {
             (".python-version", "R003"),
             (".nvmrc", "R003"),
             ("rust-toolchain.toml", "R003"),
-            ("web/package-lock.json", "R006"),
+            ("web/pnpm-lock.yaml", "R006"),
             ("go.sum", "R006"),
             ("Cargo.lock", "R006"),
             ("build.gradle.kts", "R006"),

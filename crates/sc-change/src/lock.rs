@@ -21,6 +21,18 @@ pub enum LockKind {
     Pylock,
     /// `requirements*.txt`.
     Requirements,
+    /// npm `package-lock.json` / `npm-shrinkwrap.json` (lockfile v1 to v3).
+    Npm,
+}
+
+impl LockKind {
+    /// The package ecosystem the lockfile pins: `"pypi"` or `"npm"`.
+    pub fn ecosystem(self) -> &'static str {
+        match self {
+            Self::Npm => "npm",
+            _ => "pypi",
+        }
+    }
 }
 
 /// A package pin on one side of a delta.
@@ -65,6 +77,7 @@ pub fn lock_kind(path: &str) -> Option<LockKind> {
             Some(LockKind::Pylock)
         }
         f if f.starts_with("requirements") && f.ends_with(".txt") => Some(LockKind::Requirements),
+        "package-lock.json" | "npm-shrinkwrap.json" => Some(LockKind::Npm),
         _ => None,
     }
 }
@@ -125,7 +138,90 @@ fn parse(kind: LockKind, text: &str) -> Result<BTreeMap<String, PkgPin>, String>
         LockKind::Uv | LockKind::Poetry => parse_toml(text, "package"),
         LockKind::Pylock => parse_toml(text, "packages"),
         LockKind::Requirements => parse_requirements(text),
+        LockKind::Npm => parse_npm(text),
     }
+}
+
+/// npm lockfiles. v2/v3 list every installed copy under `packages`, keyed
+/// by its `node_modules/...` path. v1 nests them under `dependencies`. A
+/// name installed at several paths (different versions for different
+/// dependents) is one package whose fingerprint covers every copy. The
+/// root entry (`""`) is the project itself, whose manifest is
+/// `package.json`.
+fn parse_npm(text: &str) -> Result<BTreeMap<String, PkgPin>, String> {
+    let v: serde_json::Value =
+        serde_json::from_str(text).map_err(|e| format!("invalid package-lock JSON: {e}"))?;
+    let mut copies: BTreeMap<String, Vec<(String, String, String)>> = BTreeMap::new();
+    if let Some(pkgs) = v.get("packages").and_then(|p| p.as_object()) {
+        for (path, entry) in pkgs {
+            if path.is_empty() {
+                continue;
+            }
+            let name = entry
+                .get("name")
+                .and_then(|n| n.as_str())
+                .map(str::to_owned)
+                .or_else(|| path.rsplit_once("node_modules/").map(|(_, n)| n.to_owned()))
+                // Workspace members are listed by their directory.
+                .unwrap_or_else(|| path.clone());
+            let version = entry
+                .get("version")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_owned();
+            copies
+                .entry(name)
+                .or_default()
+                .push((path.clone(), version, entry.to_string()));
+        }
+    } else if let Some(deps) = v.get("dependencies").and_then(|d| d.as_object()) {
+        fn walk(
+            prefix: &str,
+            deps: &serde_json::Map<String, serde_json::Value>,
+            out: &mut BTreeMap<String, Vec<(String, String, String)>>,
+        ) {
+            for (name, entry) in deps {
+                let path = format!("{prefix}node_modules/{name}");
+                let version = entry
+                    .get("version")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("")
+                    .to_owned();
+                let mut flat = entry.clone();
+                if let Some(o) = flat.as_object_mut() {
+                    o.remove("dependencies");
+                }
+                out.entry(name.clone()).or_default().push((
+                    path.clone(),
+                    version,
+                    flat.to_string(),
+                ));
+                if let Some(nested) = entry.get("dependencies").and_then(|d| d.as_object()) {
+                    walk(&format!("{path}/"), nested, out);
+                }
+            }
+        }
+        walk("", deps, &mut copies);
+    } else {
+        return Err("package-lock has neither `packages` nor `dependencies`".into());
+    }
+    Ok(copies
+        .into_iter()
+        .map(|(name, mut list)| {
+            list.sort();
+            let mut versions: Vec<&str> = list.iter().map(|(_, v, _)| v.as_str()).collect();
+            versions.dedup();
+            let joined: String = list
+                .iter()
+                .map(|(p, _, e)| format!("{p}\u{0}{e}\u{0}"))
+                .collect();
+            let pin = PkgPin {
+                version: versions.join(","),
+                fingerprint: hash_domain(Domain::Blob, joined.as_bytes()),
+            };
+            (name, pin)
+        })
+        .collect())
 }
 
 pub(crate) fn canonical(v: &toml::Value) -> String {
@@ -381,5 +477,77 @@ sdist = { url = "x", hash = "sha256:aaa" }
     fn invalid_toml_is_unparseable() {
         let d = delta(LockKind::Uv, Some(b"[[package]\nname="), Some(b""));
         assert!(matches!(d, LockDelta::Unparseable(_)));
+    }
+
+    const NPM_V3: &str = r#"{
+  "name": "app", "lockfileVersion": 3, "requires": true,
+  "packages": {
+    "": { "name": "app", "dependencies": { "left-pad": "^1.3.0", "@scope/util": "^2.0.0" } },
+    "node_modules/left-pad": { "version": "1.3.0", "integrity": "sha512-aaa" },
+    "node_modules/@scope/util": { "version": "2.0.0", "integrity": "sha512-bbb" },
+    "node_modules/@scope/util/node_modules/left-pad": { "version": "1.1.0", "integrity": "sha512-ccc" }
+  }
+}"#;
+
+    #[test]
+    fn npm_lockfile_deltas() {
+        assert_eq!(lock_kind("web/package-lock.json"), Some(LockKind::Npm));
+        assert_eq!(LockKind::Npm.ecosystem(), "npm");
+        let bump = NPM_V3.replace(
+            "\"2.0.0\", \"integrity\": \"sha512-bbb\"",
+            "\"2.1.0\", \"integrity\": \"sha512-ddd\"",
+        );
+        let LockDelta::Packages(ch) = delta(
+            LockKind::Npm,
+            Some(NPM_V3.as_bytes()),
+            Some(bump.as_bytes()),
+        ) else {
+            panic!("unparseable")
+        };
+        let names: Vec<&str> = ch.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, vec!["@scope/util"]);
+        assert_eq!(ch[0].new.as_ref().unwrap().version, "2.1.0");
+        // A nested copy is part of its name's fingerprint.
+        let nested = NPM_V3.replace("sha512-ccc", "sha512-eee");
+        let LockDelta::Packages(ch) = delta(
+            LockKind::Npm,
+            Some(NPM_V3.as_bytes()),
+            Some(nested.as_bytes()),
+        ) else {
+            panic!("unparseable")
+        };
+        assert_eq!(
+            ch.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            vec!["left-pad"]
+        );
+        // Formatting isn't a change.
+        let compact: serde_json::Value = serde_json::from_str(NPM_V3).unwrap();
+        let LockDelta::Packages(ch) = delta(
+            LockKind::Npm,
+            Some(NPM_V3.as_bytes()),
+            Some(compact.to_string().as_bytes()),
+        ) else {
+            panic!("unparseable")
+        };
+        assert!(ch.is_empty());
+        assert!(matches!(
+            delta(LockKind::Npm, Some(b"{"), Some(b"{}")),
+            LockDelta::Unparseable(_)
+        ));
+    }
+
+    #[test]
+    fn npm_lockfile_v1() {
+        let v1 = r#"{"lockfileVersion": 1, "dependencies": {"a": {"version": "1.0.0", "dependencies": {"b": {"version": "2.0.0"}}}}}"#;
+        let v1b = v1.replace("\"2.0.0\"", "\"2.0.1\"");
+        let LockDelta::Packages(ch) =
+            delta(LockKind::Npm, Some(v1.as_bytes()), Some(v1b.as_bytes()))
+        else {
+            panic!("unparseable")
+        };
+        assert_eq!(
+            ch.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            vec!["b"]
+        );
     }
 }

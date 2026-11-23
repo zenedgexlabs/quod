@@ -1,0 +1,26 @@
+{
+  "name": "skipcert-js",
+  "version": "0.1.0",
+  "description": "Skipcert probe for JavaScript and TypeScript test runners (Vitest): per-test executed lines via V8 precise coverage",
+  "type": "module",
+  "license": "Apache-2.0",
+  "private": true,
+  "bin": {
+    "skipcert-vitest": "src/cli.mjs"
+  },
+  "exports": {
+    "./reporter": "./src/reporter.mjs",
+    "./setup": "./src/setup.mjs",
+    "./coverage": "./src/coverage.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/probe.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}

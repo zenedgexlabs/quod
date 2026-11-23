@@ -618,6 +618,7 @@ name = "sc-change"
 version = "0.1.0"
 dependencies = [
  "sc-hash",
+ "serde_json",
  "tempfile",
  "thiserror",
  "toml",

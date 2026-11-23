@@ -505,6 +505,10 @@ pub fn diff(
     })
 }
 
+/// A definition's (start, end, name index); positions are 0-based
+/// (row, column).
+type Span = ((usize, usize), (usize, usize), u32);
+
 /// Maps executed source lines to entities, for probes that report lines.
 #[derive(Clone, Debug, Default)]
 pub struct LineMap {
@@ -512,6 +516,9 @@ pub struct LineMap {
     /// `names`). Index 0 is line 1.
     by_line: Vec<Option<u32>>,
     names: Vec<String>,
+    /// Definition spans in pre-order: ((start row, col), (end row, col),
+    /// name index), rows and columns 0-based.
+    spans: Vec<Span>,
 }
 
 impl LineMap {
@@ -527,6 +534,7 @@ impl LineMap {
         let mut map = Self {
             by_line: vec![None; lines],
             names: Vec::new(),
+            spans: Vec::new(),
         };
         map.walk(tree.root_node(), &cx, "");
         Ok(map)
@@ -543,8 +551,11 @@ impl LineMap {
                     (self.names.len() - 1) as u32
                 }
             };
+            let (sp, ep) = (node.start_position(), node.end_position());
+            self.spans
+                .push(((sp.row, sp.column), (ep.row, ep.column), idx));
             // Outer definitions are visited first, so inner ones overwrite.
-            let (start, end) = (node.start_position().row, node.end_position().row);
+            let (start, end) = (sp.row, ep.row);
             for l in start..=end.min(self.by_line.len().saturating_sub(1)) {
                 self.by_line[l] = Some(idx);
             }
@@ -556,6 +567,21 @@ impl LineMap {
         for ch in children {
             self.walk(ch, cx, scope);
         }
+    }
+
+    /// The innermost entity containing the position (1-based line, 0-based
+    /// column), or `None` for module-level code. Probes that know where
+    /// each executed function starts report these positions, which also
+    /// tells apart several definitions on one line.
+    pub fn entity_at(&self, line: u32, col: u32) -> Option<&str> {
+        let pos = (usize::try_from(line).ok()?.checked_sub(1)?, col as usize);
+        // Pre-order: a later span containing the position is nested in an
+        // earlier one, so the last match is the innermost.
+        self.spans
+            .iter()
+            .rev()
+            .find(|(s, e, _)| *s <= pos && pos < *e)
+            .map(|(_, _, i)| self.names[*i as usize].as_str())
     }
 
     /// The innermost entity containing 1-based `line`, or `None` for
@@ -903,6 +929,19 @@ public class Calc {
         assert_eq!(m.entity(11), Some("Calc.run"));
         assert_eq!(m.entity(15), None);
         assert_eq!(m.entity(999), None);
+        // Positions tell apart definitions sharing a line.
+        assert_eq!(m.entity_at(5, 12), Some("mul")); // the arrow's parameters
+        assert_eq!(m.entity_at(5, 6), Some("mul"));
+        assert_eq!(m.entity_at(5, 0), None); // `const`: module level
+        let one = LineMap::new(
+            Language::JavaScript,
+            b"class A { m() { return 1; } n() { return 2; } }
+",
+        )
+        .unwrap();
+        assert_eq!(one.entity_at(1, 10), Some("A.m"));
+        assert_eq!(one.entity_at(1, 28), Some("A.n"));
+        assert_eq!(one.entity_at(1, 0), Some("A"));
         let (ents, module) = m.resolve(&[(1, 1), (9, 12)]);
         assert_eq!(ents, vec!["Calc", "Calc.run"]);
         assert!(module);
