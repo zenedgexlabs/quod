@@ -110,6 +110,10 @@ pub struct PolicyConfig {
     /// on top of the built-in list (linters, formatters, docs metadata).
     /// Entries ending in `*` match by prefix.
     pub irrelevant_config_sections: Vec<String>,
+    /// Globs of source files the Untested-change lens doesn't report on:
+    /// code nobody expects tests to execute (docs, scripts, examples,
+    /// benchmarks). Reporting only; selection is unaffected.
+    pub untested_ignore: Vec<String>,
 }
 
 impl Default for PolicyConfig {
@@ -132,6 +136,18 @@ impl Default for PolicyConfig {
                 "**/tests/**/*.rs".into(),
             ],
             native_code: NativeCode::TrustPackageHash,
+            untested_ignore: vec![
+                "docs/**".into(),
+                "doc/**".into(),
+                "examples/**".into(),
+                "example/**".into(),
+                "scripts/**".into(),
+                "benchmarks/**".into(),
+                "bench/**".into(),
+                "**/setup.py".into(),
+                "**/noxfile.py".into(),
+                "**/*.config.*".into(),
+            ],
             test_workflows: vec![
                 ".github/workflows/*test*".into(),
                 ".github/workflows/ci.y*ml".into(),
@@ -518,6 +534,7 @@ pub struct Policy {
     build: GlobSet,
     run_all: GlobSet,
     never_skip: GlobSet,
+    untested_ignore: GlobSet,
     tests: GlobSet,
 }
 
@@ -528,6 +545,7 @@ impl Policy {
         for list in [
             &mut config.run_all_paths,
             &mut config.never_skip,
+            &mut config.untested_ignore,
             &mut config.test_paths,
             &mut config.test_workflows,
             &mut config.irrelevant_config_sections,
@@ -548,9 +566,15 @@ impl Policy {
             build: globset(BUILD_PATHS)?,
             run_all: globset(&config.run_all_paths)?,
             never_skip: globset(&config.never_skip)?,
+            untested_ignore: globset(&config.untested_ignore)?,
             tests: globset(&config.test_paths)?,
             config,
         })
+    }
+
+    /// True if the Untested-change lens should not report on `path`.
+    pub fn is_untested_ignored(&self, path: &str) -> bool {
+        self.untested_ignore.is_match(path)
     }
 
     /// True if `path` (repository-relative) is a test file under this policy.

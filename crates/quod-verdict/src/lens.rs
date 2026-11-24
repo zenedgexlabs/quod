@@ -116,6 +116,7 @@ pub fn untested_changes(inp: &LensInput<'_>) -> Vec<Finding> {
         let path = &fd.change.path;
         if fd.change.status == FileStatus::Deleted
             || inp.policy.is_test_path(path)
+            || inp.policy.is_untested_ignored(path)
             || fd.lock.is_some()
             || fd.config.is_some()
         {
