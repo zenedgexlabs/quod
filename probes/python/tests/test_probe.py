@@ -171,8 +171,13 @@ def test_env_written(monkeypatch):
     monkeypatch.setenv("SKIPCERT_T_B", "x")
     assert os.environ["SKIPCERT_T_B"] == "x"
 
-def test_env_iter():
+def test_env_iter(monkeypatch):
+    monkeypatch.setenv("ZZ_SKIPCERT_T_C", "y")
     assert len(dict(os.environ)) > 0
+
+def test_env_runner():
+    assert os.environ.get("PYTEST_VERSION")
+    assert os.environ.get("PYTEST_CURRENT_TEST")
 """
 
 ENV = {**os.environ, "SKIPCERT_T_A": "1"}
@@ -226,7 +231,7 @@ def fns(rec: dict) -> set[tuple[str, str]]:
 
 def test_header_and_names(captured):
     res, recs, tests, _ = captured
-    assert "19 passed" in res.stdout
+    assert "20 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
     assert recs[0]["capabilities"] == ["py.environment", "py.introspection"]
     assert recs[-1]["type"] == "root"
@@ -311,7 +316,7 @@ def test_skip_file_deselects_named_tests(project_dir):
     skip.write_text("tests/test_pay.py::test_charge\ntests/test_pay.py::test_param[2]\n")
     res = _pytest(project_dir, f"--skipcert-skip={skip}")
     assert res.returncode == 0, res.stdout + res.stderr
-    assert "17 passed, 2 deselected" in res.stdout
+    assert "18 passed, 2 deselected" in res.stdout
 
 
 @pytest.mark.parametrize(
@@ -371,9 +376,12 @@ def test_environment_and_invocation_fingerprints(captured):
 
 
 def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir):
-    _, recs, _, _ = captured
+    """What ``select`` computes outside pytest matches what was recorded
+    inside it, including ``env:*`` after pytest set ``PYTEST_VERSION`` and a
+    test wrote a variable before enumerating."""
+    _, recs, tests, _ = captured
     out = subprocess.run(
-        [sys.executable, "-m", "skipcert_probe", "fingerprint", "--env", "SKIPCERT_T_A", "--env", "NOPE_X"],
+        [sys.executable, "-m", "skipcert_probe", "fingerprint", "--env", "SKIPCERT_T_A", "--env", "NOPE_X", "--env", "*"],
         cwd=project_dir,
         capture_output=True,
         text=True,
@@ -382,6 +390,7 @@ def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir)
     )
     fp = json.loads(out.stdout)
     assert fp["environment"] == recs[0]["environment"]
+    assert fp["env"].pop("*") == env_of(tests["tests/test_env.py::test_env_iter"])["*"]
     assert fp["env"] == {"SKIPCERT_T_A": fingerprint.env_value_hash("1"), "NOPE_X": fingerprint.env_value_hash(None)}
 
 
@@ -395,6 +404,8 @@ def test_environment_reads_are_recorded_per_test(captured):
     assert "SKIPCERT_T_B" not in env_of(tests["tests/test_env.py::test_env_written"])
     assert "*" in env_of(tests["tests/test_env.py::test_env_iter"])
     assert "SKIPCERT_T_A" not in env_of(tests["tests/test_pay.py::test_charge"])
+    # Variables pytest sets for itself aren't inputs.
+    assert env_of(tests["tests/test_env.py::test_env_runner"]).keys().isdisjoint(fingerprint.RUNNER_ENV_NAMES)
 
 
 def _skip_file(project_dir, *header: str):
@@ -413,7 +424,7 @@ def test_skip_file_checks_pass_when_everything_matches(captured, project_dir):
         f"# skipcert-env SKIPCERT_T_A {fingerprint.env_value_hash('1')}",
     )
     res = _pytest(project_dir, f"--skipcert-skip={skip}")
-    assert "18 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
+    assert "19 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
 
 
 @pytest.mark.parametrize(
@@ -427,5 +438,5 @@ def test_skip_file_checks_pass_when_everything_matches(captured, project_dir):
 )
 def test_skip_file_mismatch_runs_everything(project_dir, line, why):
     res = _pytest(project_dir, f"--skipcert-skip={_skip_file(project_dir, line)}")
-    assert "19 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
+    assert "20 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
     assert why in res.stderr

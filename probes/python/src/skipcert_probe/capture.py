@@ -225,10 +225,13 @@ class EnvTracker:
     ``os._Environ.__getitem__`` is the one path behind ``os.environ[k]``,
     ``.get``, ``in`` and ``os.getenv``. Iteration (``keys``, ``items``,
     ``copy``, ``dict(os.environ)``, ``len``) depends on the whole environment,
-    recorded as ``env:*``. A key the process itself wrote (fixtures,
-    ``monkeypatch``, test runners) is in-process state, not an input, so later
-    reads of it aren't recorded. Writes made before recording started are
-    treated as inputs, which is conservative.
+    recorded as ``env:*``: the hash of the environment as it was when
+    recording started, the part that comes from outside the process. Writes
+    after that are in-process state made by traced code (fixtures,
+    ``monkeypatch``), not inputs, so later reads of a written key aren't
+    recorded. Writes made before recording started are treated as inputs,
+    which is conservative. Variables the runner sets for itself
+    (``fingerprint.RUNNER_ENV_NAMES``) are never recorded.
 
     ``monkeypatch.setenv``/``delenv`` read the old value only to restore it
     later, so the key is marked written before that read.
@@ -243,10 +246,11 @@ class EnvTracker:
     def install(self) -> None:
         if self._orig:
             return
-        from .fingerprint import env_key, env_value_hash, environ_hash
+        from .fingerprint import RUNNER_ENV_NAMES, env_key, env_value_hash, environ_hash
 
         cls = type(os.environ)
         note, written, environ = self._note, self.written, os.environ
+        outer = environ_hash(dict(os.environ))
         orig = {n: cls.__dict__[n] for n in ("__getitem__", "__setitem__", "__delitem__", "__iter__", "__len__")}
         self._orig = orig
 
@@ -254,7 +258,7 @@ class EnvTracker:
             if self is environ:
                 try:
                     k = env_key(key)
-                    if k not in written:
+                    if k not in written and k not in RUNNER_ENV_NAMES:
                         try:
                             value = orig["__getitem__"](self, key)
                         except KeyError:
@@ -280,11 +284,7 @@ class EnvTracker:
 
         def whole(self):
             if self is environ:
-                try:
-                    data = {k: v for k, v in self._data.items()}
-                    note("*", environ_hash({self.decodekey(k): self.decodevalue(v) for k, v in data.items()}))
-                except Exception:  # noqa: BLE001
-                    pass
+                note("*", outer)
 
         def __iter__(self):
             whole(self)

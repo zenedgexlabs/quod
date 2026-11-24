@@ -68,6 +68,6 @@ mutate = ["httpx/*.py", "httpx/_transports/*.py"]
 [repos.pydantic]
 url = "https://github.com/pydantic/pydantic"
 branch = "main"
-install = ["-e", ".", "--group", "testing"]
+install = ["-e", ".", "--group", "dev"]
 pytest = ["tests", "-q", "-p", "no:cacheprovider", "--ignore=tests/mypy", "--ignore=tests/benchmarks"]
 mutate = ["pydantic/*.py", "pydantic/_internal/*.py"]
