@@ -18,6 +18,7 @@ quod-hash.workspace = true
 quod-ladder.workspace = true
 quod-model.workspace = true
 quod-policy.workspace = true
+quod-verdict.workspace = true
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 serde.workspace = true
@@ -25,6 +26,7 @@ serde_json.workspace = true
 
 [dev-dependencies]
 quod-verify = { path = "../../verifier" }
+quod-verdict.workspace = true
 tempfile = "3"
 
 [lints]

@@ -563,6 +563,7 @@ dependencies = [
  "quod-ladder",
  "quod-model",
  "quod-policy",
+ "quod-verdict",
  "quod-verify",
  "serde",
  "serde_json",
@@ -624,6 +625,23 @@ dependencies = [
  "serde",
  "thiserror",
  "toml",
+]
+
+[[package]]
+name = "quod-verdict"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "quod-cert",
+ "quod-change",
+ "quod-graph",
+ "quod-hash",
+ "quod-ladder",
+ "quod-model",
+ "quod-policy",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

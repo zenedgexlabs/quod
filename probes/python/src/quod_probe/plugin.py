@@ -11,6 +11,10 @@ Options:
     (``# quod-environment D``, ``# quod-invocation D``,
     ``# quod-env NAME H``) are checked against this process first. On
     any mismatch nothing is deselected (ADR 012).
+``--quod-results PATH``
+    Write each test's outcome to PATH (JSON Lines: ``{"type": "result",
+    "name", "outcome", "duration_ms"}``), for ``quod verdict``. Under
+    pytest-xdist only the controller writes it.
 ``--quod-root DIR``
     Repository root (default: ``git rev-parse --show-toplevel``, else rootdir).
 
@@ -85,6 +89,51 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     g.addoption("--quod-record", metavar="PATH", default=None, help="record per-test footprints to PATH")
     g.addoption("--quod-skip", metavar="PATH", default=None, help="deselect the tests named in PATH")
     g.addoption("--quod-root", metavar="DIR", default=None, help="repository root (default: git toplevel)")
+    g.addoption("--quod-results", metavar="PATH", default=None, help="write per-test outcomes to PATH (JSON Lines)")
+
+
+class ResultsWriter:
+    """Collects per-test outcomes from reports and writes them at session end.
+
+    Names are derived from node IDs so the xdist controller, which never sees
+    the items, produces the same names as the recorder (``item_name``).
+    """
+
+    def __init__(self, path: str, rootdir: str, repo_root: str) -> None:
+        self.path = path
+        self.rootdir = os.path.realpath(rootdir)
+        self.repo_root = os.path.realpath(repo_root)
+        self.results: dict[str, list] = {}
+
+    def name(self, nodeid: str) -> str:
+        file, _, rest = nodeid.partition("::")
+        rel = os.path.relpath(os.path.realpath(os.path.join(self.rootdir, file)), self.repo_root)
+        rel = rel.replace(os.sep, "/")
+        return f"{rel}::{rest}" if rest else rel
+
+    def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
+        entry = self.results.setdefault(report.nodeid, ["passed", 0.0])
+        entry[1] += report.duration
+        if report.failed:
+            entry[0] = "failed"
+        elif report.skipped and entry[0] == "passed":
+            entry[0] = "skipped"
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_sessionfinish(self, session: pytest.Session) -> None:
+        with open(self.path, "w", encoding="utf-8") as f:
+            for nodeid, (outcome, duration) in sorted(self.results.items()):
+                rec = {"type": "result", "name": self.name(nodeid), "outcome": outcome,
+                       "duration_ms": round(duration * 1000, 3)}
+                f.write(json.dumps(rec, sort_keys=True))
+                f.write("\n")
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    path = config.getoption("quod_results", None)
+    if path and not hasattr(config, "workerinput"):
+        root = _repo_root(str(config.rootpath), config.getoption("quod_root"))
+        config.pluginmanager.register(ResultsWriter(os.path.abspath(path), str(config.rootpath), root), "quod-results")
 
 
 def _repo_root(start: str, override: str | None) -> str:

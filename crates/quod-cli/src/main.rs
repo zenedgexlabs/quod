@@ -10,8 +10,9 @@ use clap::{Parser, Subcommand};
 
 use quod_cert::{Ed25519Signer, Signer, write_jsonl};
 use quod_change::Repo;
-use quod_cli::{ENGINE_VERSION, SelectOptions, ingest, run_select};
+use quod_cli::{ENGINE_VERSION, SelectOptions, VerdictOptions, ingest, run_select, run_verdict};
 use quod_graph::MapMeta;
+use quod_verdict::{AuthorKind, Status};
 
 #[derive(Parser)]
 #[command(
@@ -67,23 +68,10 @@ enum Cmd {
         #[arg(last = true, required = true)]
         command: Vec<String>,
     },
-    /// Decide which tests to run and certify the skips.
+    /// Decide which tests to run and certify the skips (the Verdict's plan stage).
     Select {
-        /// Footprint map.
-        #[arg(long)]
-        map: PathBuf,
-        /// Head revision (default: the working tree).
-        #[arg(long)]
-        head: Option<String>,
-        /// Policy file (default: quod.toml at the repository root, if present).
-        #[arg(long)]
-        policy: Option<PathBuf>,
-        /// Signing key seed file. Required unless --advisory.
-        #[arg(long)]
-        key: Option<PathBuf>,
-        /// Advisory output (sandbox or local): certificates can't license CI skips.
-        #[arg(long)]
-        advisory: bool,
+        #[command(flatten)]
+        sel: SelectArgs,
         /// Write skipped test names here (pass to pytest as --quod-skip).
         #[arg(long)]
         skip_out: Option<PathBuf>,
@@ -96,19 +84,69 @@ enum Cmd {
         /// Print the JSON report to stdout instead of the summary.
         #[arg(long)]
         json: bool,
-        /// Python interpreter of the environment the tests will run in.
-        /// Turns on environment mode for maps recorded by a probe with the
-        /// `py.environment` capability (ADR 012).
-        #[arg(long)]
-        python: Option<PathBuf>,
-        /// One argument of the probe's fingerprint command for the target
-        /// environment (repeat for each), e.g. `node`,
-        /// `<quod-js>/src/cli.mjs`, `fingerprint`, `--root`, `.`.
-        /// Turns on environment mode for maps recorded with an environment
-        /// capability. `--env NAME` arguments are appended.
-        #[arg(long = "fingerprint-cmd", allow_hyphen_values = true)]
-        fingerprint_cmd: Vec<String>,
     },
+    /// Seal test results into a signed Verdict (architecture v5).
+    ///
+    /// Takes the same selection inputs as `select`, plus the results files
+    /// the probes wrote. Exits 0 on PASS, 1 on FAIL or BLOCKED.
+    Verdict {
+        #[command(flatten)]
+        sel: SelectArgs,
+        /// Results files written by the probes (`--quod-results`), JSON Lines.
+        #[arg(long = "results", required = true)]
+        results: Vec<PathBuf>,
+        /// Write the DSSE envelope (in-toto Statement) here.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Write the Markdown card here (for a PR check or comment).
+        #[arg(long)]
+        card: Option<PathBuf>,
+        /// Who authored the change.
+        #[arg(long, value_enum, default_value = "unknown")]
+        author: Author,
+        /// Agent name, when an agent authored the change.
+        #[arg(long)]
+        agent: Option<String>,
+    },
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum Author {
+    Human,
+    Agent,
+    Unknown,
+}
+
+/// Selection inputs shared by `select` and `verdict`.
+#[derive(clap::Args)]
+struct SelectArgs {
+    /// Footprint map.
+    #[arg(long)]
+    map: PathBuf,
+    /// Head revision (default: the working tree).
+    #[arg(long)]
+    head: Option<String>,
+    /// Policy file (default: quod.toml at the repository root, if present).
+    #[arg(long)]
+    policy: Option<PathBuf>,
+    /// Signing key seed file. Required unless --advisory.
+    #[arg(long)]
+    key: Option<PathBuf>,
+    /// Advisory output (sandbox or local): certificates can't license CI skips.
+    #[arg(long)]
+    advisory: bool,
+    /// Python interpreter of the environment the tests will run in.
+    /// Turns on environment mode for maps recorded by a probe with the
+    /// `py.environment` capability (ADR 012).
+    #[arg(long)]
+    python: Option<PathBuf>,
+    /// One argument of the probe's fingerprint command for the target
+    /// environment (repeat for each), e.g. `node`,
+    /// `<quod-js>/src/cli.mjs`, `fingerprint`, `--root`, `.`.
+    /// Turns on environment mode for maps recorded with an environment
+    /// capability. `--env NAME` arguments are appended.
+    #[arg(long = "fingerprint-cmd", allow_hyphen_values = true)]
+    fingerprint_cmd: Vec<String>,
 }
 
 fn repo_id(cli: &Cli, repo: &Repo) -> String {
@@ -226,29 +264,15 @@ fn run(cli: Cli) -> Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Cmd::Select {
-            map,
-            head,
-            policy,
-            key,
-            advisory,
+            sel,
             skip_out,
             certs_out,
             report_out,
             json,
-            python,
-            fingerprint_cmd,
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
-            let opts = SelectOptions {
-                map: map.clone(),
-                head: head.clone(),
-                policy: policy.clone(),
-                key: key.clone(),
-                advisory: *advisory,
-                repo_id: repo_id(&cli, &repo),
-                python: python.clone(),
-                fingerprint_cmd: (!fingerprint_cmd.is_empty()).then(|| fingerprint_cmd.clone()),
-            };
+            let opts = select_options(&cli, &repo, sel);
+            let key = &sel.key;
             let res = run_select(&repo, &opts)?;
             if let Some(p) = skip_out {
                 let lines: Vec<&str> = res
@@ -295,6 +319,53 @@ fn run(cli: Cli) -> Result<ExitCode> {
             }
             Ok(ExitCode::SUCCESS)
         }
+        Cmd::Verdict {
+            sel,
+            results,
+            out,
+            card,
+            author,
+            agent,
+        } => {
+            let repo = Repo::discover(&cli.repo_dir)?;
+            let opts = select_options(&cli, &repo, sel);
+            let vopts = VerdictOptions {
+                results: results.clone(),
+                author: match author {
+                    Author::Human => AuthorKind::Human,
+                    Author::Agent => AuthorKind::Agent,
+                    Author::Unknown => AuthorKind::Unknown,
+                },
+                agent: agent.clone(),
+            };
+            let v = run_verdict(&repo, &opts, &vopts)?;
+            if let Some(p) = out {
+                fs::write(p, serde_json::to_string_pretty(&v.envelope)?)
+                    .with_context(|| format!("writing {}", p.display()))?;
+            }
+            if let Some(p) = card {
+                fs::write(p, &v.card).with_context(|| format!("writing {}", p.display()))?;
+            }
+            print!("{}", v.card);
+            Ok(if v.verdict.status == Status::Pass {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::from(1)
+            })
+        }
+    }
+}
+
+fn select_options(cli: &Cli, repo: &Repo, sel: &SelectArgs) -> SelectOptions {
+    SelectOptions {
+        map: sel.map.clone(),
+        head: sel.head.clone(),
+        policy: sel.policy.clone(),
+        key: sel.key.clone(),
+        advisory: sel.advisory,
+        repo_id: repo_id(cli, repo),
+        python: sel.python.clone(),
+        fingerprint_cmd: (!sel.fingerprint_cmd.is_empty()).then(|| sel.fingerprint_cmd.clone()),
     }
 }
 

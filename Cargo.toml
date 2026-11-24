@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/quod-hash", "crates/quod-model", "crates/quod-graph", "crates/quod-change", "crates/quod-policy", "crates/quod-ladder", "crates/quod-cert", "verifier", "crates/quod-cli"]
+members = ["crates/quod-hash", "crates/quod-model", "crates/quod-graph", "crates/quod-change", "crates/quod-policy", "crates/quod-ladder", "crates/quod-cert", "crates/quod-verdict", "verifier", "crates/quod-cli"]
 
 [workspace.package]
 version = "0.1.0"
@@ -21,6 +21,7 @@ quod-change = { path = "crates/quod-change" }
 quod-policy = { path = "crates/quod-policy" }
 quod-ladder = { path = "crates/quod-ladder" }
 quod-cert = { path = "crates/quod-cert" }
+quod-verdict = { path = "crates/quod-verdict" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -553,6 +553,11 @@ impl Policy {
         })
     }
 
+    /// True if `path` (repository-relative) is a test file under this policy.
+    pub fn is_test_path(&self, path: &str) -> bool {
+        self.tests.is_match(path)
+    }
+
     /// Parses `quod.toml` text.
     pub fn from_toml(text: &str) -> Result<Self, PolicyError> {
         let file: PolicyFile =

@@ -440,3 +440,15 @@ def test_skip_file_mismatch_runs_everything(project_dir, line, why):
     res = _pytest(project_dir, f"--quod-skip={_skip_file(project_dir, line)}")
     assert "20 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
     assert why in res.stderr
+
+
+def test_results_file_names_match_recorded_names(captured, project_dir):
+    """``quod verdict`` joins results to the map by name, so the results
+    file must spell every test exactly as the recorder does."""
+    _, _, tests, _ = captured
+    out = project_dir / "results.jsonl"
+    res = _pytest(project_dir, f"--quod-results={out}")
+    assert res.returncode == 0, res.stdout + res.stderr
+    results = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
+    assert {r["name"] for r in results} == set(tests)
+    assert all(r["type"] == "result" and r["outcome"] in {"passed", "skipped"} for r in results)

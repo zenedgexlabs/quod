@@ -740,3 +740,172 @@ export function other() {
     .unwrap();
     assert!(select_js(&root, &map, &key).is_empty());
 }
+
+// Verdict (architecture v5) --------------------------------------------------
+
+fn verdict(f: &Fixture, results: &[(&str, &str)]) -> quod_cli::VerdictOutput {
+    let file = f.root.parent().unwrap().join("results.jsonl");
+    let lines: Vec<String> = results
+        .iter()
+        .map(|(n, o)| {
+            format!(r#"{{"type":"result","name":"{n}","outcome":"{o}","duration_ms":1}}"#)
+        })
+        .collect();
+    fs::write(&file, lines.join("\n")).unwrap();
+    let repo = Repo::discover(&f.root).unwrap();
+    quod_cli::run_verdict(
+        &repo,
+        &SelectOptions {
+            map: f.map.clone(),
+            head: None,
+            policy: None,
+            key: Some(f.key.clone()),
+            advisory: false,
+            repo_id: "acme/app".into(),
+            python: None,
+            fingerprint_cmd: None,
+        },
+        &quod_cli::VerdictOptions {
+            results: vec![file],
+            author: quod_verdict::AuthorKind::Agent,
+            agent: Some("test-agent".into()),
+        },
+    )
+    .unwrap()
+}
+
+fn rules(v: &quod_verdict::Verdict) -> Vec<(String, String)> {
+    v.findings
+        .iter()
+        .map(|f| (f.rule.clone(), f.subject.clone()))
+        .collect()
+}
+
+/// Untested change, flake proof and a signed, verifiable envelope.
+#[test]
+fn verdict_finds_untested_changes_and_clears_unrelated_failures() {
+    let f = setup();
+    // `charge` is executed by test_charge; `refund` by no test.
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3").replace("-x", "0 - x"),
+    )
+    .unwrap();
+    let out = verdict(
+        &f,
+        &[
+            ("tests/test_pay.py::test_charge", "passed"),
+            ("tests/test_misc.py::test_broken", "passed"),
+            // Nothing test_ok depends on changed: not this change's fault.
+            ("tests/test_misc.py::test_ok", "failed"),
+        ],
+    );
+    let v = &out.verdict;
+    assert_eq!(v.status, quod_verdict::Status::Pass, "{}", out.card);
+    let r = rules(v);
+    assert!(
+        r.contains(&("U001".into(), "app/billing.py::refund".into())),
+        "{r:?}"
+    );
+    assert!(
+        !r.iter().any(|(_, s)| s == "app/billing.py::charge"),
+        "{r:?}"
+    );
+    assert!(
+        r.contains(&("F001".into(), "tests/test_misc.py::test_ok".into())),
+        "{r:?}"
+    );
+    assert_eq!(v.obligations.failed_not_caused, 1);
+    assert!(out.card.contains("Untested changes"), "{}", out.card);
+
+    // The envelope verifies under the CI key and nothing else.
+    let st = quod_verdict::verify(&out.envelope, &f.signer.key_id()).unwrap();
+    assert_eq!(st.predicate, *v);
+    let other = Ed25519Signer::generate().unwrap();
+    assert!(quod_verdict::verify(&out.envelope, &other.key_id()).is_err());
+    let mut tampered = out.envelope.clone();
+    let mut body = quod_verdict::b64::decode(&tampered.payload).unwrap();
+    let s = String::from_utf8(body.clone())
+        .unwrap()
+        .replace("\"fail\"", "\"pass\"")
+        .replace("\"pass\"", "\"blocked\"");
+    body = s.into_bytes();
+    tampered.payload = quod_verdict::b64::encode(&body);
+    assert!(quod_verdict::verify(&tampered, &f.signer.key_id()).is_err());
+}
+
+/// A failure in a test whose footprint the change touched is never cleared.
+#[test]
+fn verdict_fails_when_a_dependent_test_fails() {
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let out = verdict(
+        &f,
+        &[
+            ("tests/test_pay.py::test_charge", "failed"),
+            ("tests/test_misc.py::test_broken", "passed"),
+        ],
+    );
+    assert_eq!(
+        out.verdict.status,
+        quod_verdict::Status::Fail,
+        "{}",
+        out.card
+    );
+    assert!(!rules(&out.verdict).iter().any(|(r, _)| r == "F001"));
+}
+
+/// An obligated test that didn't run blocks the Verdict.
+#[test]
+fn verdict_blocks_when_an_obligation_is_not_met() {
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let out = verdict(&f, &[("tests/test_misc.py::test_broken", "passed")]);
+    assert_eq!(
+        out.verdict.status,
+        quod_verdict::Status::Blocked,
+        "{}",
+        out.card
+    );
+    assert!(
+        rules(&out.verdict).contains(&("O001".into(), "tests/test_pay.py::test_charge".into()))
+    );
+}
+
+/// A test edited together with the code it executes is flagged for review.
+#[test]
+fn verdict_flags_tests_edited_with_the_code_they_guard() {
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    fs::write(
+        f.root.join("tests/test_pay.py"),
+        "def test_charge():\n    assert True\n",
+    )
+    .unwrap();
+    let out = verdict(
+        &f,
+        &[
+            ("tests/test_pay.py::test_charge", "passed"),
+            ("tests/test_misc.py::test_broken", "passed"),
+        ],
+    );
+    let r = rules(&out.verdict);
+    assert!(
+        r.contains(&("I001".into(), "tests/test_pay.py::test_charge".into())),
+        "{r:?}"
+    );
+    assert_eq!(out.verdict.status, quod_verdict::Status::Pass);
+    assert!(out.card.contains("Test integrity"), "{}", out.card);
+}

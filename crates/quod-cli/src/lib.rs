@@ -19,6 +19,7 @@ use quod_ladder::{RunReason, SelectInput, Selection, select};
 use quod_model::version::{CAP_JS_ENVIRONMENT, CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
 use quod_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
 use quod_policy::{EnvironmentDelta, EvalContext, Evaluation, Policy};
+use quod_verdict::{Finding, LensInput, lens};
 
 /// Engine version recorded in maps and certificates.
 pub const ENGINE_VERSION: &str = concat!("quod/", env!("CARGO_PKG_VERSION"));
@@ -641,6 +642,8 @@ pub struct Report {
     pub changed: Vec<String>,
     /// Integrity findings (rule: path: detail).
     pub integrity: Vec<String>,
+    /// Plan-stage lens findings (Untested-change, Integrity), sorted.
+    pub findings: Vec<Finding>,
     /// Policy hash.
     pub policy: String,
     /// Map root.
@@ -664,6 +667,25 @@ pub struct SelectResult {
     pub evaluation: Evaluation,
     /// The resolved change.
     pub change: ChangeSet,
+    /// The footprint map selection ran against.
+    pub graph: FootprintGraph,
+    /// The policy in force.
+    pub policy: Policy,
+    /// True if the environment was fingerprinted and compared.
+    pub environment_checked: bool,
+}
+
+impl SelectResult {
+    /// The lens input for this selection.
+    pub fn lens_input(&self) -> LensInput<'_> {
+        LensInput {
+            graph: &self.graph,
+            policy: &self.policy,
+            change: &self.change,
+            evaluation: &self.evaluation,
+            environment_checked: self.environment_checked,
+        }
+    }
 }
 
 fn reason_text(r: &RunReason) -> String {
@@ -851,11 +873,12 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
             .iter()
             .map(|f| format!("{}: {}: {}", f.rule, f.path, f.detail))
             .collect(),
+        findings: Vec::new(),
         policy: policy.hash().to_hex(),
         map: map_root.to_hex(),
     };
 
-    Ok(SelectResult {
+    let mut res = SelectResult {
         certificates,
         skip_names,
         skip_header,
@@ -863,5 +886,178 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         selection,
         evaluation,
         change,
+        graph,
+        policy,
+        environment_checked: env_mode,
+    };
+    let inp = res.lens_input();
+    let mut findings = lens::untested_changes(&inp);
+    findings.extend(lens::integrity(&inp));
+    findings.sort();
+    res.report.findings = findings;
+    Ok(res)
+}
+
+/// Options for [`run_verdict`] beyond selection's.
+#[derive(Clone, Debug)]
+pub struct VerdictOptions {
+    /// Results files written by the probes (JSON Lines).
+    pub results: Vec<PathBuf>,
+    /// Who authored the change.
+    pub author: quod_verdict::AuthorKind,
+    /// Agent name, if an agent authored it.
+    pub agent: Option<String>,
+}
+
+/// A sealed Verdict and its card.
+pub struct VerdictOutput {
+    /// The signed (or, when advisory, unsigned) DSSE envelope.
+    pub envelope: quod_verdict::Envelope,
+    /// The Verdict.
+    pub verdict: quod_verdict::Verdict,
+    /// Markdown card.
+    pub card: String,
+}
+
+#[derive(Deserialize)]
+struct ResultLine {
+    #[serde(rename = "type", default)]
+    kind: Option<String>,
+    name: Option<String>,
+    outcome: Option<String>,
+    #[serde(default)]
+    duration_ms: f64,
+}
+
+/// Reads probe results files: JSON Lines of `{"type": "result", "name",
+/// "outcome", "duration_ms"}`. Other record types are ignored. A test that
+/// appears more than once (reruns, workers) keeps its worst outcome.
+pub fn read_results(paths: &[PathBuf]) -> Result<Vec<quod_verdict::TestResult>> {
+    use quod_verdict::Outcome;
+    let rank = |o: Outcome| match o {
+        Outcome::Passed => 0,
+        Outcome::Skipped => 1,
+        Outcome::Failed => 2,
+    };
+    let mut by_name: BTreeMap<String, quod_verdict::TestResult> = BTreeMap::new();
+    for p in paths {
+        let f = File::open(p).with_context(|| format!("reading {}", p.display()))?;
+        for (i, line) in BufReader::new(f).lines().enumerate() {
+            let line = line?;
+            if line.trim().is_empty() {
+                continue;
+            }
+            let r: ResultLine = serde_json::from_str(&line)
+                .with_context(|| format!("{}:{}", p.display(), i + 1))?;
+            if r.kind.as_deref().is_some_and(|k| k != "result") {
+                continue;
+            }
+            let (Some(name), Some(outcome)) = (r.name, r.outcome) else {
+                continue;
+            };
+            let outcome = match outcome.as_str() {
+                "passed" => Outcome::Passed,
+                "skipped" => Outcome::Skipped,
+                // "failed", "error" and anything unknown count as failures.
+                _ => Outcome::Failed,
+            };
+            let entry = by_name
+                .entry(name.clone())
+                .or_insert(quod_verdict::TestResult {
+                    name,
+                    outcome,
+                    duration_ms: 0,
+                });
+            if rank(outcome) > rank(entry.outcome) {
+                entry.outcome = outcome;
+            }
+            entry.duration_ms += r.duration_ms.max(0.0).round() as u64;
+        }
+    }
+    Ok(by_name.into_values().collect())
+}
+
+/// Plan → results → lenses → sealed Verdict (architecture v5, F1).
+///
+/// Selection is recomputed from the same pinned inputs, so the Verdict
+/// describes exactly the obligations the plan stage handed out.
+pub fn run_verdict(
+    repo: &Repo,
+    opts: &SelectOptions,
+    vopts: &VerdictOptions,
+) -> Result<VerdictOutput> {
+    use quod_verdict::{CertRef, ChangeRef, CompileInput, Inputs};
+
+    let res = run_select(repo, opts)?;
+    let results = read_results(&vopts.results)?;
+    let failed: Vec<String> = results
+        .iter()
+        .filter(|r| r.outcome == quod_verdict::Outcome::Failed)
+        .map(|r| r.name.clone())
+        .collect();
+
+    let inp = res.lens_input();
+    let mut findings = res.report.findings.clone();
+    findings.extend(lens::flake_proof(&inp, &failed));
+
+    let changed_test_files = res
+        .change
+        .files
+        .iter()
+        .filter(|f| res.policy.is_test_path(&f.change.path))
+        .map(|f| f.change.path.clone())
+        .collect();
+    let input = CompileInput {
+        change: ChangeRef {
+            repo: opts.repo_id.clone(),
+            base: res.report.base.clone(),
+            head: res.report.head.clone(),
+            tree: res.change.tree.map(|t| t.to_hex()),
+            author_kind: vopts.author,
+            agent: vopts.agent.clone(),
+        },
+        inputs: Inputs {
+            map: res.report.map.clone(),
+            policy: res.report.policy.clone(),
+            engine: res.report.engine.clone(),
+            environment: res
+                .environment_checked
+                .then(|| res.graph.meta().environment_digest.clone()),
+        },
+        advisory: res.report.advisory,
+        obligated: res.report.run.iter().map(|r| r.name.clone()).collect(),
+        changed_test_files,
+        results,
+        certificates: CertRef {
+            chain_head: res
+                .certificates
+                .last()
+                .map(|c| c.self_hash.to_hex())
+                .unwrap_or_default(),
+            count: res.certificates.len(),
+        },
+        fallback_rules: res
+            .evaluation
+            .global
+            .iter()
+            .map(|t| t.rule.to_owned())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect(),
+    };
+    let verdict = quod_verdict::compile(input, findings);
+    let signer = match (&opts.key, verdict.advisory) {
+        (Some(k), false) => Some(Ed25519Signer::from_seed_hex(
+            &std::fs::read_to_string(k).with_context(|| format!("reading key {}", k.display()))?,
+        )?),
+        _ => None,
+    };
+    let st = quod_verdict::statement(verdict.clone());
+    let envelope = quod_verdict::seal(&st, signer.as_ref().map(|s| s as &dyn Signer))?;
+    let card = quod_verdict::card::render(&verdict, quod_verdict::verdict::signer_of(&envelope));
+    Ok(VerdictOutput {
+        envelope,
+        verdict,
+        card,
     })
 }
