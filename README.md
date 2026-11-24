@@ -1,13 +1,23 @@
 # Quod
 
-Sound, certificate-based test selection for AI-agent-scale CI.
+**Can this change merge, and why should you believe it?** Quod answers with a
+signed Verdict for every change, from humans and AI agents alike.
 
-Quod runs only the tests a change can affect. Every skipped test gets a
-certificate that an independent verifier can check. Results are shared across
-branches and agents off the same base. The full suite still runs in the
-background, so any missed failure is caught and published.
+*Quod* is short for *quod erat demonstrandum*: "which was to be proven".
 
-> Status: **M1 in progress.** The end-to-end flow works for Python/pytest (record → select → verify). Not yet benchmarked on real repositories.
+Quod records what every test actually depends on: functions, packages,
+environment variables and module state. From that evidence graph it derives:
+
+- the tests a change obligates, with a signed certificate for every test skipped;
+- changed code that no test executes;
+- tests weakened or removed alongside the code they guard;
+- failures that provably aren't caused by the change (flaky or environment);
+- the commit that broke main.
+
+An independent open verifier re-checks every claim. See
+[docs/architecture-v5-verdict.md](docs/architecture-v5-verdict.md).
+
+> Status: the selection engine and its certificates work for Python (pytest) and JS/TS (Vitest), with 0 dependency escapes on 11 open-source repositories ([E1](docs/benchmarks/e1.md)). Verdict lenses are next (V1).
 
 ## Quickstart (Python / pytest)
 
