@@ -628,6 +628,9 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = tomllib.loads((ROOT / "conformance" / "repos.toml").read_text(encoding="utf-8"))["repos"][args.repo]
+    # The environment the project's CI runs its tests in (time zone, locale).
+    # Process-wide, so recording, select's fingerprint and every run agree.
+    os.environ.update({k: str(v) for k, v in cfg.get("env", {}).items()})
     for tool in ("git", "uv"):
         if shutil.which(tool) is None:
             print(f"{tool} is required on PATH", file=sys.stderr)

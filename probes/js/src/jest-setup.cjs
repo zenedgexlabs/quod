@@ -7,14 +7,15 @@
 // worker and coverage starts before the test module is evaluated.
 //
 // Names: Jest exposes the running test only as its titles joined by
-// spaces (`expect.getState().currentTestName`). The describe/test globals
-// are wrapped to record each test's title path at definition time, so
-// coverage is keyed by `file::suite > test` like the reporter's names. A
-// test whose name can't be recovered (`.each` titles, colliding names)
-// leaves its module untraced: its tests always run.
+// spaces (`expect.getState().currentTestName`). Coverage windows are keyed
+// by that ID (`file::#<id>`); the reporter, which knows every test's title
+// path (including `.each` titles), maps IDs to `suite > test` names and
+// leaves colliding IDs untraced.
 //
-// Skip mode (QUOD_SKIP_FILE): tests named in the file are defined with
-// `test.skip`, so neither they nor their hooks run.
+// Skip mode (QUOD_SKIP_FILE): the describe/test globals are wrapped to
+// recover each test's title path at definition time, and tests named in the
+// file are defined with `test.skip`, so neither they nor their hooks run.
+// Tests whose names are only known at run time (`.each`) always run.
 
 /* global beforeEach, afterEach, afterAll, expect */
 'use strict';
@@ -104,9 +105,10 @@ for (const name of ['test', 'it', 'fit', 'xit', 'xtest']) {
   globalThis[name] = w;
 }
 
-function currentName() {
-  const full = byId.get(expect.getState().currentTestName);
-  return full ? `${testFile()}::${full}` : null;
+/** The window key: the file and Jest's own test ID (see capture.mjs). */
+function currentKey() {
+  const id = expect.getState().currentTestName;
+  return typeof id === 'string' ? `${testFile()}::#${id}` : null;
 }
 
 // --- record mode ------------------------------------------------------------
@@ -114,11 +116,11 @@ function currentName() {
 if (RECORD_DIR && recorder) {
   const mod = recorder.module();
   beforeEach(async () =>
-    (await mod).before(currentName(), {
+    (await mod).before(currentKey(), {
       moduleFile: expect.getState().testPath,
       concurrent: usedConcurrent && process.env.QUOD_SERIAL !== '1',
     }),
   );
-  afterEach(async () => (await mod).after(currentName()));
+  afterEach(async () => (await mod).after(currentKey()));
   afterAll(async () => (await mod).finish());
 }

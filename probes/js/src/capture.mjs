@@ -1,9 +1,11 @@
 // Capture and results writers shared by the Vitest and Jest reporters.
 //
 // Both reporters reduce their framework's results to a list of tests:
-// `{ file, name, qual, outcome: 'passed'|'failed'|'skipped', duration_ms }`,
-// where `name` is `file::suite > test`, the name the Rust side derives
-// stable IDs from.
+// `{ file, name, qual, outcome: 'passed'|'failed'|'skipped', duration_ms,
+// key? }`, where `name` is `file::suite > test`, the name the Rust side
+// derives stable IDs from, and `key` (if present) is the name the workers
+// keyed coverage windows by; `key: null` means the test can't be
+// attributed (untraced).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -144,8 +146,10 @@ export function writeCapture({ root, dir, out, rootFiles, runner, tests }) {
     };
     if (cov) {
       for (const s of cov.shared) add(s);
-      const own = cov.tests.get(test.name);
-      if (own) own.forEach(add);
+      const key = test.key === undefined ? test.name : test.key;
+      const own = key === null ? undefined : cov.tests.get(key);
+      if (key === null) untraced = true;
+      else if (own) own.forEach(add);
       else if (test.outcome === 'passed') untraced = true; // ran, but no window was recorded
     }
     emit({

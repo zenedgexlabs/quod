@@ -251,7 +251,7 @@ export function main(argv) {
           userConfig,
           setup: path.join(HERE, 'jest-setup.cjs'),
           reporter: path.join(HERE, 'jest-reporter.mjs'),
-          environment: path.join(HERE, 'jest-env.mjs'),
+          environment: path.join(HERE, 'jest-env.cjs'),
         })
       : wrapperSource({
           root: opts.dir,

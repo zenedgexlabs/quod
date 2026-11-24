@@ -14,7 +14,7 @@
     "./setup": "./src/setup.mjs",
     "./coverage": "./src/coverage.mjs",
     "./jest-reporter": "./src/jest-reporter.mjs",
-    "./jest-env": "./src/jest-env.mjs",
+    "./jest-env": "./src/jest-env.cjs",
     "./jest-setup": "./src/jest-setup.cjs"
   },
   "engines": {

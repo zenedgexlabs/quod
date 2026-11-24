@@ -15,16 +15,27 @@ export default class QuodJestReporter {
     this.rootFiles = options.rootFiles || JSON.parse(process.env.QUOD_ROOT_FILES || '[]');
   }
 
-  /** Jest's results as the shared test list (`file::suite > test`). */
+  /**
+   * Jest's results as the shared test list (`file::suite > test`). Coverage
+   * windows are keyed by Jest's space-joined test ID (`key`); an ID that
+   * two tests of a file share can't be attributed, so neither gets a key.
+   */
   tests(results) {
     const out = [];
     for (const file of results.testResults) {
       const rel = slash(path.relative(this.root, file.testFilePath));
+      const ids = new Map();
+      for (const a of file.testResults) {
+        const id = [...a.ancestorTitles, a.title].join(' ');
+        ids.set(id, (ids.get(id) ?? 0) + 1);
+      }
       for (const a of file.testResults) {
         const qual = [...a.ancestorTitles, a.title].join(' > ');
+        const id = [...a.ancestorTitles, a.title].join(' ');
         out.push({
           file: rel,
           name: `${rel}::${qual}`,
+          key: ids.get(id) === 1 ? `${rel}::#${id}` : null,
           qual,
           outcome: a.status === 'passed' ? 'passed' : a.status === 'failed' ? 'failed' : 'skipped',
           duration_ms: a.duration ?? 0,
