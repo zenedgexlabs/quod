@@ -106,3 +106,10 @@ runner = "vitest"
 install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
 args = ["--project", "!*browser*"]
 mutate = ["pkgs/tz/src/*.ts", "pkgs/tz/src/*/index.ts", "pkgs/utc/src/*.ts", "pkgs/utc/src/*/index.ts"]
+
+[repos.luxon]
+url = "https://github.com/moment/luxon"
+branch = "master"
+runner = "jest"
+install = [["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]]
+mutate = ["src/*.js", "src/impl/*.js"]

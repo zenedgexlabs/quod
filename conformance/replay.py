@@ -52,6 +52,7 @@ EXE = ".exe" if os.name == "nt" else ""
 QUOD = ROOT / "target" / "release" / f"quod{EXE}"
 VERIFY = ROOT / "target" / "release" / f"quod-verify{EXE}"
 JS_PROBE = ROOT / "probes" / "js" / "src" / "cli.mjs"
+JS_RUNNERS = ("vitest", "jest")
 
 
 class SuiteTimeout(RuntimeError):
@@ -133,7 +134,7 @@ def setup(name: str, cfg: dict, work: Path, python_version: str) -> Workspace:
     if not repo.exists():
         log(f"cloning {cfg['url']}")
         sh(["git", "clone", "-q", "--filter=blob:none", "-b", cfg["branch"], cfg["url"], repo])
-    if cfg.get("runner", "pytest") == "vitest":
+    if cfg.get("runner", "pytest") in JS_RUNNERS:
         for cmd in cfg["install"]:
             log(f"installing: {' '.join(cmd)}")
             sh(cmd if os.name != "nt" or not cmd[0] in ("npm", "npx", "pnpm") else ["cmd", "/c", *cmd], cwd=repo)
@@ -189,8 +190,8 @@ def run_suite(
     cap = ws.artifacts / f"{tag}.jsonl"
     for old in ws.artifacts.glob(cap.name + "*"):
         old.unlink()
-    if ws.runner == "vitest":
-        args = ["node", JS_PROBE, "record", "--out", cap, "--root", ws.repo, "--dir", ws.test_dir, "--",
+    if ws.runner in JS_RUNNERS:
+        args = ["node", JS_PROBE, "record", "--runner", ws.runner, "--out", cap, "--root", ws.repo, "--dir", ws.test_dir, "--",
                 *ws.cfg.get("args", []), *(extra or [])]
     else:
         args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--quod-record={cap}", f"--quod-root={ws.repo}", *(extra or [])]
@@ -203,16 +204,22 @@ def run_suite(
 
 def passes_alone(ws: Workspace, name: str) -> bool:
     """Runs one test by itself."""
-    if ws.runner == "vitest":
+    if ws.runner in JS_RUNNERS:
         file, full = name.split("::", 1)
         out = ws.artifacts / "alone.json"
         if out.exists():
             out.unlink()
-        # Vitest matches -t against the suite path and test name joined by spaces.
+        # Both runners match -t against the suite path and test name joined
+        # by spaces, and write the same JSON result shape.
         pattern = "^" + re.escape(full.replace(" > ", " ")) + "$"
         rel_file = os.path.relpath(ws.repo / file, ws.test_dir)
-        sh(["node", vitest_bin(ws), "run", rel_file, "-t", pattern, "--reporter=json", f"--outputFile={out}",
-            *ws.cfg.get("args", [])], cwd=ws.test_dir, check=False, timeout=600)
+        if ws.runner == "jest":
+            cmd = ["node", runner_bin(ws, "jest"), rel_file.replace(os.sep, "/"), "-t", pattern, "--json",
+                   f"--outputFile={out}", *ws.cfg.get("args", [])]
+        else:
+            cmd = ["node", runner_bin(ws, "vitest"), "run", rel_file, "-t", pattern, "--reporter=json",
+                   f"--outputFile={out}", *ws.cfg.get("args", [])]
+        sh(cmd, cwd=ws.test_dir, check=False, timeout=600)
         if not out.exists():
             return False
         res = json.loads(out.read_text(encoding="utf-8"))
@@ -223,14 +230,14 @@ def passes_alone(ws: Workspace, name: str) -> bool:
     return r.returncode == 0
 
 
-def vitest_bin(ws: Workspace) -> Path:
+def runner_bin(ws: Workspace, runner: str) -> Path:
     for d in (ws.test_dir, ws.repo):
-        pkg = d / "node_modules" / "vitest" / "package.json"
+        pkg = d / "node_modules" / runner / "package.json"
         if pkg.exists():
             meta = json.loads(pkg.read_text(encoding="utf-8"))
-            bin_ = meta["bin"] if isinstance(meta["bin"], str) else meta["bin"]["vitest"]
+            bin_ = meta["bin"] if isinstance(meta["bin"], str) else meta["bin"][runner]
             return pkg.parent / bin_
-    raise RuntimeError("vitest is not installed")
+    raise RuntimeError(f"{runner} is not installed")
 
 
 def nonflaky_failures(ws: Workspace, failing: set[str]) -> set[str]:
@@ -267,7 +274,7 @@ def select(ws: Workspace, map_path: Path, tag: str) -> dict:
     env_args: list = []
     if ENV_MODE and ws.runner == "pytest":
         env_args = ["--python", ws.python]
-    elif ENV_MODE and ws.runner == "vitest":
+    elif ENV_MODE and ws.runner in JS_RUNNERS:
         cmd = ["node", JS_PROBE, "fingerprint", "--root", ws.repo, "--dir", ws.test_dir]
         env_args = [x for c in cmd for x in ("--fingerprint-cmd", c)]
     sh([QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
