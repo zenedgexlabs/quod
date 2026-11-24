@@ -509,6 +509,131 @@ pub fn diff(
 /// (row, column).
 type Span = ((usize, usize), (usize, usize), u32);
 
+fn kind_in(n: Option<Node<'_>>, kinds: &[&str]) -> bool {
+    n.is_some_and(|n| kinds.contains(&n.kind()))
+}
+
+/// Mutable state at module or class level (see [`LineMap::module_state`]).
+/// A syntactic, conservative-by-construction check per language:
+///
+/// - JavaScript/TypeScript: `let`/`var` at the top level; `const` bound to an
+///   object, array or `new` expression; static class fields with such
+///   values;
+/// - Python: module- or class-level assignments of dict/list/set displays,
+///   comprehensions or `dict()`/`set()`/`defaultdict()`-style calls, and any
+///   `global` statement;
+/// - Go: package-level `var`; Rust: `static`, `thread_local!`; Java: `static`
+///   fields that aren't `final` primitives or strings.
+fn has_module_state(lang: Language, root: Node<'_>, src: &[u8]) -> bool {
+    const JS_MUTABLE: &[&str] = &["object", "array", "new_expression"];
+    const PY_MUTABLE: &[&str] = &[
+        "dictionary",
+        "list",
+        "set",
+        "dictionary_comprehension",
+        "list_comprehension",
+        "set_comprehension",
+    ];
+    const PY_CALLS: &[&str] = &[
+        "dict",
+        "list",
+        "set",
+        "defaultdict",
+        "OrderedDict",
+        "Counter",
+        "deque",
+        "WeakValueDictionary",
+        "WeakKeyDictionary",
+        "WeakSet",
+        "ChainMap",
+    ];
+    let text = |n: Node<'_>| std::str::from_utf8(&src[n.byte_range()]).unwrap_or("");
+    // (node, depth, inside a Python function)
+    let mut stack = vec![(root, 0usize, false)];
+    while let Some((n, depth, in_fn)) = stack.pop() {
+        let found = match lang {
+            Language::JavaScript | Language::TypeScript | Language::Tsx => match n.kind() {
+                "lexical_declaration" | "variable_declaration" if depth <= 2 => {
+                    let mut c = n.walk();
+                    let kw = n.children(&mut c).next().map(text).unwrap_or("");
+                    kw != "const" || {
+                        let mut c = n.walk();
+                        let decls: Vec<_> = n.named_children(&mut c).collect();
+                        decls
+                            .iter()
+                            .any(|d| kind_in(d.child_by_field_name("value"), JS_MUTABLE))
+                    }
+                }
+                "field_definition" | "public_field_definition" => {
+                    let mut c = n.walk();
+                    let is_static = n.children(&mut c).any(|ch| ch.kind() == "static");
+                    is_static && kind_in(n.child_by_field_name("value"), JS_MUTABLE)
+                }
+                _ => false,
+            },
+            Language::Python => match n.kind() {
+                "global_statement" => true,
+                "assignment" if !in_fn && depth <= 6 => {
+                    let right = n.child_by_field_name("right");
+                    kind_in(right, PY_MUTABLE)
+                        || right.is_some_and(|r| {
+                            r.kind() == "call"
+                                && r.child_by_field_name("function").is_some_and(|f| {
+                                    let name = text(f).rsplit('.').next().unwrap_or("");
+                                    PY_CALLS.contains(&name)
+                                })
+                        })
+                }
+                _ => false,
+            },
+            Language::Go => n.kind() == "var_declaration" && depth <= 1,
+            Language::Rust => {
+                matches!(n.kind(), "static_item")
+                    || (n.kind() == "macro_invocation" && text(n).starts_with("thread_local!"))
+            }
+            Language::Java => {
+                n.kind() == "field_declaration" && {
+                    let t = text(n);
+                    let head = t.split('=').next().unwrap_or(t);
+                    head.contains("static")
+                        && !(head.contains("final")
+                            && n.child_by_field_name("type").is_some_and(|ty| {
+                                matches!(
+                                    ty.kind(),
+                                    "integral_type" | "floating_point_type" | "boolean_type"
+                                ) || text(ty) == "String"
+                            }))
+                }
+            }
+        };
+        if found {
+            return true;
+        }
+        // Function bodies are excluded: their locals aren't shared state
+        // (except Python's `global`, found anywhere).
+        let is_function = matches!(
+            n.kind(),
+            "function_declaration"
+                | "function_expression"
+                | "arrow_function"
+                | "method_definition"
+                | "generator_function_declaration"
+                | "function_item"
+                | "method_declaration"
+                | "constructor_declaration"
+        ) || (n.kind() == "function_definition" && lang != Language::Python);
+        if is_function {
+            continue;
+        }
+        let in_fn = in_fn || n.kind() == "function_definition";
+        let mut c = n.walk();
+        for ch in n.children(&mut c) {
+            stack.push((ch, depth + 1, in_fn));
+        }
+    }
+    false
+}
+
 /// Maps executed source lines to entities, for probes that report lines.
 #[derive(Clone, Debug, Default)]
 pub struct LineMap {
@@ -516,6 +641,9 @@ pub struct LineMap {
     /// `names`). Index 0 is line 1.
     by_line: Vec<Option<u32>>,
     names: Vec<String>,
+    /// The file keeps mutable state across calls at module (or class) level:
+    /// a cache, a registry, a counter. See [`LineMap::module_state`].
+    module_state: bool,
     /// Definition spans in pre-order: ((start row, col), (end row, col),
     /// name index), rows and columns 0-based.
     spans: Vec<Span>,
@@ -534,10 +662,26 @@ impl LineMap {
         let mut map = Self {
             by_line: vec![None; lines],
             names: Vec::new(),
+            module_state: has_module_state(lang, tree.root_node(), &src),
             spans: Vec::new(),
         };
         map.walk(tree.root_node(), &cx, "");
         Ok(map)
+    }
+
+    /// Every entity of the file.
+    pub fn entities(&self) -> &[String] {
+        &self.names
+    }
+
+    /// True if the file keeps mutable state at module or class level. A
+    /// function that reads that state can depend on a *different* function
+    /// of the file that ran earlier, possibly in another test: a memoised
+    /// result is read without re-running what computed it. Ingest therefore
+    /// widens a test that touched such a file to every entity of the file.
+    /// State shared *across* files stays a documented assumption.
+    pub fn module_state(&self) -> bool {
+        self.module_state
     }
 
     fn walk(&mut self, node: Node<'_>, cx: &Cx<'_>, scope: &str) {
@@ -974,5 +1118,71 @@ class C:
             "package p\nfunc TestX(t *testing.T) { t.Skip(\"x\") }\n",
         );
         assert_eq!(go.skip_markers, (0, 1));
+    }
+
+    fn stateful(lang: Language, src: &str) -> bool {
+        LineMap::new(lang, src.as_bytes()).unwrap().module_state()
+    }
+
+    /// From conformance (date-fns `tzOffset`): a module-level cache filled by
+    /// `calcOffset` is read by later tests that never run `calcOffset`.
+    #[test]
+    fn module_state_detection() {
+        use Language::*;
+        for (lang, src) in [
+            (
+                TypeScript,
+                "const offsetCache: Record<string, number> = {};\nexport function f() {}\n",
+            ),
+            (
+                JavaScript,
+                "let count = 0;\nexport function inc() { return ++count; }\n",
+            ),
+            (JavaScript, "var seen;\n"),
+            (JavaScript, "export const registry = new Map();\n"),
+            (TypeScript, "class C {\n  static cache = new Map();\n}\n"),
+            (
+                Python,
+                "_cache = {}\ndef f(x):\n    return _cache.setdefault(x, x)\n",
+            ),
+            (
+                Python,
+                "from collections import defaultdict\nseen = defaultdict(list)\n",
+            ),
+            (Python, "class C:\n    instances = []\n"),
+            (Python, "n = 0\ndef inc():\n    global n\n    n += 1\n"),
+            (Go, "package p\n\nvar cache = map[string]int{}\n"),
+            (Rust, "static COUNT: AtomicUsize = AtomicUsize::new(0);\n"),
+            (
+                Java,
+                "class C { static Map<String, Integer> cache = new HashMap<>(); }\n",
+            ),
+        ] {
+            assert!(stateful(lang, src), "{lang:?}: {src}");
+        }
+        for (lang, src) in [
+            (
+                TypeScript,
+                "export const RATE = 2;\nconst NAME = 'x';\nexport function f() { let local = {}; return local; }\n",
+            ),
+            (
+                JavaScript,
+                "const re = /a+/;\nexport const add = (a, b) => a + b;\n",
+            ),
+            (
+                Python,
+                "RATE = 2\nNAME = 'x'\ndef f():\n    cache = {}\n    return cache\n",
+            ),
+            (
+                Go,
+                "package p\n\nconst Limit = 10\n\nfunc f() { m := map[string]int{}; _ = m }\n",
+            ),
+            (
+                Java,
+                "class C { static final int LIMIT = 10; static final String NAME = \"x\"; }\n",
+            ),
+        ] {
+            assert!(!stateful(lang, src), "{lang:?}: {src}");
+        }
     }
 }

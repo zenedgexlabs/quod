@@ -671,3 +671,69 @@ fn javascript_lines_map_to_functions() {
         vec!["test/calc.test.js::add", "test/calc.test.js::mul"]
     );
 }
+
+/// Module-state widening (ADR 014), reproducing the date-fns escape: the
+/// second test only reads the cache that the first test filled through
+/// `calc`. A change to `calc` must re-run it.
+#[test]
+fn memoised_module_state_widens_to_the_whole_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("repo");
+    fs::create_dir_all(root.join("src")).unwrap();
+    let src = "const cache = {};
+export function lookup(k) {
+  if (k in cache) return cache[k];
+  return calc(k);
+}
+function calc(k) {
+  return (cache[k] = k * 2);
+}
+export function other() {
+  return 1;
+}
+";
+    fs::write(root.join("src/memo.js"), src).unwrap();
+    fs::write(
+        root.join("src/plain.js"),
+        "export function a() {\n  return 1;\n}\nexport function b() {\n  return 2;\n}\n",
+    )
+    .unwrap();
+    git(&root, &["init", "-q", "-b", "main"]);
+    git(&root, &["add", "-A"]);
+    git(&root, &["commit", "-q", "-m", "base"]);
+    let header =
+        r#"{"type":"header","v":1,"probe":"js-probe/0.0.1","capabilities":[],"ecosystem":"npm"}"#;
+    let first = r#"{"type":"test","name":"t.test.js::first","path":"t.test.js","qual":"first","params":"","outcome":"passed","duration_ms":1,"files":[],"functions":[],"packages":[],"flags":[],"positions":[["src/memo.js",[[2,7],[6,0]]]]}"#;
+    let second = r#"{"type":"test","name":"t.test.js::second","path":"t.test.js","qual":"second","params":"","outcome":"passed","duration_ms":1,"files":[],"functions":[],"packages":[],"flags":[],"positions":[["src/memo.js",[[2,7]]],["src/plain.js",[[1,7]]]]}"#;
+    let root_rec = r#"{"type":"root","files":[],"functions":[],"packages":[]}"#;
+    let cap = dir.path().join("cap.jsonl");
+    fs::write(&cap, [header, first, second, root_rec].join("\n")).unwrap();
+    let repo = Repo::discover(&root).unwrap();
+    let meta = MapMeta {
+        repo: "acme/web".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    let graph = ingest(&[cap], repo.root(), meta).unwrap();
+    let map = dir.path().join("map.scmap");
+    fs::write(&map, graph.encode().unwrap().0).unwrap();
+    let key = dir.path().join("key.hex");
+    fs::write(&key, Ed25519Signer::generate().unwrap().seed_hex()).unwrap();
+
+    // `second` never ran `calc`, but read what it cached: it re-runs.
+    fs::write(root.join("src/memo.js"), src.replace("k * 2", "k * 3")).unwrap();
+    assert_eq!(
+        select_js(&root, &map, &key),
+        vec!["t.test.js::first", "t.test.js::second"]
+    );
+
+    // A stateless file stays function-precise: `b` ran in no test.
+    fs::write(root.join("src/memo.js"), src).unwrap();
+    fs::write(
+        root.join("src/plain.js"),
+        "export function a() {\n  return 1;\n}\nexport function b() {\n  return 3;\n}\n",
+    )
+    .unwrap();
+    assert!(select_js(&root, &map, &key).is_empty());
+}

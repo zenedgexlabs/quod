@@ -170,6 +170,39 @@ impl Ingest<'_> {
         out
     }
 
+    /// Module-state widening (ADR 014): for every touched source file that
+    /// keeps mutable state at module or class level, every entity of the
+    /// file and the file itself. A memoised result can be read without
+    /// re-running the function that computed it, possibly in another test.
+    fn stateful_widening(
+        &mut self,
+        files: &[String],
+        functions: &[(String, String)],
+        positions: &[(String, Vec<(u32, u32)>)],
+        lines: &[(String, Vec<(u32, u32)>)],
+    ) -> Vec<NodeId> {
+        let touched: BTreeSet<String> = files
+            .iter()
+            .map(|f| names::file(f))
+            .chain(functions.iter().map(|(p, _)| names::file(p)))
+            .chain(positions.iter().map(|(p, _)| names::file(p)))
+            .chain(lines.iter().map(|(p, _)| names::file(p)))
+            .collect();
+        let mut out = Vec::new();
+        for f in touched {
+            self.load_map(&f);
+            let entities: Vec<String> = match &self.line_maps[&f] {
+                Some(m) if m.module_state() => m.entities().to_vec(),
+                _ => continue,
+            };
+            out.push(self.file(&f));
+            for q in &entities {
+                out.push(self.function(&f, q));
+            }
+        }
+        out
+    }
+
     fn load_map(&mut self, name: &str) {
         if !self.line_maps.contains_key(name) {
             let map = Language::from_path(name).and_then(|lang| {
@@ -395,6 +428,9 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                         st.b.observe(t, n);
                     }
                 }
+                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
+                    st.b.observe(t, n);
+                }
             }
             Record::Root {
                 files,
@@ -429,6 +465,9 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     for n in st.positions(path, pos) {
                         st.b.observe_root(n);
                     }
+                }
+                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
+                    st.b.observe_root(n);
                 }
             }
         }
