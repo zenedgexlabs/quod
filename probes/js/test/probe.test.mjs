@@ -53,18 +53,27 @@ describe('coverage math', () => {
 describe('recorded Vitest run', () => {
   let tests;
   let header;
+  let results;
   before(() => {
-    const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-')), 'cap.jsonl');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-'));
+    const out = path.join(tmp, 'cap.jsonl');
+    const resultsFile = path.join(tmp, 'results.jsonl');
     process.env.FIXTURE_VAR = '1';
     delete process.env.FIXTURE_MISSING;
-    const status = main(['record', '--out', out, '--root', FIXTURE]);
+    const status = main(['record', '--out', out, '--results', resultsFile, '--root', FIXTURE]);
     assert.equal(status, 0);
     const recs = fs.readFileSync(out, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     header = recs[0];
     tests = Object.fromEntries(recs.filter((r) => r.type === 'test').map((r) => [r.name, r]));
+    results = fs.readFileSync(resultsFile, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   });
 
   const positions = (t, file) => (t.positions.find(([f]) => f === file)?.[1] ?? []).map(([l, c]) => `${l}:${c}`);
+
+  test('results are named exactly as recorded (quod verdict joins on names)', () => {
+    assert.deepEqual(results.map((r) => r.name).sort(), Object.keys(tests).sort());
+    assert.ok(results.every((r) => r.type === 'result' && ['passed', 'failed', 'skipped'].includes(r.outcome)));
+  });
 
   test('header and names', () => {
     assert.equal(header.probe, 'js-probe/0.1.0');

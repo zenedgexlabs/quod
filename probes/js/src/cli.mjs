@@ -27,8 +27,8 @@ const CONFIG_EXTS = ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'];
 
 function usage(msg) {
   if (msg) console.error(`quod-vitest: ${msg}`);
-  console.error('usage: quod-vitest record --out FILE [--root DIR] [-- vitest args]');
-  console.error('       quod-vitest run --skip FILE [--root DIR] [-- vitest args]');
+  console.error('usage: quod-vitest record --out FILE [--results FILE] [--root DIR] [-- vitest args]');
+  console.error('       quod-vitest run --skip FILE [--results FILE] [--root DIR] [-- vitest args]');
   console.error('       quod-vitest fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
   process.exit(2);
 }
@@ -36,7 +36,7 @@ function usage(msg) {
 export function parseArgs(argv) {
   const [cmd, ...rest] = argv;
   if (!['record', 'run', 'fingerprint'].includes(cmd)) usage(`unknown command ${cmd ?? ''}`);
-  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, env: [], passthrough: [] };
+  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, results: null, env: [], passthrough: [] };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === '--') {
@@ -44,6 +44,7 @@ export function parseArgs(argv) {
       break;
     } else if (a === '--out') opts.out = rest[++i];
     else if (a === '--skip') opts.skip = rest[++i];
+    else if (a === '--results') opts.results = rest[++i];
     else if (a === '--root') opts.root = rest[++i];
     else if (a === '--dir') opts.dir = rest[++i];
     else if (a === '--env') opts.env.push(rest[++i]);
@@ -173,6 +174,7 @@ export function main(argv) {
     QUOD_DIR: opts.dir,
     QUOD_ARGS: JSON.stringify(opts.passthrough),
   };
+  if (opts.results) env.QUOD_RESULTS_OUT = path.resolve(opts.results);
   let recordDir = null;
   if (opts.cmd === 'record') {
     recordDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-vitest-'));

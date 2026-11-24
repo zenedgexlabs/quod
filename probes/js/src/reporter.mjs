@@ -23,7 +23,43 @@ export default class QuodReporter {
     this.vitest = vitest;
   }
 
+  /**
+   * Per-test outcomes for `quod verdict` (QUOD_RESULTS_OUT), named exactly
+   * as recorded. Tests Quod skipped (the skip file) are not results: they
+   * carry certificates instead.
+   */
+  writeResults(testModules) {
+    const out = process.env.QUOD_RESULTS_OUT;
+    if (!out) return;
+    const certified = new Set();
+    try {
+      const skip = process.env.QUOD_SKIP_FILE;
+      if (skip) {
+        for (const line of fs.readFileSync(skip, 'utf8').split(/\r?\n/)) {
+          if (line && !line.startsWith('#')) certified.add(line);
+        }
+      }
+    } catch {
+      // no skip file: every test is a result
+    }
+    const lines = [];
+    for (const mod of testModules) {
+      const file = slash(path.relative(this.root, mod.moduleId));
+      for (const test of mod.children.allTests()) {
+        const name = `${file}::${test.fullName}`;
+        if (certified.has(name)) continue;
+        const state = test.result().state;
+        const outcome = state === 'passed' ? 'passed' : state === 'failed' ? 'failed' : 'skipped';
+        const duration = test.diagnostic?.()?.duration ?? 0;
+        lines.push(JSON.stringify({ duration_ms: Math.round(duration * 1000) / 1000, name, outcome, type: 'result' }));
+      }
+    }
+    lines.sort();
+    fs.writeFileSync(out, lines.length ? `${lines.join('\n')}\n` : '');
+  }
+
   onTestRunEnd(testModules) {
+    this.writeResults(testModules);
     if (!this.dir || !this.out) return;
     const records = [];
     for (const f of fs.existsSync(this.dir) ? fs.readdirSync(this.dir) : []) {
