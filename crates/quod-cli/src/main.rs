@@ -108,6 +108,18 @@ enum Cmd {
         #[arg(long)]
         agent: Option<String>,
     },
+    /// Serve the agent tools (tests_for, why, check) over MCP on stdio.
+    ///
+    /// Advisory only: run it inside the agent's sandbox with the map baked
+    /// in (`quod mcp --map .quod/map.qmap`).
+    Mcp {
+        /// Footprint map.
+        #[arg(long)]
+        map: PathBuf,
+        /// Policy file (default: quod.toml at the repository root, if present).
+        #[arg(long)]
+        policy: Option<PathBuf>,
+    },
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]
@@ -353,7 +365,21 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 ExitCode::from(1)
             })
         }
+        Cmd::Mcp { map, policy } => serve_mcp(&cli, map, policy.as_deref()),
     }
+}
+
+fn serve_mcp(cli: &Cli, map: &Path, policy: Option<&Path>) -> Result<ExitCode> {
+    let repo = Repo::discover(&cli.repo_dir)?;
+    let ctx = quod_cli::mcp::McpContext {
+        repo_id: repo_id(cli, &repo),
+        repo,
+        map: map.to_path_buf(),
+        policy: policy.map(Path::to_path_buf),
+    };
+    let stdin = std::io::stdin();
+    quod_cli::mcp::serve(&ctx, stdin.lock(), std::io::stdout().lock())?;
+    Ok(ExitCode::SUCCESS)
 }
 
 fn select_options(cli: &Cli, repo: &Repo, sel: &SelectArgs) -> SelectOptions {

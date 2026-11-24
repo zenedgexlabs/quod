@@ -1,0 +1,229 @@
+name: Quod Verdict
+description: >-
+  A signed Verdict for every change: which tests the change obligates, proof
+  for every test skipped, failures the change did not cause, changed code no
+  test executes, and test-integrity findings.
+author: Quod
+
+inputs:
+  mode:
+    description: >-
+      record (on the default branch: record the footprint map), shadow (PRs:
+      run everything, report what Quod would skip) or enforce (PRs: skip
+      certified tests; the Verdict gates the job).
+    default: shadow
+  runner:
+    description: pytest or vitest.
+    default: pytest
+  test-command:
+    description: >-
+      pytest: the command that runs the suite, e.g. `python -m pytest -q`.
+      vitest: extra arguments passed to Vitest.
+    default: python -m pytest -q
+  signing-key:
+    description: >-
+      Ed25519 seed from `quod keygen` (a secret). Without it (for example on
+      forks), certificates and the Verdict are advisory.
+    default: ''
+  quod-bin:
+    description: Path to the quod binary.
+    default: quod
+  probe-js:
+    description: Path to the quod-js CLI (probes/js/src/cli.mjs), for vitest.
+    default: ''
+  python:
+    description: >-
+      Python interpreter of the test environment. Turns on environment mode
+      (installed packages and environment variables are compared exactly).
+    default: ''
+  agent-authors:
+    description: >-
+      Comma-separated logins whose changes are recorded as agent-authored.
+    default: copilot-swe-agent[bot],devin-ai-integration[bot],claude[bot],cursor[bot],chatgpt-codex-connector[bot]
+  map-path:
+    description: Where the footprint map is stored in the workspace.
+    default: .quod/map.qmap
+
+outputs:
+  status:
+    description: Verdict status (pass, fail, blocked), or empty when no Verdict was sealed.
+    value: ${{ steps.verdict.outputs.status }}
+  verdict:
+    description: Path to the DSSE envelope (in-toto Statement).
+    value: ${{ steps.verdict.outputs.envelope }}
+
+runs:
+  using: composite
+  steps:
+    # ---- record (default branch) ------------------------------------------
+    - name: Record footprints
+      if: inputs.mode == 'record'
+      shell: bash
+      env:
+        QUOD: ${{ inputs.quod-bin }}
+        RUNNER: ${{ inputs.runner }}
+        CMD: ${{ inputs.test-command }}
+        PROBE_JS: ${{ inputs.probe-js }}
+        MAP: ${{ inputs.map-path }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$(dirname "$MAP")"
+        if [ "$RUNNER" = vitest ]; then
+          cap="$RUNNER_TEMP/quod-capture.jsonl"
+          node "$PROBE_JS" record --out "$cap" -- $CMD || echo "::warning::tests failed; failing tests are recorded as untraced and always run"
+          "$QUOD" ingest --capture "$cap" --out "$MAP" --allow-dirty
+        else
+          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD
+        fi
+
+    - name: Save map
+      if: inputs.mode == 'record'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.map-path }}
+        key: quod-map-${{ github.sha }}
+
+    # ---- PR: plan --------------------------------------------------------
+    - name: Find the merge base
+      id: base
+      if: inputs.mode != 'record'
+      shell: bash
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        ref="${BASE_REF:-main}"
+        git fetch --no-tags --quiet origin "$ref" || true
+        echo "sha=$(git merge-base "origin/$ref" HEAD 2>/dev/null || git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore map
+      id: map
+      if: inputs.mode != 'record'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.map-path }}
+        key: quod-map-${{ steps.base.outputs.sha }}
+        restore-keys: quod-map-
+
+    - name: Plan
+      id: plan
+      if: inputs.mode != 'record'
+      shell: bash
+      env:
+        QUOD: ${{ inputs.quod-bin }}
+        MAP: ${{ inputs.map-path }}
+        KEY: ${{ inputs.signing-key }}
+        PY: ${{ inputs.python }}
+        HIT: ${{ steps.map.outputs.cache-matched-key }}
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/quod"; mkdir -p "$dir"
+        : > "$dir/skip.txt"
+        if [ -z "$HIT" ] || [ ! -f "$MAP" ]; then
+          echo "::notice::Quod: no footprint map yet (record one on the default branch); running everything"
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        args=(--map "$MAP" --skip-out "$dir/skip.txt" --report-out "$dir/plan.json")
+        if [ -n "$KEY" ]; then
+          printf '%s' "$KEY" > "$dir/key.seed"; chmod 600 "$dir/key.seed"
+          args+=(--key "$dir/key.seed")
+        else
+          args+=(--advisory)
+        fi
+        [ -n "$PY" ] && args+=(--python "$PY")
+        "$QUOD" select "${args[@]}"
+        printf '%s\n' "${args[@]}" > "$dir/args.txt"
+        echo "ready=true" >> "$GITHUB_OUTPUT"
+
+    # ---- PR: run -----------------------------------------------------------
+    - name: Run tests
+      id: tests
+      if: inputs.mode != 'record'
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        RUNNER: ${{ inputs.runner }}
+        CMD: ${{ inputs.test-command }}
+        PROBE_JS: ${{ inputs.probe-js }}
+        READY: ${{ steps.plan.outputs.ready }}
+      run: |
+        set -uo pipefail
+        dir="$RUNNER_TEMP/quod"
+        skip="$dir/skip.txt"
+        # Shadow mode runs everything: the skip list is only reported.
+        [ "$MODE" = enforce ] && [ "$READY" = true ] || { skip="$dir/empty.txt"; : > "$skip"; }
+        if [ "$RUNNER" = vitest ]; then
+          node "$PROBE_JS" run --skip "$skip" --results "$dir/results.jsonl" -- $CMD
+        else
+          extra=(--quod-results "$dir/results.jsonl")
+          [ -s "$skip" ] && extra+=(--quod-skip "$skip")
+          $CMD "${extra[@]}"
+        fi
+        echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+    # ---- PR: seal ------------------------------------------------------------
+    - name: Seal the Verdict
+      id: verdict
+      if: inputs.mode != 'record' && steps.plan.outputs.ready == 'true'
+      shell: bash
+      env:
+        QUOD: ${{ inputs.quod-bin }}
+        MODE: ${{ inputs.mode }}
+        ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
+        AGENTS: ${{ inputs.agent-authors }}
+      run: |
+        set -uo pipefail
+        dir="$RUNNER_TEMP/quod"
+        mapfile -t args < "$dir/args.txt"
+        # Drop the plan-only output flags.
+        sel=(); skip_next=0
+        for a in "${args[@]}"; do
+          if [ $skip_next = 1 ]; then skip_next=0; continue; fi
+          case "$a" in --skip-out|--report-out) skip_next=1; continue;; esac
+          sel+=("$a")
+        done
+        author=human
+        case ",$AGENTS," in *",$ACTOR,"*) author=agent;; esac
+        "$QUOD" verdict "${sel[@]}" --results "$dir/results.jsonl" \
+          --out "$dir/verdict.json" --card "$dir/card.md" --author "$author" \
+          $( [ "$author" = agent ] && printf -- '--agent %s' "$ACTOR" ) > /dev/null
+        code=$?
+        status=$(python3 -c "import json,base64,sys; e=json.load(open(sys.argv[1])); print(json.loads(base64.b64decode(e['payload']))['predicate']['status'])" "$dir/verdict.json" 2>/dev/null || echo unknown)
+        {
+          if [ "$MODE" = shadow ]; then
+            skipped=$(grep -vc '^#' "$dir/skip.txt" || true)
+            echo "> **Shadow mode:** the full suite ran. In enforce mode Quod would have skipped **$skipped** tests, each with a certificate."
+            echo
+          fi
+          cat "$dir/card.md"
+        } >> "$GITHUB_STEP_SUMMARY"
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "envelope=$dir/verdict.json" >> "$GITHUB_OUTPUT"
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Upload the Verdict
+      if: steps.verdict.outputs.envelope != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: quod-verdict
+        path: ${{ runner.temp }}/quod/verdict.json
+        if-no-files-found: ignore
+
+    # ---- outcome -------------------------------------------------------------
+    - name: Outcome
+      if: inputs.mode != 'record'
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        TESTS: ${{ steps.tests.outputs.exit }}
+        CODE: ${{ steps.verdict.outputs.code }}
+        STATUS: ${{ steps.verdict.outputs.status }}
+      run: |
+        # Enforce: the Verdict decides (flaky failures this change did not
+        # cause don't fail the job; unmet obligations do). Shadow, or no map
+        # yet: the test command decides, as before Quod.
+        if [ "$MODE" = enforce ] && [ -n "$CODE" ]; then
+          echo "Quod Verdict: $STATUS"; exit "$CODE"
+        fi
+        exit "${TESTS:-1}"

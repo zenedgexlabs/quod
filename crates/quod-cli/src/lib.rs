@@ -3,6 +3,8 @@
 //! Kept separate from `main.rs` so the whole record → select → verify flow is
 //! testable without a Python interpreter.
 
+pub mod mcp;
+
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};

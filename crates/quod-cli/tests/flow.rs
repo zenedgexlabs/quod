@@ -909,3 +909,70 @@ fn verdict_flags_tests_edited_with_the_code_they_guard() {
     assert_eq!(out.verdict.status, quod_verdict::Status::Pass);
     assert!(out.card.contains("Test integrity"), "{}", out.card);
 }
+
+/// The agent tools over MCP: advisory selection on the working tree.
+#[test]
+fn mcp_server_answers_agent_tools() {
+    use serde_json::{Value, json};
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let ctx = quod_cli::mcp::McpContext {
+        repo: Repo::discover(&f.root).unwrap(),
+        map: f.map.clone(),
+        policy: None,
+        repo_id: "acme/app".into(),
+    };
+    let input = [
+        json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}),
+        json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+        json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}),
+        json!({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "tests_for", "arguments": {}}}),
+        json!({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "why", "arguments": {"test": "tests/test_misc.py::test_ok"}}}),
+        json!({"jsonrpc": "2.0", "id": 5, "method": "nope"}),
+    ]
+    .iter()
+    .map(Value::to_string)
+    .collect::<Vec<_>>()
+    .join("\n");
+    let mut out = Vec::new();
+    quod_cli::mcp::serve(&ctx, input.as_bytes(), &mut out).unwrap();
+    let replies: Vec<Value> = String::from_utf8(out)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    assert_eq!(replies.len(), 5, "notifications get no reply");
+    assert_eq!(replies[0]["result"]["serverInfo"]["name"], "quod");
+    let names: Vec<&str> = replies[1]["result"]["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(names, ["tests_for", "why", "check"]);
+    let text = |i: usize| -> Value {
+        serde_json::from_str(replies[i]["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
+    };
+    let plan = text(2);
+    assert_eq!(plan["advisory"], true);
+    let obligated: Vec<&str> = plan["obligated"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["test"].as_str().unwrap())
+        .collect();
+    assert!(
+        obligated.contains(&"tests/test_pay.py::test_charge"),
+        "{plan}"
+    );
+    assert!(
+        !obligated.contains(&"tests/test_misc.py::test_ok"),
+        "{plan}"
+    );
+    assert_eq!(text(3)["decision"], "skip");
+    assert_eq!(replies[4]["error"]["code"], -32601);
+}
