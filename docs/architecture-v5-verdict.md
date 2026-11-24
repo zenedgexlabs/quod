@@ -399,15 +399,13 @@ These items follow from the same graph and are the long-term differentiators. Ea
 
 ## 9. Decisions to record as ADRs
 
-| ADR | Decision |
-|---|---|
-| 015 | The Verdict is the product primitive; selection is one lens among several |
-| 016 | Lenses are pure functions over pinned inputs, so every finding can be re-derived by the verifier |
-| 017 | The Verdict is an in-toto statement with an open predicate; skip certificates are referenced by chain head |
-| 018 | Flake-proof may relabel a failure only when the footprint shows no change; it never relabels a footprint-intersecting failure |
-| 019 | Culprit naming is evidence (shared nodes). Auto-revert is opt-in policy, never a default |
-| 020 | Maps are commit-versioned with structural sharing, to serve Culprit and Audit |
-| 021 | Advisory Verdicts (sandbox) and sealed Verdicts (trusted CI) are separate types; the verifier rejects advisory where proof is required |
+| ADR | Status | Decision |
+|---|---|---|
+| [015](adr/0015-verdict.md) | Accepted | The Verdict is the product primitive (in-toto Statement, DSSE, pinned changed set); lenses are pure functions over pinned inputs |
+| [016](adr/0016-flake-proof.md) | Accepted | Flake-proof clears a failure only when its footprint is complete and untouched; never a footprint-intersecting failure |
+| [017](adr/0017-advisory-verdicts.md) | Accepted | Advisory Verdicts (sandbox, MCP) and sealed Verdicts (trusted CI) are separate; the verifier rejects advisory where proof is required |
+| 018 | Proposed | Culprit naming is evidence (shared nodes). Auto-revert is opt-in policy, never a default |
+| 019 | Proposed | Maps are commit-versioned with structural sharing, to serve Culprit and Audit |
 
 ---
 

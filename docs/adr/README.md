@@ -20,6 +20,9 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [012](0012-environment-fingerprint.md) | Accepted | Environment fingerprinting replaces path-based environment rules (R001, R003, most of R002, lockfiles); new R018 | Path rules were both imprecise (most CI/tox edits change nothing) and incomplete (runner images, env vars) |
 | [013](0013-language-adapters.md) | Accepted | Any language: probes report executed lines, Quod maps them to entities with the same tree-sitter extractor that diffs changes; JS/TS, Go, Rust, Java specs; static languages need the build closure | One bespoke probe per language doesn't scale, and probe/diff naming must never disagree |
 | [014](0014-module-state-widening.md) | Accepted | A test that touches a file with module- or class-level mutable state observes every entity of that file | date-fns: a memoised result was read by 90 tests that never ran the function computing it |
+| [015](0015-verdict.md) | Accepted | The Verdict (in-toto Statement in a DSSE envelope, pinned changed set) is the product primitive; lenses are pure functions | Users buy trust ("can this merge, and why believe it?"), not selection alone |
+| [016](0016-flake-proof.md) | Accepted | A failure is cleared (F001) only when its footprint is complete and untouched, no global rule fired, and its file didn't change | A wrong "not your fault" merges a regression |
+| [017](0017-advisory-verdicts.md) | Accepted | Agents get advisory Verdicts over MCP; only trusted CI seals proof; unmet obligations block | Agents control their sandboxes and are documented gaming tests |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.
