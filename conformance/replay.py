@@ -71,7 +71,8 @@ def sh(
     cmd: list, cwd: Path | None = None, check: bool = True, env: dict | None = None, timeout: float | None = None
 ) -> subprocess.CompletedProcess:
     proc = subprocess.Popen(
-        [str(c) for c in cmd], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+        [str(c) for c in cmd], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
+        encoding="utf-8", errors="replace",
     )
     try:
         out, err = proc.communicate(timeout=timeout)
