@@ -148,9 +148,9 @@ def _python_setup(cfg: dict, work: Path, repo: Path, python_version: str) -> Pat
 
 
 def _finish_setup(name: str, cfg: dict, work: Path, repo: Path, py: Path | None) -> "Workspace":
-    if not SKIPCERT.exists() or not VERIFY.exists():
-        log("building skipcert (release)")
-        sh(["cargo", "build", "-q", "--release", "-p", "sc-cli", "-p", "skipcert-verify"], cwd=ROOT)
+    # Always (a no-op when up to date): a stale engine would be measured.
+    log("building skipcert (release)")
+    sh(["cargo", "build", "-q", "--release", "-p", "sc-cli", "-p", "skipcert-verify"], cwd=ROOT)
     key = work / "replay-key.seed"
     if key.exists():
         key.unlink()
