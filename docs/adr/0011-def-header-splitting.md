@@ -12,7 +12,7 @@ therefore global.
 Most of those class-entity changes were edits to method *headers*: a new
 keyword parameter with a constant default (`context_settings=None`), or a
 return annotation changing to `-> t.Self` in modules with
-`from __future__ import annotations`. `sc-change` put the whole header in the
+`from __future__ import annotations`. `quod-change` put the whole header in the
 enclosing stream, because decorators, defaults and annotations run in the
 enclosing scope.
 
@@ -52,7 +52,7 @@ kinds of code observe it:
    `py.introspection` capability.
 
 A map's capabilities are the intersection over its captures.
-`skipcert select` splits headers only for maps with `py.introspection`. Older
+`quod select` splits headers only for maps with `py.introspection`. Older
 maps get the previous, conservative analysis.
 
 ## Assumptions (documented, audited)
@@ -94,6 +94,6 @@ observes.
   skips 1,117 of 2,651 tests. The skipped-time fraction goes from 28.9% to
   29.6%.
 - **Soundness** must be re-measured by E1 with probe 0.2.
-- New tests: `sc-change` split rules (`split_headers_*`), probe introspection
+- New tests: `quod-change` split rules (`split_headers_*`), probe introspection
   capture (`test_introspection_counts_as_use`), and the CLI capability gate
   (`header_split_requires_the_introspection_capability`).

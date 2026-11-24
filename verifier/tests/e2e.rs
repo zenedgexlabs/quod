@@ -1,13 +1,13 @@
 //! End to end: ladder → sign → verify, plus attacks the verifier must catch.
 
-use sc_cert::{Ed25519Signer, Signer};
-use sc_change::{ChangeSet, FileChange, FileDetail, FileStatus, SourceDelta};
-use sc_graph::{FootprintGraph, GraphBuilder, MapMeta};
-use sc_hash::{Digest, Domain, hash_domain};
-use sc_ladder::{SelectInput, select};
-use sc_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
-use sc_policy::{EvalContext, Policy};
-use skipcert_verify::{VerifyConfig, verify};
+use quod_cert::{Ed25519Signer, Signer};
+use quod_change::{ChangeSet, FileChange, FileDetail, FileStatus, SourceDelta};
+use quod_graph::{FootprintGraph, GraphBuilder, MapMeta};
+use quod_hash::{Digest, Domain, hash_domain};
+use quod_ladder::{SelectInput, select};
+use quod_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
+use quod_policy::{EvalContext, Policy};
+use quod_verify::{VerifyConfig, verify};
 
 fn graph() -> (FootprintGraph, Digest) {
     let mut b = GraphBuilder::new(MapMeta {
@@ -110,7 +110,7 @@ fn cfg(signer: &Ed25519Signer) -> VerifyConfig {
     }
 }
 
-fn reasons(r: &skipcert_verify::Report) -> String {
+fn reasons(r: &quod_verify::Report) -> String {
     r.violations
         .iter()
         .map(|v| v.reason.as_str())

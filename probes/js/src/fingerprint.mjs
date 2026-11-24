@@ -4,7 +4,7 @@
 // test outcomes without going through code the probe observes: the Node
 // runtime (its bundled V8, OpenSSL, ICU, ...), the platform, time zone and
 // locale, variables read below JavaScript (NODE_*, TZ, LANG, LC_*), and every
-// installed package. `skipcert select` compares it with the map's. Any
+// installed package. `quod select` compares it with the map's. Any
 // difference outside `dist.*` runs everything (R018); `dist.npm:<name>`
 // differences become changed package nodes.
 //
@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const HASH_PREFIX = 'skipcert v1 env value\0';
+const HASH_PREFIX = 'quod v1 env value\0';
 
 export const envKey = (name) => (process.platform === 'win32' ? name.toUpperCase() : name);
 
@@ -25,17 +25,17 @@ export function envValueHash(value) {
   return createHash('sha256').update(HASH_PREFIX + data, 'utf8').digest('hex');
 }
 
-/** Hash of the whole environment (the `env:*` node), minus Skipcert's own variables. */
+/** Hash of the whole environment (the `env:*` node), minus Quod's own variables. */
 export function environHash(env = process.env) {
   const items = Object.keys(env)
     .map((k) => [envKey(k), env[k]])
-    .filter(([k]) => !k.startsWith('SKIPCERT_'))
+    .filter(([k]) => !k.startsWith('QUOD_'))
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return createHash('sha256').update(HASH_PREFIX + JSON.stringify(items), 'utf8').digest('hex');
 }
 
 /**
- * The environment as `skipcert select` sees it, as value hashes: what a test
+ * The environment as `quod select` sees it, as value hashes: what a test
  * read is recorded against this, not against the worker's environment, which
  * Vitest changes (VITEST, TEST, VITEST_WORKER_ID, NODE_ENV when unset, ...).
  * The in-worker values follow from these, the Vitest version (`dist.*`) and
@@ -45,7 +45,7 @@ export function outerEnv(env = process.env) {
   const values = {};
   for (const k of Object.keys(env)) {
     const key = envKey(k);
-    if (!key.startsWith('SKIPCERT_')) values[key] = envValueHash(env[k]);
+    if (!key.startsWith('QUOD_')) values[key] = envValueHash(env[k]);
   }
   return { all: environHash(env), values };
 }
@@ -88,7 +88,7 @@ function system() {
     'system.timezone_offset': safe(() => new Date(0).getTimezoneOffset()),
     'system.locale': safe(() => Intl.DateTimeFormat().resolvedOptions().locale),
     'system.cpu_count': safe(() => os.availableParallelism?.() ?? os.cpus().length),
-    ...(process.env.SKIPCERT_CONTAINER_DIGEST ? { 'system.container': process.env.SKIPCERT_CONTAINER_DIGEST } : {}),
+    ...(process.env.QUOD_CONTAINER_DIGEST ? { 'system.container': process.env.QUOD_CONTAINER_DIGEST } : {}),
   };
 }
 
@@ -97,7 +97,7 @@ function processEnv() {
   for (const [k, v] of Object.entries(process.env)) {
     const key = envKey(k);
     if (PROCESS_ENV_NAMES.has(key) || PROCESS_ENV_PREFIXES.some((p) => key.startsWith(p))) {
-      if (key.startsWith('SKIPCERT_')) continue;
+      if (key.startsWith('QUOD_')) continue;
       out[`process_env.${key}`] = envValueHash(v);
     }
   }
@@ -187,7 +187,7 @@ export function environment(root, dir = root) {
   return { ...runtime(), ...system(), ...processEnv(), ...installedPackages(dirs) };
 }
 
-/** The invocation fingerprint: runner arguments (Skipcert's own excluded). */
+/** The invocation fingerprint: runner arguments (Quod's own excluded). */
 export function invocation(args) {
   return {
     'invocation.runner': 'vitest',

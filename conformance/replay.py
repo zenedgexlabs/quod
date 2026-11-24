@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Skipcert conformance replay (experiment E1).
+"""Quod conformance replay (experiment E1).
 
 For one repository from ``repos.toml`` this harness measures:
 
 History replay
     For consecutive first-parent commits (base, next):
     1. full suite at ``base`` with the probe → footprint map and base outcomes;
-    2. check out ``next``; ``skipcert select`` (signed) and ``skipcert-verify``;
+    2. check out ``next``; ``quod select`` (signed) and ``quod-verify``;
     3. full suite at ``next`` → ground truth (failures re-run to drop flakes);
-    4. **escape** = a test Skipcert skipped that passed at ``base`` and really
+    4. **escape** = a test Quod skipped that passed at ``base`` and really
        fails at ``next``.
 
 Mutation testing
@@ -49,8 +49,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXE = ".exe" if os.name == "nt" else ""
-SKIPCERT = ROOT / "target" / "release" / f"skipcert{EXE}"
-VERIFY = ROOT / "target" / "release" / f"skipcert-verify{EXE}"
+QUOD = ROOT / "target" / "release" / f"quod{EXE}"
+VERIFY = ROOT / "target" / "release" / f"quod-verify{EXE}"
 JS_PROBE = ROOT / "probes" / "js" / "src" / "cli.mjs"
 
 
@@ -149,19 +149,19 @@ def _python_setup(cfg: dict, work: Path, repo: Path, python_version: str) -> Pat
         log(f"creating venv (python {python_version})")
         sh(["uv", "venv", "-q", "--python", python_version, venv])
     py = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    sh(["uv", "pip", "install", "-q", "--python", py, "--reinstall-package", "skipcert-probe", ROOT / "probes" / "python", "pytest"])
+    sh(["uv", "pip", "install", "-q", "--python", py, "--reinstall-package", "quod-probe", ROOT / "probes" / "python", "pytest"])
     sh(["uv", "pip", "install", "-q", "--python", py, *cfg["install"]], cwd=repo)
     return py
 
 
 def _finish_setup(name: str, cfg: dict, work: Path, repo: Path, py: Path | None) -> "Workspace":
     # Always (a no-op when up to date): a stale engine would be measured.
-    log("building skipcert (release)")
-    sh(["cargo", "build", "-q", "--release", "-p", "sc-cli", "-p", "skipcert-verify"], cwd=ROOT)
+    log("building quod (release)")
+    sh(["cargo", "build", "-q", "--release", "-p", "quod-cli", "-p", "quod-verify"], cwd=ROOT)
     key = work / "replay-key.seed"
     if key.exists():
         key.unlink()
-    out = sh([SKIPCERT, "keygen", "--out", key]).stdout
+    out = sh([QUOD, "keygen", "--out", key]).stdout
     key_id = next(line.split(": ", 1)[1] for line in out.splitlines() if line.startswith("trusted key id"))
     artifacts = work / "artifacts"
     artifacts.mkdir(exist_ok=True)
@@ -193,7 +193,7 @@ def run_suite(
         args = ["node", JS_PROBE, "record", "--out", cap, "--root", ws.repo, "--dir", ws.test_dir, "--",
                 *ws.cfg.get("args", []), *(extra or [])]
     else:
-        args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--skipcert-record={cap}", f"--skipcert-root={ws.repo}", *(extra or [])]
+        args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--quod-record={cap}", f"--quod-root={ws.repo}", *(extra or [])]
     sh(args, cwd=ws.repo, check=False, timeout=timeout)
     if not cap.exists():
         raise RuntimeError(f"no capture produced for {tag}; the suite may not have started")
@@ -250,10 +250,10 @@ def failing(tests: dict) -> set[str]:
 
 
 def build_map(ws: Workspace, cap: Path, tag: str) -> Path:
-    out = ws.artifacts / f"{tag}.scmap"
+    out = ws.artifacts / f"{tag}.qmap"
     ws.git("clean", "-fdq")  # tests may leave untracked files; ingest wants a clean tree
     caps = sorted(cap.parent.glob(cap.name + "*"))
-    sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "ingest", *[a for c in caps for a in ("--capture", c)], "--out", out])
+    sh([QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "ingest", *[a for c in caps for a in ("--capture", c)], "--out", out])
     return out
 
 
@@ -270,7 +270,7 @@ def select(ws: Workspace, map_path: Path, tag: str) -> dict:
     elif ENV_MODE and ws.runner == "vitest":
         cmd = ["node", JS_PROBE, "fingerprint", "--root", ws.repo, "--dir", ws.test_dir]
         env_args = [x for c in cmd for x in ("--fingerprint-cmd", c)]
-    sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
+    sh([QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
         "--skip-out", skip, "--certs-out", certs, "--report-out", report, *env_args])
     v = sh([VERIFY, "--certs", certs, "--map", map_path, "--trusted-key", ws.key_id], check=False)
     rep = json.loads(report.read_text(encoding="utf-8"))
@@ -309,8 +309,8 @@ class Step:
     head: str
     tests_total: int
     total_ms: int
-    skipcert_skipped: int
-    skipcert_run_ms: int
+    quod_skipped: int
+    quod_run_ms: int
     baseline_skipped: int
     baseline_run_ms: int
     escapes: list[str]
@@ -319,11 +319,11 @@ class Step:
     global_triggers: list[str]
     verifier_ok: bool
     note: str = ""
-    # File-level baseline that also obeys Skipcert's global policy triggers
-    # (runs everything whenever Skipcert's policy does): the fair comparison.
+    # File-level baseline that also obeys Quod's global policy triggers
+    # (runs everything whenever Quod's policy does): the fair comparison.
     policy_baseline_skipped: int = 0
     policy_baseline_run_ms: int = 0
-    # Escapes split by cause: a dependency escape fails when run alone (Skipcert
+    # Escapes split by cause: a dependency escape fails when run alone (Quod
     # missed a real dependency); a victim passes alone and fails only through
     # state other failing tests left behind.
     dependency_escapes: list[str] = field(default_factory=list)
@@ -359,8 +359,8 @@ def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fa
         head=head,
         tests_total=len(head_tests),
         total_ms=total,
-        skipcert_skipped=len(skipped & set(head_tests)),
-        skipcert_run_ms=total - sum(dur.get(n, 0) for n in skipped),
+        quod_skipped=len(skipped & set(head_tests)),
+        quod_run_ms=total - sum(dur.get(n, 0) for n in skipped),
         baseline_skipped=len(baseline_skip & set(head_tests)),
         baseline_run_ms=total - sum(dur.get(n, 0) for n in baseline_skip),
         policy_baseline_skipped=len(policy_baseline_skip & set(head_tests)),
@@ -521,7 +521,7 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
             log(f"  step skipped: {str(e).splitlines()[0]}")
             continue
         s = steps[-1]
-        log(f"  skipcert ran {s.tests_total - s.skipcert_skipped}/{s.tests_total} tests, escapes={len(s.dependency_escapes)} dep + {len(s.victim_escapes)} victim, verifier={'ok' if s.verifier_ok else 'FAIL'}")
+        log(f"  quod ran {s.tests_total - s.quod_skipped}/{s.tests_total} tests, escapes={len(s.dependency_escapes)} dep + {len(s.victim_escapes)} victim, verifier={'ok' if s.verifier_ok else 'FAIL'}")
 
     if n_mutants:
         rng = random.Random(seed)
@@ -561,7 +561,7 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
                 step = measure("mutant", base, f"mutant{made}", base_tests, head_tests, rep, changed, real, ws, note=desc)
                 step.extra["killed"] = bool(real - ws.flaky)
                 steps.append(step)
-                log(f"  killed={bool(real)} ran {step.tests_total - step.skipcert_skipped}/{step.tests_total}, escapes={len(step.dependency_escapes)} dep + {len(step.victim_escapes)} victim, change_escape={step.change_escape}")
+                log(f"  killed={bool(real)} ran {step.tests_total - step.quod_skipped}/{step.tests_total}, escapes={len(step.dependency_escapes)} dep + {len(step.victim_escapes)} victim, change_escape={step.change_escape}")
             finally:
                 ws.checkout(base)
     return steps
@@ -573,7 +573,7 @@ def summarize(name: str, steps: list[Step]) -> dict:
 
     def agg(ss):
         total = sum(s.total_ms for s in ss) or 1
-        sk = sum(s.skipcert_run_ms for s in ss)
+        sk = sum(s.quod_run_ms for s in ss)
         bl = sum(s.baseline_run_ms for s in ss)
         pbl = sum(s.policy_baseline_run_ms for s in ss)
         return {
@@ -583,7 +583,7 @@ def summarize(name: str, steps: list[Step]) -> dict:
             "victim_escapes": sum(len(s.victim_escapes) for s in ss),
             "change_escapes": sum(s.change_escape for s in ss),
             "baseline_escapes": sum(len(s.baseline_escapes) for s in ss),
-            "skipcert_time_fraction": round(sk / total, 4),
+            "quod_time_fraction": round(sk / total, 4),
             "baseline_time_fraction": round(bl / total, 4),
             "policy_baseline_time_fraction": round(pbl / total, 4),
             "advantage_vs_baseline": round(bl / sk, 2) if sk else None,

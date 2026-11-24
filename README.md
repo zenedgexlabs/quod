@@ -1,8 +1,8 @@
-# Skipcert
+# Quod
 
 Sound, certificate-based test selection for AI-agent-scale CI.
 
-Skipcert runs only the tests a change can affect. Every skipped test gets a
+Quod runs only the tests a change can affect. Every skipped test gets a
 certificate that an independent verifier can check. Results are shared across
 branches and agents off the same base. The full suite still runs in the
 background, so any missed failure is caught and published.
@@ -13,20 +13,20 @@ background, so any missed failure is caught and published.
 
 ```sh
 pip install ./probes/python                 # the pytest plugin, into the project's env
-cargo build --release                       # builds `skipcert` and `skipcert-verify`
+cargo build --release                       # builds `quod` and `quod-verify`
 
-skipcert keygen --out ci-key.seed           # keep the seed secret; note the printed key id
+quod keygen --out ci-key.seed           # keep the seed secret; note the printed key id
 
 # On a clean checkout of the base commit (e.g. main, after merge):
-skipcert record --out .skipcert/map.scmap -- python -m pytest
+quod record --out .quod/map.qmap -- python -m pytest
 
 # On a PR (working tree or --head <rev>):
-skipcert select --map .skipcert/map.scmap --key ci-key.seed \
+quod select --map .quod/map.qmap --key ci-key.seed \
   --skip-out skip.txt --certs-out certs.jsonl --report-out report.json
-python -m pytest --skipcert-skip=skip.txt   # runs everything not certified as skippable
+python -m pytest --quod-skip=skip.txt   # runs everything not certified as skippable
 
 # Anyone can re-check the skips independently:
-skipcert-verify --certs certs.jsonl --map .skipcert/map.scmap --trusted-key ed25519:<key id>
+quod-verify --certs certs.jsonl --map .quod/map.qmap --trusted-key ed25519:<key id>
 ```
 
 Agents and local runs use `--advisory` (no key). Advisory certificates are never
@@ -36,13 +36,13 @@ accepted as proof by the verifier.
 
 | Path | Contents |
 |---|---|
-| `crates/sc-hash` | BLAKE3 hashing with domain separation, canonical CBOR, Merkle roots |
-| `crates/sc-model` | v1 schemas: stable test IDs, footprint vocabulary, outcome-key envelope, certificates, journal events |
+| `crates/quod-hash` | BLAKE3 hashing with domain separation, canonical CBOR, Merkle roots |
+| `crates/quod-model` | v1 schemas: stable test IDs, footprint vocabulary, outcome-key envelope, certificates, journal events |
 | `docs/architecture.md` | Production architecture (v4) |
 | `docs/adr/` | Architecture decision records |
 
-Planned crates (see the architecture doc): `sc-graph`, `sc-change`, `sc-policy`,
-`sc-ladder`, `sc-cert`, `sc-store`, `sc-client`, `sc-cli`, `sc-mcp`, plus a
+Planned crates (see the architecture doc): `quod-graph`, `quod-change`, `quod-policy`,
+`quod-ladder`, `quod-cert`, `sc-store`, `quod-client`, `quod-cli`, `sc-mcp`, plus a
 separate `verifier`, language `probes/`, and the `server/` control plane.
 
 ## Development

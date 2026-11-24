@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/sc-hash", "crates/sc-model", "crates/sc-graph", "crates/sc-change", "crates/sc-policy", "crates/sc-ladder", "crates/sc-cert", "verifier", "crates/sc-cli"]
+members = ["crates/quod-hash", "crates/quod-model", "crates/quod-graph", "crates/quod-change", "crates/quod-policy", "crates/quod-ladder", "crates/quod-cert", "verifier", "crates/quod-cli"]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,13 +14,13 @@ ciborium = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-sc-hash = { path = "crates/sc-hash" }
-sc-model = { path = "crates/sc-model" }
-sc-graph = { path = "crates/sc-graph" }
-sc-change = { path = "crates/sc-change" }
-sc-policy = { path = "crates/sc-policy" }
-sc-ladder = { path = "crates/sc-ladder" }
-sc-cert = { path = "crates/sc-cert" }
+quod-hash = { path = "crates/quod-hash" }
+quod-model = { path = "crates/quod-model" }
+quod-graph = { path = "crates/quod-graph" }
+quod-change = { path = "crates/quod-change" }
+quod-policy = { path = "crates/quod-policy" }
+quod-ladder = { path = "crates/quod-ladder" }
+quod-cert = { path = "crates/quod-cert" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

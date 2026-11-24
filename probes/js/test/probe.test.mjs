@@ -54,7 +54,7 @@ describe('recorded Vitest run', () => {
   let tests;
   let header;
   before(() => {
-    const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-')), 'cap.jsonl');
+    const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-')), 'cap.jsonl');
     process.env.FIXTURE_VAR = '1';
     delete process.env.FIXTURE_MISSING;
     const status = main(['record', '--out', out, '--root', FIXTURE]);
@@ -113,7 +113,7 @@ describe('recorded Vitest run', () => {
   });
 
   test('skip-file checks fail open to running everything', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-'));
     const run = (header) => {
       const skip = path.join(dir, 'skip.txt');
       fs.writeFileSync(skip, [...header, 'test/calc.test.ts::calc > mul', ''].join('\n'));
@@ -125,15 +125,15 @@ describe('recorded Vitest run', () => {
       ];
     };
     const good = [
-      `# skipcert-environment ${header.environment_digest}`,
-      `# skipcert-invocation ${digest({ ...header.invocation, 'invocation.args': JSON.stringify(['--reporter=json']) })}`,
+      `# quod-environment ${header.environment_digest}`,
+      `# quod-invocation ${digest({ ...header.invocation, 'invocation.args': JSON.stringify(['--reporter=json']) })}`,
     ];
     // The invocation differs (--outputFile), so nothing is skipped ...
     assert.equal(run(good), 'passed');
     // ... and a changed variable a skipped test read disables skipping too.
-    assert.equal(run([`# skipcert-environment ${header.environment_digest}`, '# skipcert-env FIXTURE_VAR 00']), 'passed');
+    assert.equal(run([`# quod-environment ${header.environment_digest}`, '# quod-env FIXTURE_VAR 00']), 'passed');
     // With only matching checks, the test is skipped.
-    assert.equal(run([`# skipcert-environment ${header.environment_digest}`, `# skipcert-env FIXTURE_VAR ${envValueHash('1')}`]), 'skipped');
+    assert.equal(run([`# quod-environment ${header.environment_digest}`, `# quod-env FIXTURE_VAR ${envValueHash('1')}`]), 'skipped');
   });
 
   test('a test observes the functions it ran, not the others', () => {
@@ -161,7 +161,7 @@ describe('recorded Vitest run', () => {
   });
 
   test('skip mode skips the named tests', () => {
-    const skip = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-')), 'skip.txt');
+    const skip = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-')), 'skip.txt');
     fs.writeFileSync(skip, 'test/calc.test.ts::calc > mul\ntest/concurrent.test.ts::c2\n');
     const out = path.join(path.dirname(skip), 'res.json');
     const status = main(['run', '--skip', skip, '--root', FIXTURE, '--', '--reporter=json', `--outputFile=${out}`]);

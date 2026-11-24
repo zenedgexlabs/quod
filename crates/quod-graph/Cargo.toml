@@ -1,0 +1,17 @@
+[package]
+name = "quod-graph"
+description = "Quod footprint graph: canonical builder, bidirectional CSR, .qmap v1 encoding"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+quod-hash.workspace = true
+quod-model.workspace = true
+ciborium.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,12 +1,12 @@
 {
-  "name": "skipcert-js",
+  "name": "quod-js",
   "version": "0.1.0",
-  "description": "Skipcert probe for JavaScript and TypeScript test runners (Vitest): per-test executed lines via V8 precise coverage",
+  "description": "Quod probe for JavaScript and TypeScript test runners (Vitest): per-test executed lines via V8 precise coverage",
   "type": "module",
   "license": "Apache-2.0",
   "private": true,
   "bin": {
-    "skipcert-vitest": "src/cli.mjs"
+    "quod-vitest": "src/cli.mjs"
   },
   "exports": {
     "./reporter": "./src/reporter.mjs",

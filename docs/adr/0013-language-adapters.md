@@ -22,8 +22,8 @@ does this with `co_qualname` (ADR 011).
 
 A test (or root) record may carry `lines: [[path, [[start, end], ...]], ...]`:
 the 1-based, inclusive source line ranges the test executed. At ingest,
-Skipcert maps each line to the innermost entity that contains it. It uses
-**the same tree-sitter extractor `sc-change` uses to diff changes**, at the
+Quod maps each line to the innermost entity that contains it. It uses
+**the same tree-sitter extractor `quod-change` uses to diff changes**, at the
 recorded commit. Probe and diff therefore can't disagree on names, and a
 probe needs nothing but per-test line coverage, which every mainstream
 runtime has:
@@ -41,7 +41,7 @@ forms may appear in the same record.
 
 ### 2. Language registry with declarative entity specs
 
-`sc_change::lang` maps file extensions to a `Language`. For each language,
+`quod_change::lang` maps file extensions to a `Language`. For each language,
 a spec gives:
 
 - **definition node kinds**, how each is named, and whether it contains
@@ -55,7 +55,7 @@ a spec gives:
   dynamic ones.
 
 Entity naming is internal (`Outer.inner`, with same-named definitions
-combined, as in ADR 011). Only `sc-change` and ingest use it.
+combined, as in ADR 011). Only `quod-change` and ingest use it.
 
 | language | extensions | entities | static |
 |---|---|---|---|

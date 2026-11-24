@@ -1,6 +1,6 @@
-// Skipcert Vitest worker setup (ADR 013). Must be the *first* setup file.
+// Quod Vitest worker setup (ADR 013). Must be the *first* setup file.
 //
-// Record mode (SKIPCERT_RECORD_DIR set): collects, per test, the functions
+// Record mode (QUOD_RECORD_DIR set): collects, per test, the functions
 // that ran (V8 precise coverage) as original start positions, plus the files
 // whose module-level code ran. One JSON file per test module is written for
 // the reporter to merge.
@@ -14,7 +14,7 @@
 // - recording runs one test at a time (maxConcurrency 1); if tests still
 //   overlap (no serialising wrapper), they are flagged `untraced`.
 //
-// Skip mode (SKIPCERT_SKIP_FILE set): tests named in the file are skipped
+// Skip mode (QUOD_SKIP_FILE set): tests named in the file are skipped
 // before their own hooks run.
 
 import { afterAll, afterEach, beforeEach, vi } from 'vitest';
@@ -28,16 +28,16 @@ import { envKey, envValueHash, environHash } from './fingerprint.mjs';
 /** The CLI's environment (`outerEnv`), or null when Vitest was started directly. */
 function readOuterEnv() {
   try {
-    const f = process.env.SKIPCERT_FINGERPRINT_FILE;
+    const f = process.env.QUOD_FINGERPRINT_FILE;
     return f ? (JSON.parse(fs.readFileSync(f, 'utf8')).env ?? null) : null;
   } catch {
     return null;
   }
 }
 
-const ROOT = path.resolve(process.env.SKIPCERT_ROOT || process.cwd());
-const RECORD_DIR = process.env.SKIPCERT_RECORD_DIR;
-const SKIP_FILE = process.env.SKIPCERT_SKIP_FILE;
+const ROOT = path.resolve(process.env.QUOD_ROOT || process.cwd());
+const RECORD_DIR = process.env.QUOD_RECORD_DIR;
+const SKIP_FILE = process.env.QUOD_SKIP_FILE;
 
 const slash = (p) => p.split(path.sep).join('/');
 const rel = (abs) => slash(path.relative(ROOT, abs));
@@ -76,16 +76,16 @@ if (SKIP_FILE) {
 const g = globalThis;
 
 async function session() {
-  if (g.__skipcert) return g.__skipcert;
+  if (g.__quod) return g.__quod;
   const inspector = await import('node:inspector/promises');
   const s = new inspector.Session();
   s.connect();
   await s.post('Profiler.enable');
   await s.post('Debugger.enable');
   await s.post('Profiler.startPreciseCoverage', { callCount: true, detailed: false });
-  g.__skipcert = { s, sources: new Map(), packages: new Map(), lineCounts: new Map(), env: new Map() };
-  trackEnv(g.__skipcert);
-  return g.__skipcert;
+  g.__quod = { s, sources: new Map(), packages: new Map(), lineCounts: new Map(), env: new Map() };
+  trackEnv(g.__quod);
+  return g.__quod;
 }
 
 function packageOf(abs) {
@@ -148,14 +148,14 @@ const empty = () => ({
  * wrote itself (`vi.stubEnv`, fixtures) are in-process state, not inputs.
  *
  * Values are recorded as the CLI saw them before starting Vitest (`outerEnv`),
- * the environment `skipcert select` compares with.
+ * the environment `quod select` compares with.
  */
 function trackEnv(sc) {
   const target = process.env;
   const written = new Set();
   const outer = readOuterEnv();
   const note = (k, h) => {
-    if (k.startsWith('SKIPCERT_') || sc.env.has(k)) return;
+    if (k.startsWith('QUOD_') || sc.env.has(k)) return;
     if (outer) h = k === '*' ? outer.all : (outer.values[k] ?? envValueHash(undefined));
     sc.env.set(k, h);
   };
@@ -333,7 +333,7 @@ if (RECORD_DIR) {
   beforeEach(async (ctx) => {
     moduleFile ??= ctx.task.file.filepath;
     // Concurrent tests share windows, unless recording serialised them.
-    if (ctx.task.concurrent && process.env.SKIPCERT_SERIAL !== '1') concurrent = true;
+    if (ctx.task.concurrent && process.env.QUOD_SERIAL !== '1') concurrent = true;
     const name = testName(ctx.task);
     const cov = await take();
     if (!own.has(name)) own.set(name, empty());
@@ -358,7 +358,7 @@ if (RECORD_DIR) {
       concurrent,
       shared: encode(shared),
       tests: Object.fromEntries([...own].map(([n, c]) => [n, encode(c)])),
-      packages: [...g.__skipcert.packages.values()],
+      packages: [...g.__quod.packages.values()],
     };
     fs.mkdirSync(RECORD_DIR, { recursive: true });
     const id = createHash('sha256')

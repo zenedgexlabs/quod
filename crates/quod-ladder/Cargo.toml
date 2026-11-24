@@ -1,0 +1,18 @@
+[package]
+name = "quod-ladder"
+description = "Quod skip ladder: per-test run/skip decisions and certificate minting"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+quod-change.workspace = true
+quod-graph.workspace = true
+quod-hash.workspace = true
+quod-model.workspace = true
+quod-policy.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

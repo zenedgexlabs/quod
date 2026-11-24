@@ -30,7 +30,7 @@ idiomatic in both languages, so the assumption can't be left to the audit.
 
 ## Decision
 
-**Module-state widening.** `sc_change::lang::LineMap::module_state` marks a
+**Module-state widening.** `quod_change::lang::LineMap::module_state` marks a
 source file *stateful* when its top level, or a class body, declares
 mutable state:
 

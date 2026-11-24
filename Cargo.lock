@@ -521,6 +521,127 @@ dependencies = [
 ]
 
 [[package]]
+name = "quod-cert"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "getrandom 0.3.4",
+ "quod-hash",
+ "quod-model",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "quod-change"
+version = "0.1.0"
+dependencies = [
+ "quod-hash",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "toml",
+ "tree-sitter",
+ "tree-sitter-go",
+ "tree-sitter-java",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+]
+
+[[package]]
+name = "quod-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "quod-cert",
+ "quod-change",
+ "quod-graph",
+ "quod-hash",
+ "quod-ladder",
+ "quod-model",
+ "quod-policy",
+ "quod-verify",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "quod-graph"
+version = "0.1.0"
+dependencies = [
+ "ciborium",
+ "quod-hash",
+ "quod-model",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "quod-hash"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "ciborium",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "quod-ladder"
+version = "0.1.0"
+dependencies = [
+ "quod-change",
+ "quod-graph",
+ "quod-hash",
+ "quod-model",
+ "quod-policy",
+ "thiserror",
+]
+
+[[package]]
+name = "quod-model"
+version = "0.1.0"
+dependencies = [
+ "quod-hash",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "quod-policy"
+version = "0.1.0"
+dependencies = [
+ "globset",
+ "quod-change",
+ "quod-hash",
+ "quod-model",
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
+name = "quod-verify"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "quod-cert",
+ "quod-change",
+ "quod-graph",
+ "quod-hash",
+ "quod-ladder",
+ "quod-model",
+ "quod-policy",
+ "serde_json",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -599,112 +720,6 @@ dependencies = [
  "libc",
  "linux-raw-sys",
  "windows-sys",
-]
-
-[[package]]
-name = "sc-cert"
-version = "0.1.0"
-dependencies = [
- "ed25519-dalek",
- "getrandom 0.3.4",
- "sc-hash",
- "sc-model",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "sc-change"
-version = "0.1.0"
-dependencies = [
- "sc-hash",
- "serde_json",
- "tempfile",
- "thiserror",
- "toml",
- "tree-sitter",
- "tree-sitter-go",
- "tree-sitter-java",
- "tree-sitter-javascript",
- "tree-sitter-python",
- "tree-sitter-rust",
- "tree-sitter-typescript",
-]
-
-[[package]]
-name = "sc-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "sc-cert",
- "sc-change",
- "sc-graph",
- "sc-hash",
- "sc-ladder",
- "sc-model",
- "sc-policy",
- "serde",
- "serde_json",
- "skipcert-verify",
- "tempfile",
-]
-
-[[package]]
-name = "sc-graph"
-version = "0.1.0"
-dependencies = [
- "ciborium",
- "sc-hash",
- "sc-model",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "sc-hash"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "ciborium",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "sc-ladder"
-version = "0.1.0"
-dependencies = [
- "sc-change",
- "sc-graph",
- "sc-hash",
- "sc-model",
- "sc-policy",
- "thiserror",
-]
-
-[[package]]
-name = "sc-model"
-version = "0.1.0"
-dependencies = [
- "sc-hash",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "sc-policy"
-version = "0.1.0"
-dependencies = [
- "globset",
- "sc-change",
- "sc-hash",
- "sc-model",
- "serde",
- "thiserror",
- "toml",
 ]
 
 [[package]]
@@ -791,21 +806,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "rand_core",
-]
-
-[[package]]
-name = "skipcert-verify"
-version = "0.1.0"
-dependencies = [
- "ed25519-dalek",
- "sc-cert",
- "sc-change",
- "sc-graph",
- "sc-hash",
- "sc-ladder",
- "sc-model",
- "sc-policy",
- "serde_json",
 ]
 
 [[package]]

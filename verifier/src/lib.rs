@@ -1,4 +1,4 @@
-//! Independent verification of Skipcert skip certificates (ADR-006).
+//! Independent verification of Quod skip certificates (ADR-006).
 //!
 //! Given a run's certificates, the footprint map they cite, and a set of
 //! trusted public keys, [`verify`] re-checks every skip without using the
@@ -22,13 +22,13 @@
 use std::collections::{HashMap, HashSet};
 
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use sc_graph::FootprintGraph;
-use sc_hash::Digest;
-use sc_model::{CertKind, Certificate, NodeKind, SkipType, TestFlags};
+use quod_graph::FootprintGraph;
+use quod_hash::Digest;
+use quod_model::{CertKind, Certificate, NodeKind, SkipType, TestFlags};
 
 /// Signature context. Deliberately duplicated from the signer so that a
 /// change on either side breaks verification loudly.
-const SIG_CONTEXT: &[u8] = b"skipcert v1 certificate signature\0";
+const SIG_CONTEXT: &[u8] = b"quod v1 certificate signature\0";
 
 /// Flags that forbid any skip, re-stated independently of the policy crate.
 const BLOCKING: [(TestFlags, &str); 5] = [
@@ -98,7 +98,7 @@ fn verifying_key(key_id: &str) -> Option<VerifyingKey> {
     VerifyingKey::from_bytes(&bytes).ok()
 }
 
-/// Node kind for a ref tag, re-stated independently of `sc-graph::kind_tag`.
+/// Node kind for a ref tag, re-stated independently of `quod-graph::kind_tag`.
 fn kind_for_tag(tag: &str) -> Option<NodeKind> {
     Some(match tag {
         "file" => NodeKind::File,
@@ -150,7 +150,7 @@ pub fn verify(
         violations: Vec::new(),
     };
     let root_set: HashSet<_> = graph.root_nodes().collect();
-    let mut footprints: HashMap<u32, HashSet<sc_graph::NodeId>> = HashMap::new();
+    let mut footprints: HashMap<u32, HashSet<quod_graph::NodeId>> = HashMap::new();
     let mut prev: Option<Digest> = None;
 
     for (index, cert) in certs.iter().enumerate() {

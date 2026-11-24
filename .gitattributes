@@ -3,4 +3,4 @@
 .githooks/* text eol=lf
 *.rs text eol=lf
 *.toml text eol=lf
-*.scmap binary
+*.qmap binary

@@ -1,4 +1,4 @@
-// Skipcert Vitest reporter: merges the workers' per-module coverage records
+// Quod Vitest reporter: merges the workers' per-module coverage records
 // with test results into a capture file (protocol v1, `lines` form, ADR 013).
 
 import fs from 'node:fs';
@@ -9,14 +9,14 @@ import { digest } from './fingerprint.mjs';
 
 const slash = (p) => p.split(path.sep).join('/');
 
-export default class SkipcertReporter {
+export default class QuodReporter {
   constructor(options = {}) {
-    this.root = path.resolve(options.root || process.env.SKIPCERT_ROOT || process.cwd());
-    this.dir = options.dir || process.env.SKIPCERT_RECORD_DIR;
-    this.out = options.out || process.env.SKIPCERT_RECORD_OUT;
-    this.rootFiles = options.rootFiles || JSON.parse(process.env.SKIPCERT_ROOT_FILES || '[]');
-    this.testDir = path.resolve(process.env.SKIPCERT_DIR || this.root);
-    this.args = JSON.parse(process.env.SKIPCERT_ARGS || '[]');
+    this.root = path.resolve(options.root || process.env.QUOD_ROOT || process.cwd());
+    this.dir = options.dir || process.env.QUOD_RECORD_DIR;
+    this.out = options.out || process.env.QUOD_RECORD_OUT;
+    this.rootFiles = options.rootFiles || JSON.parse(process.env.QUOD_ROOT_FILES || '[]');
+    this.testDir = path.resolve(process.env.QUOD_DIR || this.root);
+    this.args = JSON.parse(process.env.QUOD_ARGS || '[]');
   }
 
   onInit(vitest) {
@@ -58,9 +58,9 @@ export default class SkipcertReporter {
     // stays in path mode.
     let fingerprints = {};
     try {
-      if (process.env.SKIPCERT_FINGERPRINT_FILE) {
+      if (process.env.QUOD_FINGERPRINT_FILE) {
         const { environment: env, invocation: inv } = JSON.parse(
-          fs.readFileSync(process.env.SKIPCERT_FINGERPRINT_FILE, 'utf8'),
+          fs.readFileSync(process.env.QUOD_FINGERPRINT_FILE, 'utf8'),
         );
         fingerprints = {
           environment: env,
@@ -70,7 +70,7 @@ export default class SkipcertReporter {
         };
       }
     } catch (e) {
-      process.stderr.write(`skipcert: no environment fingerprint (${e?.message ?? e})\n`);
+      process.stderr.write(`quod: no environment fingerprint (${e?.message ?? e})\n`);
     }
     const lines = [];
     const emit = (o) => lines.push(JSON.stringify(o));

@@ -79,13 +79,13 @@ export default async (env) => {
   config.test.name ??= ${JSON.stringify(projectName(dir))};
   const userSetup = [].concat(config.test.setupFiles ?? []);
   config.test.setupFiles = [${JSON.stringify(setup)}, ...userSetup.filter((s) => s !== ${JSON.stringify(setup)})];
-  if (process.env.SKIPCERT_RECORD_DIR) {
+  if (process.env.QUOD_RECORD_DIR) {
     // Recording runs one test at a time, so every test gets its own coverage
     // window. Concurrency doesn't change what code a test executes; skip
     // runs keep the project's own concurrency.
     config.test.maxConcurrency = 1;
     config.test.sequence = { ...(config.test.sequence ?? {}), concurrent: false };
-    process.env.SKIPCERT_SERIAL = '1';
+    process.env.QUOD_SERIAL = '1';
   }
   // Projects can nest.
   if (Array.isArray(config.test.projects)) {
@@ -102,7 +102,7 @@ export default async (env) => {
 
 /** Record-mode settings for an inline project config object (see the wrappers). */
 function serialise(test) {
-  if (!process.env.SKIPCERT_RECORD_DIR) return test;
+  if (!process.env.QUOD_RECORD_DIR) return test;
   return { ...test, maxConcurrency: 1, sequence: { ...(test.sequence ?? {}), concurrent: false } };
 }
 
@@ -125,7 +125,7 @@ export function wrapProjects(projects, { root, setup, cacheDir }) {
         // Vitest resolves a project's root and test globs from its config
         // file's directory, so the wrapper sits next to the project's own
         // config. The CLI deletes it after the run (see `generated`).
-        const file = path.join(dir, `vitest.skipcert-${process.pid}-${generatedCount++}.config.mjs`);
+        const file = path.join(dir, `vitest.quod-${process.pid}-${generatedCount++}.config.mjs`);
         fs.writeFileSync(file, projectWrapperSource({ dir, userConfig, setup, cacheDir }));
         fs.appendFileSync(path.join(cacheDir, 'generated.txt'), `${file}${os.EOL}`);
         out.push(file);

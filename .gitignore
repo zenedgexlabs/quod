@@ -5,7 +5,7 @@ __pycache__/
 .venv/
 node_modules/
 dist/
-*.scmap
+*.qmap
 .env
 .claude/settings.local.json
 *.seed

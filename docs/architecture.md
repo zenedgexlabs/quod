@@ -1,6 +1,6 @@
-# Skipcert production architecture (v4)
+# Quod production architecture (v4)
 
-*2026-11-21. This is the engineering architecture derived from `Skipcert use cases.md`. It supersedes v3's system sections; v3's packaging and pricing still apply.*
+*2026-11-21. This is the engineering architecture derived from `Quod use cases.md`. It supersedes v3's system sections; v3's packaging and pricing still apply.*
 *Design goal: a production-grade system, not a prototype. The schemas and trust boundaries below are the decisions that can't be undone later.*
 
 ---
@@ -54,22 +54,22 @@
 ## 4. Repository and module layout
 
 ```
-skipcert/
+quod/
 ├── crates/                         # Rust workspace (core is one static binary + libs)
-│   ├── sc-model/                   # all on-disk/on-wire schemas, versioned; no logic
-│   ├── sc-hash/                    # BLAKE3 content hashing, canonical encoding, Merkle
-│   ├── sc-graph/                   # footprint graph: build, mmap read, CSR both directions
-│   ├── sc-change/                  # git diff, dirty tree, tree-sitter function diff, lockfile resolvers
-│   ├── sc-policy/                  # declarative fail-closed rules, integrity policy, never-skip
-│   ├── sc-ladder/                  # selection: L0/L1/L2/L3 orchestration, pure functions
-│   ├── sc-cert/                    # certificate minting, hash chain, signing backends
+│   ├── quod-model/                   # all on-disk/on-wire schemas, versioned; no logic
+│   ├── quod-hash/                    # BLAKE3 content hashing, canonical encoding, Merkle
+│   ├── quod-graph/                   # footprint graph: build, mmap read, CSR both directions
+│   ├── quod-change/                  # git diff, dirty tree, tree-sitter function diff, lockfile resolvers
+│   ├── quod-policy/                  # declarative fail-closed rules, integrity policy, never-skip
+│   ├── quod-ladder/                  # selection: L0/L1/L2/L3 orchestration, pure functions
+│   ├── quod-cert/                    # certificate minting, hash chain, signing backends
 │   ├── sc-store/                   # CAS backends: fs, CI cache, S3, GCS, Azure; journal writer
-│   ├── sc-client/                  # control-plane client: outcome lookup, map fetch (opportunistic)
-│   ├── sc-cli/                     # `skipcert` binary
+│   ├── quod-client/                  # control-plane client: outcome lookup, map fetch (opportunistic)
+│   ├── quod-cli/                     # `quod` binary
 │   └── sc-mcp/                     # MCP server (stdio) over the same core
-├── verifier/                       # SEPARATE crate + Python wheel; depends only on sc-model + sc-hash
+├── verifier/                       # SEPARATE crate + Python wheel; depends only on quod-model + quod-hash
 ├── probes/
-│   ├── python/                     # pytest plugin + PyO3 extension (skipcert_probe)
+│   ├── python/                     # pytest plugin + PyO3 extension (quod_probe)
 │   └── node/                       # Jest/Vitest plugin + N-API addon
 ├── server/                         # control plane (Rust/axum): api, rollup workers, audit, scheduler
 ├── integrations/
@@ -79,18 +79,18 @@ skipcert/
 └── docs/adr/                       # architecture decision records
 ```
 
-**Dependency rule:** `verifier` must never depend on `sc-ladder`, `sc-policy` or `sc-graph` logic. It re-implements the decision check from the specification, so the trusted base is about 1–2 KLOC.
+**Dependency rule:** `verifier` must never depend on `quod-ladder`, `quod-policy` or `quod-graph` logic. It re-implements the decision check from the specification, so the trusted base is about 1–2 KLOC.
 
 ---
 
 ## 5. Data formats (all versioned, all content-addressed)
 
-### 5.1 Footprint graph (`.scmap`, format v1)
+### 5.1 Footprint graph (`.qmap`, format v1)
 
 This is a single mmap-friendly file per (repo, base commit, probe set).
 
 ```
-Header        magic "SCMAP", format_version, engine_version, repo_id, base_commit, created_at, probe_versions[]
+Header        magic "QUODM", format_version, engine_version, repo_id, base_commit, created_at, probe_versions[]
 StringTable   deduplicated paths, symbols, package names, test IDs (offset-indexed)
 NodeTable     node_id → {kind, string_ref, content_hash, parent}
                 kind ∈ {File, Function, Module, ExtPackage, ExtFile, EnvVar, NetEndpoint, Resource(typed), Test}
@@ -132,7 +132,7 @@ OutcomeKey = blake3( canonical_cbor({
   "type": "disjoint | dedup | witness",
   "test": "<stable_id>", "test_name": "tests/x.py::test_y[param]",
   "inputs": { "repo": "...", "base": "<sha>", "head": "<sha>", "tree": "<worktree hash>",
-              "map": "<scmap merkle>", "policy": "<policy hash>", "engine": "0.4.1",
+              "map": "<qmap merkle>", "policy": "<policy hash>", "engine": "0.4.1",
               "lock_delta": "<hash|null>" },
   "evidence": { "changed_nodes": ["..."], "intersection": [], "outcome_ref": null,
                 "rules_passed": ["R001","R007","R012"] },
@@ -160,7 +160,7 @@ Rollups are pure functions over the journal, so any rollup can be rebuilt from s
 
 ### 6.1 Record (post-merge on main, plus sampled PR runs)
 
-`pytest --skipcert=record` activates the probe: `sys.monitoring`, audit hooks and package attribution. Per-test events are normalized into graph deltas, and the map patch is uploaded to the customer CAS. Outcomes go to the journal. The trusted CI identity signs the map's merkle root.
+`pytest --quod=record` activates the probe: `sys.monitoring`, audit hooks and package attribution. Per-test events are normalized into graph deltas, and the map patch is uploaded to the customer CAS. Outcomes go to the journal. The trusted CI identity signs the map's merkle root.
 
 ### 6.2 PR selection (authoritative)
 
@@ -178,7 +178,7 @@ Rollups are pure functions over the journal, so any rollup can be rebuilt from s
 
 ### 6.3 Agent inner loop (advisory, offline)
 
-1. **Setup phase**, which has network: `skipcert fetch-map --base <sha>` bakes the map into the sandbox snapshot.
+1. **Setup phase**, which has network: `quod fetch-map --base <sha>` bakes the map into the sandbox snapshot.
 2. **Agent phase**, which has no network: the MCP tool `tests_for(diff)` calls the in-process ladder, using L0 plus the local outcome cache only. The response is compact: test IDs, counts, and flaky annotations.
 3. **No signing in the sandbox.** Outputs are marked `advisory: true`, and PR CI recomputes everything authoritatively.
 
@@ -215,14 +215,14 @@ Packages with C extensions, or with no RECORD available, are fail-closed: every 
 - **I5:** a changed test_code_hash ⇒ the test runs, with no exceptions.
 - **I6:** certificates exist only from the trusted namespace. Advisory outputs can never enter the outcome index.
 
-### Fail-closed rule catalog (v1, implemented in `sc-policy`, which is authoritative)
+### Fail-closed rule catalog (v1, implemented in `quod-policy`, which is authoritative)
 
 | Rule | Scope | Triggers |
 |---|---|---|
 | R001 | global | CI configuration changed |
 | R002 | global | Test-runner configuration changed (conftest, pytest.ini, pyproject, tox, setup.cfg, jest/vitest config) |
 | R003 | global | Runtime version pin changed (.python-version, .nvmrc, rust-toolchain, ...; non-Python pins also in environment mode) |
-| R004 | global | Skipcert policy changed |
+| R004 | global | Quod policy changed |
 | R005 | global | Build-affecting input changed (setup.py, build.rs, C/Cython sources, native binaries, .pth, sitecustomize) |
 | R006 | global | Lockfile unparseable, requirement options (index, includes, editables) changed, or a dependency manifest of an ecosystem without a delta parser changed (package.json, go.sum, Cargo.lock, Gradle, ...; ADR 013) |
 | R007 | global | Map staleness unknown or above `max_staleness` |
@@ -304,12 +304,12 @@ A file no test read can't affect any test, so it needs no rule of its own.
 ## 11. Verification strategy ("testing the tester")
 
 1. **Conformance corpus.** 20+ pinned OSS repos (Python and TypeScript) with full-run ground truth for each commit. The replay harness computes skip rate, escapes, latency and map size. This is the release gate: **0 escapes**.
-2. **Mutation differential.** Inject mutants (mutmut, Stryker) on changed lines. Every mutant killed by run-all must be killed by the Skipcert selection.
-3. **Property-based tests** on `sc-ladder`: monotonic widening (I3), certificate validity (I1), and determinism of decisions (same inputs give byte-identical certificates).
+2. **Mutation differential.** Inject mutants (mutmut, Stryker) on changed lines. Every mutant killed by run-all must be killed by the Quod selection.
+3. **Property-based tests** on `quod-ladder`: monotonic widening (I3), certificate validity (I1), and determinism of decisions (same inputs give byte-identical certificates).
 4. **Verifier hardening.** Fuzzing (cargo-fuzz) on certificate parsing, plus an independent re-implementation check from the specification in Python.
 5. **Probe accuracy suite.** Synthetic tests exercising every effect class: file, env, network, clock, subprocess, dynamic import, C extension, fixture scopes and monkeypatch. Each one asserts the expected footprint.
 6. **Stress (E6).** 25x PR-rate replay with injected lag. Assert widening and bounded latency.
-7. **Dogfooding.** Skipcert's own CI uses Skipcert from M2.
+7. **Dogfooding.** Quod's own CI uses Quod from M2.
 
 ---
 
@@ -318,7 +318,7 @@ A file no test read can't affect any test, so it needs no rule of its own.
 | Interface | Operations |
 |---|---|
 | **CLI** | `record`, `select`, `run`, `verify`, `explain <test>`, `impact --diff/--lock-delta`, `fetch-map`, `replay-history`, `doctor` |
-| **pytest plugin** | `--skipcert=record\|select\|advisory`, markers `@skipcert.never_skip`, `@skipcert.declares(network="stub")` |
+| **pytest plugin** | `--quod=record\|select\|advisory`, markers `@quod.never_skip`, `@quod.declares(network="stub")` |
 | **MCP** (stdio, offline) | `tests_for(diff?)`, `why(test)`, `impact(paths\|packages)`, `flaky(test)` |
 | **REST** (control plane) | `/v1/outcomes:batchGet`, `/v1/maps/{repo}/{base}`, `/v1/impact`, `/v1/escapes`, `/v1/runs` |
 | **Batch API** | `/v1/outcomes:batchGet` takes N keys and is idempotent (designed now, used later by RL and mutation) |
@@ -341,7 +341,7 @@ A file no test read can't affect any test, so it needs no rule of its own.
 
 - **Metrics:** skip rate by certificate type, minutes saved, fail-closed rate by rule, escapes, map staleness, probe overhead, rollup lag, flake rates.
 - **Tracing:** OpenTelemetry spans for CLI and server, with run_id propagation.
-- **Per-run artifact:** `skipcert-report.json`, the human and agent summary that drives the PR check.
+- **Per-run artifact:** `quod-report.json`, the human and agent summary that drives the PR check.
 
 ---
 
@@ -349,8 +349,8 @@ A file no test read can't affect any test, so it needs no rule of its own.
 
 | Milestone | Deliverables | Exit gate |
 |---|---|---|
-| **M0 Foundations** (2 wks) | Workspace, ADRs, `sc-model` v1 schemas, `sc-hash`, CI with conformance skeleton, coding standards | Schemas reviewed and frozen at v1 |
-| **M1 Core + Python** (to 31 Jan) | Python probe, `sc-graph` (bidirectional), `sc-change` (git + AST + uv/pip lock resolver), `sc-policy` R001–R012, `sc-ladder` L0, `sc-cert` (Ed25519), `verifier`, CLI, `replay-history`, conformance corpus of 5 repos | **E1:** 0 escapes, ≥2x less test time than the target-graph baseline |
+| **M0 Foundations** (2 wks) | Workspace, ADRs, `quod-model` v1 schemas, `quod-hash`, CI with conformance skeleton, coding standards | Schemas reviewed and frozen at v1 |
+| **M1 Core + Python** (to 31 Jan) | Python probe, `quod-graph` (bidirectional), `quod-change` (git + AST + uv/pip lock resolver), `quod-policy` R001–R012, `quod-ladder` L0, `quod-cert` (Ed25519), `verifier`, CLI, `replay-history`, conformance corpus of 5 repos | **E1:** 0 escapes, ≥2x less test time than the target-graph baseline |
 | **M2 CI integration** (Feb) | GitHub Action, CAS backends (CI cache, S3), journal, local audit, determinism gate, flaky signalling, dogfooding | **E6:** stress passes |
 | **M3 Outcome index** (Feb–Mar) | Control plane (axum + Postgres), rollups, trusted/untrusted namespaces, L1, typed key envelope, OIDC signing | **E4:** duplicate rate measured; L1 has 0 escapes |
 | **M4 Design partners** (Mar) | GitHub App, dashboard v0, escape log, shadow mode | **E2:** 0 escapes over 2–4 weeks with partners |

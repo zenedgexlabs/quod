@@ -3,18 +3,18 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "skipcert-probe"
+name = "quod-probe"
 version = "0.3.0"
-description = "pytest plugin that records per-test footprints for Skipcert"
+description = "pytest plugin that records per-test footprints for Quod"
 requires-python = ">=3.12"
 dependencies = ["pytest>=8"]
 license = { text = "Proprietary" }
 
 [project.entry-points.pytest11]
-skipcert = "skipcert_probe.plugin"
+quod = "quod_probe.plugin"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/skipcert_probe"]
+packages = ["src/quod_probe"]
 
 [dependency-groups]
 dev = ["pytest>=8"]

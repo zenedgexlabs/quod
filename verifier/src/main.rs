@@ -1,7 +1,7 @@
-//! `skipcert-verify`: independent certificate verification.
+//! `quod-verify`: independent certificate verification.
 //!
 //! ```text
-//! skipcert-verify --certs <certs.jsonl> --map <map.scmap>
+//! quod-verify --certs <certs.jsonl> --map <map.qmap>
 //!                 [--trusted-key ed25519:<hex>]... [--policy-hash <hex>] [--allow-unsigned]
 //! ```
 //!
@@ -11,12 +11,12 @@
 use std::fs;
 use std::process::ExitCode;
 
-use sc_graph::FootprintGraph;
-use sc_hash::Digest;
-use sc_model::Certificate;
-use skipcert_verify::{VerifyConfig, verify};
+use quod_graph::FootprintGraph;
+use quod_hash::Digest;
+use quod_model::Certificate;
+use quod_verify::{VerifyConfig, verify};
 
-const USAGE: &str = "usage: skipcert-verify --certs <certs.jsonl> --map <map.scmap> \
+const USAGE: &str = "usage: quod-verify --certs <certs.jsonl> --map <map.qmap> \
 [--trusted-key ed25519:<hex>]... [--policy-hash <hex>] [--allow-unsigned]";
 
 fn run() -> Result<bool, String> {

@@ -35,18 +35,18 @@ The environment is the thing that matters, and it can be observed directly.
 
 ### 1. Fingerprint (probe 0.3, capability `py.environment`)
 
-`skipcert_probe.fingerprint` produces a flat, sorted map of `key → value`
-strings. It is also available as `python -m skipcert_probe fingerprint`.
+`quod_probe.fingerprint` produces a flat, sorted map of `key → value`
+strings. It is also available as `python -m quod_probe fingerprint`.
 
 | group | keys |
 |---|---|
 | `interpreter.*` | implementation, full version, cache tag, `sys.platform`, machine, byte order, and `sys.flags` (optimize, dev_mode, utf8_mode, hash_randomization, safe_path, isolated, warn_default_encoding) |
-| `system.*` | OS release, libc, OpenSSL, SQLite, zlib, expat, `time.tzname`, locale and preferred encoding, filesystem encoding, CPU count, and container digest (`SKIPCERT_CONTAINER_DIGEST` when set) |
+| `system.*` | OS release, libc, OpenSSL, SQLite, zlib, expat, `time.tzname`, locale and preferred encoding, filesystem encoding, CPU count, and container digest (`QUOD_CONTAINER_DIGEST` when set) |
 | `process_env.*` | `PYTHON*`, `TZ`, `LANG`, `LANGUAGE` and `LC_*`, which the interpreter and C libraries read without going through `os.environ` |
 | `dist.<name>` | `version` plus `dist_hash` (RECORD hash) for every installed distribution, plus `__site__` (unclaimed installed files) |
 
 The pytest *invocation* is fingerprinted separately as `invocation.*`: the
-arguments without `--skipcert-*`, the ini file path relative to the root, and
+arguments without `--quod-*`, the ini file path relative to the root, and
 the raw ini values. The record header stores both fingerprints.
 
 ### 2. Per-test environment variable reads
@@ -66,8 +66,8 @@ there triggers R017.
 
 ### 3. Select in environment mode
 
-`skipcert select --python <exe>` runs
-`<exe> -m skipcert_probe fingerprint --env NAME...` for every `env:` node in
+`quod select --python <exe>` runs
+`<exe> -m quod_probe fingerprint --env NAME...` for every `env:` node in
 the map and compares the result with the map's fingerprint. Environment mode
 is on only when the map's captures all declare `py.environment` and
 `--python` is given. Otherwise the path-based rules apply unchanged
@@ -92,8 +92,8 @@ In environment mode:
   changed distributions and variables. It is omitted in path mode, so
   path-mode certificates hash exactly as before and `CERT_VERSION` stays 1.
   The verifier checks the binding against the map.
-- **Skip file.** It gains header lines `# skipcert-environment <digest>` and
-  `# skipcert-invocation <digest>`, plus `# skipcert-env NAME HASH` for the
+- **Skip file.** It gains header lines `# quod-environment <digest>` and
+  `# quod-invocation <digest>`, plus `# quod-env NAME HASH` for the
   `env:` nodes of skipped tests. At session start, the pytest plugin
   recomputes all three. On any mismatch it **ignores the skip list**, runs
   everything and prints why. This closes the gap where select and pytest run
@@ -111,7 +111,7 @@ In environment mode:
   digests pin the rest when available.
 - **Value hashes.** Environment values are stored as unsalted sha256. Low-entropy
   secret values could be brute-forced from a map. Maps are trusted-zone
-  artefacts, and `env_hash = "presence"` can be set in `skipcert.toml` to
+  artefacts, and `env_hash = "presence"` can be set in `quod.toml` to
   record presence only (re-run on any change).
 
 ## Consequences
@@ -140,8 +140,8 @@ The JavaScript probe implements the same contract:
   Proxy (enumeration is `env:*`). Writes, including `vi.stubEnv`, are
   in-process state, not inputs.
 - **Where fingerprints come from.** The CLI computes them before Vitest starts,
-  because Vitest sets `NODE_ENV` itself. `skipcert-vitest fingerprint`
-  serves `select --fingerprint-cmd`, and `skipcert-vitest run` checks the
+  because Vitest sets `NODE_ENV` itself. `quod-vitest fingerprint`
+  serves `select --fingerprint-cmd`, and `quod-vitest run` checks the
   skip-file header in that same context. On any mismatch it runs every test.
 - **Generic select option.** `select --fingerprint-cmd ARG...` (one flag per
   argument) runs any probe's fingerprint command. `--python` is shorthand

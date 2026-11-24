@@ -64,7 +64,7 @@ wheels = [
 ]
 
 [[package]]
-name = "skipcert-probe"
+name = "quod-probe"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [

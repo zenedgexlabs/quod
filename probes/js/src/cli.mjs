@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// skipcert-vitest: runs Vitest with the Skipcert probe.
+// quod-vitest: runs Vitest with the Quod probe.
 //
-//   skipcert-vitest record --out capture.jsonl [--root DIR] [--dir DIR] [-- <vitest args>]
-//   skipcert-vitest run --skip skip.txt [--root DIR] [--dir DIR] [-- <vitest args>]
+//   quod-vitest record --out capture.jsonl [--root DIR] [--dir DIR] [-- <vitest args>]
+//   quod-vitest run --skip skip.txt [--root DIR] [--dir DIR] [-- <vitest args>]
 //
 // --root is the repository root (paths in the capture are relative to it);
 // --dir is where Vitest runs (a workspace package), default --root.
 //
 // The user's Vitest config is wrapped, not modified: a generated config
-// (under node_modules/.cache/skipcert) imports it, puts the probe's setup
+// (under node_modules/.cache/quod) imports it, puts the probe's setup
 // file first and adds the reporter. The repository's working tree is left
 // untouched, so the wrapper can't show up as a change.
 
@@ -26,10 +26,10 @@ const CONFIG_NAMES = ['vitest.config', 'vite.config'];
 const CONFIG_EXTS = ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'];
 
 function usage(msg) {
-  if (msg) console.error(`skipcert-vitest: ${msg}`);
-  console.error('usage: skipcert-vitest record --out FILE [--root DIR] [-- vitest args]');
-  console.error('       skipcert-vitest run --skip FILE [--root DIR] [-- vitest args]');
-  console.error('       skipcert-vitest fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
+  if (msg) console.error(`quod-vitest: ${msg}`);
+  console.error('usage: quod-vitest record --out FILE [--root DIR] [-- vitest args]');
+  console.error('       quod-vitest run --skip FILE [--root DIR] [-- vitest args]');
+  console.error('       quod-vitest fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
   process.exit(2);
 }
 
@@ -88,13 +88,13 @@ export default async (env) => {
   const userSetup = [].concat(config.test.setupFiles ?? []);
   // The probe's setup file must come first: its hooks bound each test's window.
   config.test.setupFiles = [${JSON.stringify(setup)}, ...userSetup.filter((s) => s !== ${JSON.stringify(setup)})];
-  if (process.env.SKIPCERT_RECORD_DIR) {
+  if (process.env.QUOD_RECORD_DIR) {
     // Recording runs one test at a time, so every test gets its own coverage
     // window. Concurrency doesn't change what code a test executes; skip
     // runs keep the project's own concurrency.
     config.test.maxConcurrency = 1;
     config.test.sequence = { ...(config.test.sequence ?? {}), concurrent: false };
-    process.env.SKIPCERT_SERIAL = '1';
+    process.env.QUOD_SERIAL = '1';
   }
   if (Array.isArray(config.test.projects)) {
     config.test.projects = wrapProjects(config.test.projects, {
@@ -126,8 +126,8 @@ function vitestBin(root) {
 export function checkSkipFile(file, { root, dir, args }) {
   let envFp = null;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-    if (!line.startsWith('# skipcert-')) continue;
-    const [kind, ...rest] = line.slice('# skipcert-'.length).trim().split(/\s+/);
+    if (!line.startsWith('# quod-')) continue;
+    const [kind, ...rest] = line.slice('# quod-'.length).trim().split(/\s+/);
     if (kind === 'environment' && rest.length === 1) {
       envFp ??= environment(root, dir);
       if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
@@ -154,7 +154,7 @@ export function main(argv) {
     return 0;
   }
   const userConfig = findUserConfig(opts.dir, opts.passthrough);
-  const cache = path.join(opts.dir, 'node_modules', '.cache', 'skipcert');
+  const cache = path.join(opts.dir, 'node_modules', '.cache', 'quod');
   fs.mkdirSync(cache, { recursive: true });
   const wrapper = path.join(cache, 'vitest.config.mjs');
   fs.writeFileSync(
@@ -169,16 +169,16 @@ export function main(argv) {
   );
   const env = {
     ...process.env,
-    SKIPCERT_ROOT: opts.root,
-    SKIPCERT_DIR: opts.dir,
-    SKIPCERT_ARGS: JSON.stringify(opts.passthrough),
+    QUOD_ROOT: opts.root,
+    QUOD_DIR: opts.dir,
+    QUOD_ARGS: JSON.stringify(opts.passthrough),
   };
   let recordDir = null;
   if (opts.cmd === 'record') {
-    recordDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-vitest-'));
-    env.SKIPCERT_RECORD_DIR = recordDir;
-    env.SKIPCERT_RECORD_OUT = path.resolve(opts.out);
-    env.SKIPCERT_ROOT_FILES = JSON.stringify(
+    recordDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-vitest-'));
+    env.QUOD_RECORD_DIR = recordDir;
+    env.QUOD_RECORD_OUT = path.resolve(opts.out);
+    env.QUOD_ROOT_FILES = JSON.stringify(
       userConfig ? [path.relative(opts.root, userConfig).split(path.sep).join('/')] : [],
     );
     // Fingerprints in this process, before Vitest changes its environment.
@@ -192,9 +192,9 @@ export function main(argv) {
           env: outerEnv(),
         }),
       );
-      env.SKIPCERT_FINGERPRINT_FILE = fp;
+      env.QUOD_FINGERPRINT_FILE = fp;
     } catch (e) {
-      process.stderr.write(`skipcert: no environment fingerprint (${e?.message ?? e})\n`);
+      process.stderr.write(`quod: no environment fingerprint (${e?.message ?? e})\n`);
     }
   } else {
     let problem;
@@ -203,8 +203,8 @@ export function main(argv) {
     } catch (e) {
       problem = `could not check the skip file (${e?.message ?? e})`;
     }
-    if (problem) process.stderr.write(`skipcert: not skipping any tests: ${problem}\n`);
-    else env.SKIPCERT_SKIP_FILE = path.resolve(opts.skip);
+    if (problem) process.stderr.write(`quod: not skipping any tests: ${problem}\n`);
+    else env.QUOD_SKIP_FILE = path.resolve(opts.skip);
   }
   const res = spawnSync(process.execPath, [vitestBin(opts.dir), 'run', '--config', wrapper, ...opts.passthrough], {
     cwd: opts.dir,
