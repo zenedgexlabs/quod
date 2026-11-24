@@ -16,7 +16,7 @@ use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Language, LineMap, Repo};
 use sc_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use sc_hash::{Digest, hash_file};
 use sc_ladder::{RunReason, SelectInput, Selection, select};
-use sc_model::version::{CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
+use sc_model::version::{CAP_JS_ENVIRONMENT, CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
 use sc_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
 use sc_policy::{EnvironmentDelta, EvalContext, Evaluation, Policy};
 
@@ -454,6 +454,10 @@ pub struct SelectOptions {
     /// Python interpreter of the target environment. With a map recorded by
     /// a `py.environment` probe, this turns on environment mode (ADR 012).
     pub python: Option<PathBuf>,
+    /// The probe's fingerprint command for the target environment, for
+    /// probes other than Python's (for example `node <skipcert-js>/src/cli.mjs
+    /// fingerprint --root <repo>`). `--env NAME` arguments are appended.
+    pub fingerprint_cmd: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -463,15 +467,16 @@ struct Fingerprint {
 }
 
 /// Runs the probe's fingerprint command in the target environment.
-fn fingerprint(python: &Path, env_names: &[String]) -> Result<Fingerprint> {
-    let mut cmd = std::process::Command::new(python);
-    cmd.args(["-m", "skipcert_probe", "fingerprint"]);
+fn fingerprint(argv: &[String], env_names: &[String]) -> Result<Fingerprint> {
+    let (program, args) = argv.split_first().context("empty fingerprint command")?;
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
     for n in env_names {
         cmd.arg("--env").arg(n);
     }
     let out = cmd
         .output()
-        .with_context(|| format!("running {} -m skipcert_probe fingerprint", python.display()))?;
+        .with_context(|| format!("running the fingerprint command {}", argv.join(" ")))?;
     if !out.status.success() {
         bail!(
             "fingerprint command failed: {}",
@@ -677,16 +682,26 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     )?;
     let behind = repo.commits_between(&base, &change.head).ok();
     let policy = load_policy(repo, opts.policy.as_deref())?;
-    let env_mode = opts.python.is_some()
+    let fingerprint_cmd: Option<Vec<String>> = match (&opts.fingerprint_cmd, &opts.python) {
+        (Some(cmd), _) => Some(cmd.clone()),
+        (None, Some(py)) => Some(vec![
+            py.to_string_lossy().into_owned(),
+            "-m".into(),
+            "skipcert_probe".into(),
+            "fingerprint".into(),
+        ]),
+        (None, None) => None,
+    };
+    let env_mode = fingerprint_cmd.is_some()
         && graph
             .meta()
             .capabilities
             .iter()
-            .any(|c| c == CAP_PY_ENVIRONMENT);
-    let environment = match (&opts.python, env_mode) {
-        (Some(py), true) => Some(environment_delta(
+            .any(|c| c == CAP_PY_ENVIRONMENT || c == CAP_JS_ENVIRONMENT);
+    let environment = match (&fingerprint_cmd, env_mode) {
+        (Some(cmd), true) => Some(environment_delta(
             &graph,
-            &fingerprint(py, &env_var_names(&graph))?,
+            &fingerprint(cmd, &env_var_names(&graph))?,
         )),
         _ => None,
     };

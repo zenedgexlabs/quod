@@ -18,6 +18,8 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { digest, environHash, envValueHash, environment, invocation } from './fingerprint.mjs';
+import { PROBE_ID } from './version.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_NAMES = ['vitest.config', 'vite.config'];
@@ -27,13 +29,14 @@ function usage(msg) {
   if (msg) console.error(`skipcert-vitest: ${msg}`);
   console.error('usage: skipcert-vitest record --out FILE [--root DIR] [-- vitest args]');
   console.error('       skipcert-vitest run --skip FILE [--root DIR] [-- vitest args]');
+  console.error('       skipcert-vitest fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
   process.exit(2);
 }
 
 export function parseArgs(argv) {
   const [cmd, ...rest] = argv;
-  if (cmd !== 'record' && cmd !== 'run') usage(`unknown command ${cmd ?? ''}`);
-  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, passthrough: [] };
+  if (!['record', 'run', 'fingerprint'].includes(cmd)) usage(`unknown command ${cmd ?? ''}`);
+  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, env: [], passthrough: [] };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === '--') {
@@ -43,6 +46,7 @@ export function parseArgs(argv) {
     else if (a === '--skip') opts.skip = rest[++i];
     else if (a === '--root') opts.root = rest[++i];
     else if (a === '--dir') opts.dir = rest[++i];
+    else if (a === '--env') opts.env.push(rest[++i]);
     else usage(`unknown option ${a}`);
   }
   if (cmd === 'record' && !opts.out) usage('record needs --out');
@@ -114,8 +118,41 @@ function vitestBin(root) {
   return path.join(path.dirname(pkgPath), bin);
 }
 
+/**
+ * Re-checks the conditions the certificates assumed (skip-file header
+ * lines), in the environment the tests are about to run in. Returns the
+ * first mismatch, or null.
+ */
+export function checkSkipFile(file, { root, dir, args }) {
+  let envFp = null;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.startsWith('# skipcert-')) continue;
+    const [kind, ...rest] = line.slice('# skipcert-'.length).trim().split(/\s+/);
+    if (kind === 'environment' && rest.length === 1) {
+      envFp ??= environment(root, dir);
+      if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
+    } else if (kind === 'invocation' && rest.length === 1) {
+      if (digest(invocation(args)) !== rest[0]) return 'the Vitest invocation differs from the recorded one';
+    } else if (kind === 'env' && rest.length === 2) {
+      const [name, expected] = rest;
+      const actual = name === '*' ? environHash() : envValueHash(process.env[name]);
+      if (actual !== expected) return `environment variable ${name} differs`;
+    } else {
+      return `unknown skip-file check: ${line}`;
+    }
+  }
+  return null;
+}
+
 export function main(argv) {
   const opts = parseArgs(argv);
+  if (opts.cmd === 'fingerprint') {
+    const env = Object.fromEntries(
+      opts.env.map((n) => [n, n === '*' ? environHash() : envValueHash(process.env[n])]),
+    );
+    process.stdout.write(`${JSON.stringify({ probe: PROBE_ID, environment: environment(opts.root, opts.dir), env })}\n`);
+    return 0;
+  }
   const userConfig = findUserConfig(opts.dir, opts.passthrough);
   const cache = path.join(opts.dir, 'node_modules', '.cache', 'skipcert');
   fs.mkdirSync(cache, { recursive: true });
@@ -130,7 +167,12 @@ export function main(argv) {
       cacheDir: cache,
     }),
   );
-  const env = { ...process.env, SKIPCERT_ROOT: opts.root };
+  const env = {
+    ...process.env,
+    SKIPCERT_ROOT: opts.root,
+    SKIPCERT_DIR: opts.dir,
+    SKIPCERT_ARGS: JSON.stringify(opts.passthrough),
+  };
   let recordDir = null;
   if (opts.cmd === 'record') {
     recordDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-vitest-'));
@@ -139,8 +181,26 @@ export function main(argv) {
     env.SKIPCERT_ROOT_FILES = JSON.stringify(
       userConfig ? [path.relative(opts.root, userConfig).split(path.sep).join('/')] : [],
     );
+    // Fingerprints in this process, before Vitest changes its environment.
+    try {
+      const fp = path.join(recordDir, 'fingerprint.json');
+      fs.writeFileSync(
+        fp,
+        JSON.stringify({ environment: environment(opts.root, opts.dir), invocation: invocation(opts.passthrough) }),
+      );
+      env.SKIPCERT_FINGERPRINT_FILE = fp;
+    } catch (e) {
+      process.stderr.write(`skipcert: no environment fingerprint (${e?.message ?? e})\n`);
+    }
   } else {
-    env.SKIPCERT_SKIP_FILE = path.resolve(opts.skip);
+    let problem;
+    try {
+      problem = checkSkipFile(opts.skip, { root: opts.root, dir: opts.dir, args: opts.passthrough });
+    } catch (e) {
+      problem = `could not check the skip file (${e?.message ?? e})`;
+    }
+    if (problem) process.stderr.write(`skipcert: not skipping any tests: ${problem}\n`);
+    else env.SKIPCERT_SKIP_FILE = path.resolve(opts.skip);
   }
   const res = spawnSync(process.execPath, [vitestBin(opts.dir), 'run', '--config', wrapper, ...opts.passthrough], {
     cwd: opts.dir,

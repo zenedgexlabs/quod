@@ -9,6 +9,7 @@ import { before, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { decodeMappings, executedFunctions, executedMask } from '../src/coverage.mjs';
 import { main } from '../src/cli.mjs';
+import { digest, envValueHash } from '../src/fingerprint.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(HERE, 'fixtures', 'basic');
@@ -54,6 +55,8 @@ describe('recorded Vitest run', () => {
   let header;
   before(() => {
     const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-')), 'cap.jsonl');
+    process.env.FIXTURE_VAR = '1';
+    delete process.env.FIXTURE_MISSING;
     const status = main(['record', '--out', out, '--root', FIXTURE]);
     assert.equal(status, 0);
     const recs = fs.readFileSync(out, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
@@ -74,7 +77,53 @@ describe('recorded Vitest run', () => {
       'test/calc.test.ts::top level',
       'test/concurrent.test.ts::c1',
       'test/concurrent.test.ts::c2',
+      'test/env.test.ts::enumerates env',
+      'test/env.test.ts::reads env',
+      'test/env.test.ts::stubs env',
     ]);
+  });
+
+  test('environment fingerprint in the header', () => {
+    assert.deepEqual(header.capabilities, ['js.environment']);
+    assert.equal(header.environment['interpreter.version'], process.version);
+    assert.ok(header.environment['dist.npm:vitest'], 'installed packages are fingerprinted');
+    assert.equal(header.environment_digest, digest(header.environment));
+    assert.equal(header.invocation['invocation.args'], '[]');
+  });
+
+  test('process.env reads are recorded per test', () => {
+    const env = (name) => Object.fromEntries(tests[name].env);
+    const read = env('test/env.test.ts::reads env');
+    assert.equal(read.FIXTURE_VAR, envValueHash('1'));
+    assert.equal(read.FIXTURE_MISSING, envValueHash(undefined));
+    assert.ok(!('*' in read));
+    assert.ok(!('FIXTURE_STUB' in env('test/env.test.ts::stubs env')), 'a stubbed variable is not an input');
+    assert.ok('*' in env('test/env.test.ts::enumerates env'));
+    assert.ok(!('FIXTURE_VAR' in env('test/calc.test.ts::calc > add')));
+  });
+
+  test('skip-file checks fail open to running everything', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-'));
+    const run = (header) => {
+      const skip = path.join(dir, 'skip.txt');
+      fs.writeFileSync(skip, [...header, 'test/calc.test.ts::calc > mul', ''].join('\n'));
+      const out = path.join(dir, `res-${Math.random()}.json`);
+      main(['run', '--skip', skip, '--root', FIXTURE, '--', '--reporter=json', `--outputFile=${out}`]);
+      const res = JSON.parse(fs.readFileSync(out, 'utf8'));
+      return Object.fromEntries(res.testResults.flatMap((f) => f.assertionResults.map((a) => [a.fullName, a.status])))[
+        'calc mul'
+      ];
+    };
+    const good = [
+      `# skipcert-environment ${header.environment_digest}`,
+      `# skipcert-invocation ${digest({ ...header.invocation, 'invocation.args': JSON.stringify(['--reporter=json']) })}`,
+    ];
+    // The invocation differs (--outputFile), so nothing is skipped ...
+    assert.equal(run(good), 'passed');
+    // ... and a changed variable a skipped test read disables skipping too.
+    assert.equal(run([`# skipcert-environment ${header.environment_digest}`, '# skipcert-env FIXTURE_VAR 00']), 'passed');
+    // With only matching checks, the test is skipped.
+    assert.equal(run([`# skipcert-environment ${header.environment_digest}`, `# skipcert-env FIXTURE_VAR ${envValueHash('1')}`]), 'skipped');
   });
 
   test('a test observes the functions it ran, not the others', () => {
@@ -103,7 +152,7 @@ describe('recorded Vitest run', () => {
 
   test('skip mode skips the named tests', () => {
     const skip = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'skipcert-js-')), 'skip.txt');
-    fs.writeFileSync(skip, '# skipcert-env X y\ntest/calc.test.ts::calc > mul\ntest/concurrent.test.ts::c2\n');
+    fs.writeFileSync(skip, 'test/calc.test.ts::calc > mul\ntest/concurrent.test.ts::c2\n');
     const out = path.join(path.dirname(skip), 'res.json');
     const status = main(['run', '--skip', skip, '--root', FIXTURE, '--', '--reporter=json', `--outputFile=${out}`]);
     assert.equal(status, 0);

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { PROBE_ID, CAPTURE_VERSION } from './version.mjs';
+import { digest } from './fingerprint.mjs';
 
 const slash = (p) => p.split(path.sep).join('/');
 
@@ -14,6 +15,8 @@ export default class SkipcertReporter {
     this.dir = options.dir || process.env.SKIPCERT_RECORD_DIR;
     this.out = options.out || process.env.SKIPCERT_RECORD_OUT;
     this.rootFiles = options.rootFiles || JSON.parse(process.env.SKIPCERT_ROOT_FILES || '[]');
+    this.testDir = path.resolve(process.env.SKIPCERT_DIR || this.root);
+    this.args = JSON.parse(process.env.SKIPCERT_ARGS || '[]');
   }
 
   onInit(vitest) {
@@ -24,7 +27,7 @@ export default class SkipcertReporter {
     if (!this.dir || !this.out) return;
     const records = [];
     for (const f of fs.existsSync(this.dir) ? fs.readdirSync(this.dir) : []) {
-      if (f.endsWith('.json')) records.push(JSON.parse(fs.readFileSync(path.join(this.dir, f), 'utf8')));
+      if (f.endsWith('.json') && f !== 'fingerprint.json') records.push(JSON.parse(fs.readFileSync(path.join(this.dir, f), 'utf8')));
     }
     // A module can run in several workers (retries, projects): union them.
     const byModule = new Map();
@@ -49,13 +52,34 @@ export default class SkipcertReporter {
     } catch {
       // keep the bare name
     }
+    // Fingerprints (ADR 012), computed by the CLI before Vitest started (in
+    // the same process context as the skip-file checks and `fingerprint`;
+    // Vitest itself sets variables such as NODE_ENV). Without them the map
+    // stays in path mode.
+    let fingerprints = {};
+    try {
+      if (process.env.SKIPCERT_FINGERPRINT_FILE) {
+        const { environment: env, invocation: inv } = JSON.parse(
+          fs.readFileSync(process.env.SKIPCERT_FINGERPRINT_FILE, 'utf8'),
+        );
+        fingerprints = {
+          environment: env,
+          invocation: inv,
+          environment_digest: digest(env),
+          invocation_digest: digest(inv),
+        };
+      }
+    } catch (e) {
+      process.stderr.write(`skipcert: no environment fingerprint (${e?.message ?? e})\n`);
+    }
     const lines = [];
     const emit = (o) => lines.push(JSON.stringify(o));
     emit({
       type: 'header',
       v: CAPTURE_VERSION,
       probe: PROBE_ID,
-      capabilities: [],
+      capabilities: fingerprints.environment ? ['js.environment'] : [],
+      ...fingerprints,
       language: 'javascript',
       ecosystem: 'npm',
       runner,
@@ -79,7 +103,9 @@ export default class SkipcertReporter {
         const files = new Set();
         const pk = new Set();
         let untraced = !cov || cov.concurrent;
+        const env = new Map();
         const add = (c) => {
+          for (const [k, h] of c.env ?? []) if (!env.has(k)) env.set(k, h);
           for (const [f, ranges] of c.lines) {
             const r = merged.get(f) ?? [];
             r.push(...ranges);
@@ -112,6 +138,7 @@ export default class SkipcertReporter {
           functions: [],
           packages: [...pk].sort(),
           flags: untraced ? ['untraced'] : [],
+          env: [...env].sort((a, b) => (a[0] < b[0] ? -1 : 1)),
           lines: [...merged].sort(([a], [b]) => a.localeCompare(b)).map(([f, r]) => [f, normalize(r)]),
           positions: [...positions]
             .sort(([a], [b]) => a.localeCompare(b))

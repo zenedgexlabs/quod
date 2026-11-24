@@ -17,12 +17,13 @@
 // Skip mode (SKIPCERT_SKIP_FILE set): tests named in the file are skipped
 // before their own hooks run.
 
-import { afterAll, afterEach, beforeEach } from 'vitest';
+import { afterAll, afterEach, beforeEach, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { executedFunctions } from './coverage.mjs';
+import { envKey, envValueHash, environHash } from './fingerprint.mjs';
 
 const ROOT = path.resolve(process.env.SKIPCERT_ROOT || process.cwd());
 const RECORD_DIR = process.env.SKIPCERT_RECORD_DIR;
@@ -72,7 +73,8 @@ async function session() {
   await s.post('Profiler.enable');
   await s.post('Debugger.enable');
   await s.post('Profiler.startPreciseCoverage', { callCount: true, detailed: false });
-  g.__skipcert = { s, sources: new Map(), packages: new Map(), lineCounts: new Map() };
+  g.__skipcert = { s, sources: new Map(), packages: new Map(), lineCounts: new Map(), env: new Map() };
+  trackEnv(g.__skipcert);
   return g.__skipcert;
 }
 
@@ -120,13 +122,72 @@ function moduleFor(abs) {
   return null;
 }
 
-const empty = () => ({ positions: new Map(), files: new Set(), whole: new Map(), packages: new Set(), untraced: false });
+const empty = () => ({
+  positions: new Map(),
+  files: new Set(),
+  whole: new Map(),
+  packages: new Set(),
+  env: new Map(),
+  untraced: false,
+});
+
+/**
+ * Records reads of `process.env` as `env:NAME` observations (value hashes),
+ * into the same windows as coverage. Enumerating the environment
+ * (`Object.keys`, spreading) depends on all of it: `env:*`. Keys the process
+ * wrote itself (`vi.stubEnv`, fixtures) are in-process state, not inputs.
+ */
+function trackEnv(sc) {
+  const target = process.env;
+  const written = new Set();
+  const note = (k, h) => {
+    if (!k.startsWith('SKIPCERT_') && !sc.env.has(k)) sc.env.set(k, h);
+  };
+  process.env = new Proxy(target, {
+    get(t, k) {
+      const v = t[k];
+      if (typeof k === 'string' && !written.has(envKey(k))) note(envKey(k), envValueHash(v));
+      return v;
+    },
+    has(t, k) {
+      const r = k in t;
+      if (typeof k === 'string' && !written.has(envKey(k))) note(envKey(k), envValueHash(r ? t[k] : undefined));
+      return r;
+    },
+    set(t, k, v) {
+      if (typeof k === 'string') written.add(envKey(k));
+      t[k] = v;
+      return true;
+    },
+    deleteProperty(t, k) {
+      if (typeof k === 'string') written.add(envKey(k));
+      delete t[k];
+      return true;
+    },
+    ownKeys(t) {
+      note('*', environHash(t));
+      return Reflect.ownKeys(t);
+    },
+  });
+  // vi.stubEnv reads the old value only to restore it later.
+  try {
+    const orig = vi.stubEnv;
+    vi.stubEnv = function (name, ...rest) {
+      if (typeof name === 'string') written.add(envKey(name));
+      return orig.call(this, name, ...rest);
+    };
+  } catch {
+    // a frozen `vi`: stubbed reads stay recorded (conservative)
+  }
+}
 
 /** Coverage since the last take. */
 async function take() {
   const sc = await session();
   const { result } = await sc.s.post('Profiler.takePreciseCoverage');
   const out = empty();
+  out.env = sc.env;
+  sc.env = new Map();
   for (const script of result) {
     if (!script.url.startsWith('file:')) continue;
     if (!script.functions.some((f) => f.ranges[0]?.count > 0)) continue;
@@ -222,6 +283,7 @@ function merge(into, cov) {
   for (const f of cov.files) into.files.add(f);
   for (const [f, n] of cov.whole) into.whole.set(f, n);
   for (const p of cov.packages) into.packages.add(p);
+  for (const [k, h] of cov.env) if (!into.env.has(k)) into.env.set(k, h);
   into.untraced ||= cov.untraced;
 }
 
@@ -234,6 +296,7 @@ function encode(c) {
     files: [...c.files].sort(),
     lines: [...c.whole].map(([f, n]) => [f, [[1, n]]]),
     packages: [...c.packages].sort(),
+    env: [...c.env].sort((a, b) => (a[0] < b[0] ? -1 : 1)),
     untraced: c.untraced,
   };
 }

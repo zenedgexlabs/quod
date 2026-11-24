@@ -133,6 +133,7 @@ fn select(f: &Fixture) -> sc_cli::SelectResult {
             advisory: false,
             repo_id: "acme/app".into(),
             python: None,
+            fingerprint_cmd: None,
         },
     )
     .unwrap()
@@ -258,6 +259,7 @@ fn advisory_output_is_not_accepted_by_the_verifier() {
             advisory: true,
             repo_id: "acme/app".into(),
             python: None,
+            fingerprint_cmd: None,
             ..SelectOptions::default()
         },
     )
@@ -418,6 +420,7 @@ fn select_with(f: &Fixture, python: Option<std::path::PathBuf>) -> sc_cli::Selec
             advisory: false,
             repo_id: "acme/app".into(),
             python,
+            fingerprint_cmd: None,
         },
     )
     .unwrap()

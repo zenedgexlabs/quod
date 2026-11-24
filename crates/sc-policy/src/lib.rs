@@ -476,7 +476,8 @@ pub struct EnvironmentDelta {
     /// Fingerprint keys outside `dist.*` that differ (added, removed or
     /// changed), sorted. Any entry triggers R018.
     pub differing: Vec<String>,
-    /// Distributions (normalised names) that differ, sorted.
+    /// Distributions that differ, sorted: Python names bare, other
+    /// ecosystems qualified (`npm:<name>`).
     pub dists: Vec<String>,
     /// Environment variables (`*` is the whole environment) whose value
     /// differs from the recorded one, sorted.
@@ -723,9 +724,15 @@ impl Policy {
                 });
             }
             for d in &env.dists {
+                // `npm:<name>` keys are already qualified; Python's are bare.
+                let name = if d.contains(':') {
+                    d.clone()
+                } else {
+                    names::package(Ecosystem::Pypi, d)
+                };
                 ev.changed.push(ChangedNode {
                     kind: NodeKind::ExtPackage,
-                    name: names::package(Ecosystem::Pypi, d),
+                    name,
                     fallback_file: None,
                 });
             }
@@ -1486,7 +1493,7 @@ mod tests {
             &cs(vec![]),
             &env_mode(EnvironmentDelta {
                 differing: vec![],
-                dists: vec!["requests".into(), "__site__".into()],
+                dists: vec!["requests".into(), "__site__".into(), "npm:chai".into()],
                 env_vars: vec!["API_URL".into()],
             }),
         );
@@ -1499,6 +1506,7 @@ mod tests {
         assert_eq!(
             got,
             vec![
+                (NodeKind::ExtPackage, "npm:chai"),
                 (NodeKind::ExtPackage, "pypi:__site__"),
                 (NodeKind::ExtPackage, "pypi:requests"),
                 (NodeKind::EnvVar, "API_URL"),

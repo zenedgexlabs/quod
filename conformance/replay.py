@@ -256,7 +256,12 @@ ENV_MODE = True
 
 def select(ws: Workspace, map_path: Path, tag: str) -> dict:
     skip, certs, report = (ws.artifacts / f"{tag}.{s}" for s in ("skip.txt", "certs.jsonl", "report.json"))
-    env_args = ["--python", ws.python] if ENV_MODE and ws.runner == "pytest" else []
+    env_args: list = []
+    if ENV_MODE and ws.runner == "pytest":
+        env_args = ["--python", ws.python]
+    elif ENV_MODE and ws.runner == "vitest":
+        cmd = ["node", JS_PROBE, "fingerprint", "--root", ws.repo, "--dir", ws.test_dir]
+        env_args = [x for c in cmd for x in ("--fingerprint-cmd", c)]
     sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
         "--skip-out", skip, "--certs-out", certs, "--report-out", report, *env_args])
     v = sh([VERIFY, "--certs", certs, "--map", map_path, "--trusted-key", ws.key_id], check=False)
