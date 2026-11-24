@@ -91,6 +91,11 @@ install = [["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]]
 dir = "packages/remeda"
 args = ["--project", "runtime"]
 mutate = ["packages/remeda/src/*.ts"]
+# Real timers: fail in about half of runs on unchanged code under load.
+flaky = [
+    "packages/remeda/src/funnel.remeda-debounce.test.ts::optional param maxWaitMs > should queue a trailing call for subsequent debounced calls after `maxWait`",
+    "packages/remeda/src/funnel.test.ts::non-trivial (>0ms) timer duration > burst timer > maxBurstDurationMs limits the burst duration",
+]
 
 # date-fns' core package runs its tests only in browser mode, which the probe
 # can't observe yet: the replay covers its Node packages (tz, utc, docs).

@@ -109,6 +109,13 @@ class Workspace:
         return self.cfg.get("runner", "pytest")
 
     @property
+    def flaky(self) -> set[str]:
+        """Tests known to fail intermittently on unchanged code (real timers
+        under load). They never count as regressions; their failures are
+        reported as ``flaky_failures``."""
+        return set(self.cfg.get("flaky", []))
+
+    @property
     def test_dir(self) -> Path:
         return self.repo / self.cfg.get("dir", ".")
 
@@ -327,8 +334,10 @@ class Step:
     extra: dict = field(default_factory=dict)
 
 
-def fails_alone(ws: "Workspace", name: str) -> bool:
-    return not passes_alone(ws, name)
+def fails_alone(ws: "Workspace", name: str, runs: int = 3) -> bool:
+    """True if the test fails every time it runs by itself. One pass makes a
+    missed dependency impossible: the escape is a victim or flaky."""
+    return not any(passes_alone(ws, name) for _ in range(runs))
 
 
 def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fail, ws, note="") -> Step:
@@ -340,7 +349,8 @@ def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fa
     dur = {n: t["duration_ms"] for n, t in head_tests.items()}
     total = sum(dur.values())
     passed_at_base = {n for n, t in base_tests.items() if t["outcome"] == "passed"}
-    regressions = real_fail & passed_at_base
+    flaky = real_fail & passed_at_base & ws.flaky
+    regressions = (real_fail & passed_at_base) - flaky
     escapes = sorted(skipped & regressions)
     dependency = [n for n in escapes if fails_alone(ws, n)]
     return Step(
@@ -364,6 +374,7 @@ def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fa
         global_triggers=rep["global"],
         verifier_ok=rep["verifier_ok"],
         note=note,
+        extra={"flaky_failures": sorted(flaky)} if flaky else {},
     )
 
 
@@ -548,7 +559,7 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
                     continue
                 real = failing(head_tests) - failing(base_tests)
                 step = measure("mutant", base, f"mutant{made}", base_tests, head_tests, rep, changed, real, ws, note=desc)
-                step.extra["killed"] = bool(real)
+                step.extra["killed"] = bool(real - ws.flaky)
                 steps.append(step)
                 log(f"  killed={bool(real)} ran {step.tests_total - step.skipcert_skipped}/{step.tests_total}, escapes={len(step.dependency_escapes)} dep + {len(step.victim_escapes)} victim, change_escape={step.change_escape}")
             finally:
