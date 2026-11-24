@@ -23,13 +23,15 @@ pub enum LockKind {
     Requirements,
     /// npm `package-lock.json` / `npm-shrinkwrap.json` (lockfile v1 to v3).
     Npm,
+    /// `pnpm-lock.yaml` (lockfile v5 to v9).
+    Pnpm,
 }
 
 impl LockKind {
     /// The package ecosystem the lockfile pins: `"pypi"` or `"npm"`.
     pub fn ecosystem(self) -> &'static str {
         match self {
-            Self::Npm => "npm",
+            Self::Npm | Self::Pnpm => "npm",
             _ => "pypi",
         }
     }
@@ -78,6 +80,7 @@ pub fn lock_kind(path: &str) -> Option<LockKind> {
         }
         f if f.starts_with("requirements") && f.ends_with(".txt") => Some(LockKind::Requirements),
         "package-lock.json" | "npm-shrinkwrap.json" => Some(LockKind::Npm),
+        "pnpm-lock.yaml" => Some(LockKind::Pnpm),
         _ => None,
     }
 }
@@ -139,7 +142,106 @@ fn parse(kind: LockKind, text: &str) -> Result<BTreeMap<String, PkgPin>, String>
         LockKind::Pylock => parse_toml(text, "packages"),
         LockKind::Requirements => parse_requirements(text),
         LockKind::Npm => parse_npm(text),
+        LockKind::Pnpm => parse_pnpm(text),
     }
+}
+
+/// Splits a pnpm package key into (name, version): `vitest@4.1.5(peer@1)`,
+/// `'@scope/x@1.0.0'`, or the v5/v6 forms `/x/1.0.0` and `/@scope/x/1.0.0`.
+fn pnpm_key(key: &str) -> Option<(String, String)> {
+    let k = key.trim().trim_matches(|c| c == '\'' || c == '"');
+    let k = k.strip_prefix('/').unwrap_or(k);
+    let at = k
+        .char_indices()
+        .skip(1)
+        .find(|&(_, c)| c == '@')
+        .map(|(i, _)| i);
+    let peerless = |v: &str| v.split('(').next().unwrap_or(v).to_owned();
+    match at {
+        Some(i) if !k[..i].contains('(') => Some((k[..i].to_owned(), peerless(&k[i + 1..]))),
+        _ => {
+            let base = k.split('(').next().unwrap_or(k);
+            let (name, ver) = base.rsplit_once('/')?;
+            Some((name.to_owned(), ver.to_owned()))
+        }
+    }
+}
+
+/// pnpm lockfiles: the resolved packages are the entries of the top-level
+/// `packages` and `snapshots` mappings. A name's fingerprint covers all of
+/// its entries (every version and peer combination). `importers` only
+/// restates the specifiers from `package.json`. Parsed by indentation, which
+/// pnpm always writes the same way, rather than with a full YAML parser.
+fn parse_pnpm(text: &str) -> Result<BTreeMap<String, PkgPin>, String> {
+    let mut section = "";
+    let mut current: Option<(String, String)> = None;
+    let mut entries: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    let mut versions: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut seen_packages = false;
+    let mut flush = |cur: &mut Option<(String, String)>| {
+        if let Some((key, body)) = cur.take() {
+            let raw = key.split_once(':').map_or(key.as_str(), |(_, k)| k);
+            if let Some((name, ver)) = pnpm_key(raw) {
+                entries.entry(name.clone()).or_default().push((key, body));
+                versions.entry(name).or_default().push(ver);
+            }
+        }
+    };
+    for line in text.lines() {
+        if line.trim().is_empty() || line.trim_start().starts_with('#') {
+            continue;
+        }
+        let indent = line.len() - line.trim_start().len();
+        if indent == 0 {
+            flush(&mut current);
+            section = match line.trim_end() {
+                "packages:" => {
+                    seen_packages = true;
+                    "packages"
+                }
+                "snapshots:" => "snapshots",
+                _ => "",
+            };
+            continue;
+        }
+        if section.is_empty() {
+            continue;
+        }
+        if indent == 2 {
+            flush(&mut current);
+            let t = line.trim();
+            let (key, rest) = match t.rfind(": ") {
+                Some(i) if t.ends_with("{}") => (&t[..i], &t[i + 2..]),
+                _ => (t.trim_end_matches(':'), ""),
+            };
+            current = Some((format!("{section}:{key}"), rest.to_owned()));
+        } else if let Some((_, body)) = current.as_mut() {
+            body.push_str(line.trim_end());
+            body.push('\n');
+        }
+    }
+    flush(&mut current);
+    if !seen_packages && !text.contains("lockfileVersion") {
+        return Err("not a pnpm lockfile".into());
+    }
+    Ok(entries
+        .into_iter()
+        .map(|(name, mut list)| {
+            list.sort();
+            let joined: String = list
+                .iter()
+                .map(|(k, b)| format!("{k}\u{0}{b}\u{0}"))
+                .collect();
+            let mut vs = versions.remove(&name).unwrap_or_default();
+            vs.sort();
+            vs.dedup();
+            let pin = PkgPin {
+                version: vs.join(","),
+                fingerprint: hash_domain(Domain::Blob, joined.as_bytes()),
+            };
+            (name, pin)
+        })
+        .collect())
 }
 
 /// npm lockfiles. v2/v3 list every installed copy under `packages`, keyed
@@ -548,6 +650,98 @@ sdist = { url = "x", hash = "sha256:aaa" }
         assert_eq!(
             ch.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
             vec!["b"]
+        );
+    }
+
+    const PNPM: &str = "lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    devDependencies:
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.5(@types/node@25.6.0)
+
+packages:
+
+  '@types/node@25.6.0':
+    resolution: {integrity: sha512-aaa}
+
+  vitest@4.1.5:
+    resolution: {integrity: sha512-bbb}
+    engines: {node: '>=20'}
+
+snapshots:
+
+  '@types/node@25.6.0': {}
+
+  vitest@4.1.5(@types/node@25.6.0):
+    dependencies:
+      '@types/node': 25.6.0
+";
+
+    #[test]
+    fn pnpm_lockfile_deltas() {
+        assert_eq!(lock_kind("pnpm-lock.yaml"), Some(LockKind::Pnpm));
+        assert_eq!(LockKind::Pnpm.ecosystem(), "npm");
+        let parsed = parse_pnpm(PNPM).unwrap();
+        assert_eq!(
+            parsed.keys().collect::<Vec<_>>(),
+            vec!["@types/node", "vitest"]
+        );
+        assert_eq!(parsed["vitest"].version, "4.1.5");
+        let bump = PNPM
+            .replace("vitest@4.1.5", "vitest@4.1.6")
+            .replace("sha512-bbb", "sha512-ccc");
+        let LockDelta::Packages(ch) =
+            delta(LockKind::Pnpm, Some(PNPM.as_bytes()), Some(bump.as_bytes()))
+        else {
+            panic!("unparseable")
+        };
+        assert_eq!(
+            ch.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            vec!["vitest"]
+        );
+        // A changed specifier in `importers` alone resolves to the same packages.
+        let spec = PNPM.replace("specifier: ^4.1.5", "specifier: ^4.1.0");
+        let LockDelta::Packages(ch) =
+            delta(LockKind::Pnpm, Some(PNPM.as_bytes()), Some(spec.as_bytes()))
+        else {
+            panic!("unparseable")
+        };
+        assert!(ch.is_empty());
+        // A peer change shows up in the snapshot key.
+        let peer = PNPM.replace("@types/node@25.6.0", "@types/node@25.7.0");
+        let LockDelta::Packages(ch) =
+            delta(LockKind::Pnpm, Some(PNPM.as_bytes()), Some(peer.as_bytes()))
+        else {
+            panic!("unparseable")
+        };
+        assert_eq!(
+            ch.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            vec!["@types/node", "vitest"]
+        );
+        assert!(matches!(
+            delta(LockKind::Pnpm, Some(PNPM.as_bytes()), Some(b"hello: 1")),
+            LockDelta::Unparseable(_)
+        ));
+    }
+
+    #[test]
+    fn pnpm_keys() {
+        assert_eq!(
+            pnpm_key("'@scope/x@1.0.0'"),
+            Some(("@scope/x".into(), "1.0.0".into()))
+        );
+        assert_eq!(
+            pnpm_key("x@2.0.0(peer@1.0.0)"),
+            Some(("x".into(), "2.0.0".into()))
+        );
+        assert_eq!(pnpm_key("/x/1.0.0"), Some(("x".into(), "1.0.0".into())));
+        assert_eq!(
+            pnpm_key("/@scope/x/1.0.0"),
+            Some(("@scope/x".into(), "1.0.0".into()))
         );
     }
 }

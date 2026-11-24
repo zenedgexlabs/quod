@@ -71,3 +71,31 @@ branch = "main"
 install = ["-e", ".", "--group", "testing"]
 pytest = ["tests", "-q", "-p", "no:cacheprovider", "--ignore=tests/mypy", "--ignore=tests/benchmarks"]
 mutate = ["pydantic/*.py", "pydantic/_internal/*.py"]
+
+# JavaScript / TypeScript (Vitest), ADR 013. `install` is a list of commands
+# run in the repository; `dir` is where Vitest runs; `args` go to Vitest.
+
+[repos.ufo]
+url = "https://github.com/unjs/ufo"
+branch = "main"
+runner = "vitest"
+install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
+args = []
+mutate = ["src/*.ts"]
+
+[repos.remeda]
+url = "https://github.com/remeda/remeda"
+branch = "main"
+runner = "vitest"
+install = [["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]]
+dir = "packages/remeda"
+args = ["--project", "runtime"]
+mutate = ["packages/remeda/src/*.ts"]
+
+[repos.date-fns]
+url = "https://github.com/date-fns/date-fns"
+branch = "main"
+runner = "vitest"
+install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
+args = []
+mutate = ["src/*/index.ts"]

@@ -15,6 +15,8 @@ pub enum ConfigKind {
     PyProject,
     /// INI-style: `setup.cfg`, `tox.ini`, `pytest.ini`.
     Ini,
+    /// `package.json` (any directory): sections are top-level fields.
+    PackageJson,
 }
 
 /// Which sections of a configuration file changed.
@@ -34,6 +36,7 @@ pub fn config_kind(path: &str) -> Option<ConfigKind> {
     match path.rsplit('/').next().unwrap_or(path) {
         "pyproject.toml" => Some(ConfigKind::PyProject),
         "setup.cfg" | "tox.ini" | "pytest.ini" => Some(ConfigKind::Ini),
+        "package.json" => Some(ConfigKind::PackageJson),
         _ => None,
     }
 }
@@ -50,6 +53,7 @@ pub fn delta(kind: ConfigKind, old: Option<&[u8]>, new: Option<&[u8]>) -> Config
         match kind {
             ConfigKind::PyProject => toml_sections(&text),
             ConfigKind::Ini => Ok(ini_sections(&text)),
+            ConfigKind::PackageJson => json_fields(&text),
         }
     };
     let (a, b) = match (parse(old), parse(new)) {
@@ -85,6 +89,19 @@ fn toml_sections(text: &str) -> Result<BTreeMap<String, String>, String> {
         }
     }
     Ok(out)
+}
+
+fn json_fields(text: &str) -> Result<BTreeMap<String, String>, String> {
+    let v: serde_json::Value =
+        serde_json::from_str(text).map_err(|e| format!("invalid JSON: {e}"))?;
+    let obj = v
+        .as_object()
+        .ok_or_else(|| "package.json is not an object".to_string())?;
+    // serde_json's map is ordered by key, so `to_string` is canonical.
+    Ok(obj
+        .iter()
+        .map(|(k, v)| (k.clone(), v.to_string()))
+        .collect())
 }
 
 /// Splits INI text into sections with whitespace- and comment-normalised

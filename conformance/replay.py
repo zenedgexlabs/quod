@@ -37,6 +37,7 @@ import io
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -50,6 +51,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXE = ".exe" if os.name == "nt" else ""
 SKIPCERT = ROOT / "target" / "release" / f"skipcert{EXE}"
 VERIFY = ROOT / "target" / "release" / f"skipcert-verify{EXE}"
+JS_PROBE = ROOT / "probes" / "js" / "src" / "cli.mjs"
 
 
 class SuiteTimeout(RuntimeError):
@@ -101,6 +103,14 @@ class Workspace:
     key_id: str
     artifacts: Path
 
+    @property
+    def runner(self) -> str:
+        return self.cfg.get("runner", "pytest")
+
+    @property
+    def test_dir(self) -> Path:
+        return self.repo / self.cfg.get("dir", ".")
+
     def git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess:
         return sh(["git", "-c", "core.autocrlf=false", "-C", self.repo, *args], check=check)
 
@@ -115,6 +125,17 @@ def setup(name: str, cfg: dict, work: Path, python_version: str) -> Workspace:
     if not repo.exists():
         log(f"cloning {cfg['url']}")
         sh(["git", "clone", "-q", "--filter=blob:none", "-b", cfg["branch"], cfg["url"], repo])
+    if cfg.get("runner", "pytest") == "vitest":
+        for cmd in cfg["install"]:
+            log(f"installing: {' '.join(cmd)}")
+            sh(cmd if os.name != "nt" or not cmd[0] in ("npm", "npx", "pnpm") else ["cmd", "/c", *cmd], cwd=repo)
+        py = None
+    else:
+        py = _python_setup(cfg, work, repo, python_version)
+    return _finish_setup(name, cfg, work, repo, py)
+
+
+def _python_setup(cfg: dict, work: Path, repo: Path, python_version: str) -> Path:
     venv = work / "venv"
     if not venv.exists():
         log(f"creating venv (python {python_version})")
@@ -122,7 +143,10 @@ def setup(name: str, cfg: dict, work: Path, python_version: str) -> Workspace:
     py = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     sh(["uv", "pip", "install", "-q", "--python", py, "--reinstall-package", "skipcert-probe", ROOT / "probes" / "python", "pytest"])
     sh(["uv", "pip", "install", "-q", "--python", py, *cfg["install"]], cwd=repo)
+    return py
 
+
+def _finish_setup(name: str, cfg: dict, work: Path, repo: Path, py: Path | None) -> "Workspace":
     if not SKIPCERT.exists() or not VERIFY.exists():
         log("building skipcert (release)")
         sh(["cargo", "build", "-q", "--release", "-p", "sc-cli", "-p", "skipcert-verify"], cwd=ROOT)
@@ -157,7 +181,11 @@ def run_suite(
     cap = ws.artifacts / f"{tag}.jsonl"
     for old in ws.artifacts.glob(cap.name + "*"):
         old.unlink()
-    args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--skipcert-record={cap}", f"--skipcert-root={ws.repo}", *(extra or [])]
+    if ws.runner == "vitest":
+        args = ["node", JS_PROBE, "record", "--out", cap, "--root", ws.repo, "--dir", ws.test_dir, "--",
+                *ws.cfg.get("args", []), *(extra or [])]
+    else:
+        args = [ws.python, "-m", "pytest", *ws.cfg["pytest"], f"--skipcert-record={cap}", f"--skipcert-root={ws.repo}", *(extra or [])]
     sh(args, cwd=ws.repo, check=False, timeout=timeout)
     if not cap.exists():
         raise RuntimeError(f"no capture produced for {tag}; the suite may not have started")
@@ -165,15 +193,43 @@ def run_suite(
     return tests, recs, cap
 
 
+def passes_alone(ws: Workspace, name: str) -> bool:
+    """Runs one test by itself."""
+    if ws.runner == "vitest":
+        file, full = name.split("::", 1)
+        out = ws.artifacts / "alone.json"
+        if out.exists():
+            out.unlink()
+        # Vitest matches -t against the suite path and test name joined by spaces.
+        pattern = "^" + re.escape(full.replace(" > ", " ")) + "$"
+        rel_file = os.path.relpath(ws.repo / file, ws.test_dir)
+        sh(["node", vitest_bin(ws), "run", rel_file, "-t", pattern, "--reporter=json", f"--outputFile={out}",
+            *ws.cfg.get("args", [])], cwd=ws.test_dir, check=False, timeout=600)
+        if not out.exists():
+            return False
+        res = json.loads(out.read_text(encoding="utf-8"))
+        states = [a["status"] for f in res.get("testResults", []) for a in f.get("assertionResults", [])
+                  if " > ".join([*a.get("ancestorTitles", []), a["title"]]) == full]
+        return bool(states) and all(st == "passed" for st in states)
+    r = sh([ws.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", name], cwd=ws.repo, check=False)
+    return r.returncode == 0
+
+
+def vitest_bin(ws: Workspace) -> Path:
+    for d in (ws.test_dir, ws.repo):
+        pkg = d / "node_modules" / "vitest" / "package.json"
+        if pkg.exists():
+            meta = json.loads(pkg.read_text(encoding="utf-8"))
+            bin_ = meta["bin"] if isinstance(meta["bin"], str) else meta["bin"]["vitest"]
+            return pkg.parent / bin_
+    raise RuntimeError("vitest is not installed")
+
+
 def nonflaky_failures(ws: Workspace, failing: set[str]) -> set[str]:
     """Re-runs each failing test twice; a test that passes either time is flaky."""
     real = set()
     for name in sorted(failing):
-        passes = 0
-        for _ in range(2):
-            r = sh([ws.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", name], cwd=ws.repo, check=False)
-            passes += r.returncode == 0
-        if passes == 0:
+        if not any(passes_alone(ws, name) for _ in range(2)):
             real.add(name)
     return real
 
@@ -199,7 +255,7 @@ ENV_MODE = True
 
 def select(ws: Workspace, map_path: Path, tag: str) -> dict:
     skip, certs, report = (ws.artifacts / f"{tag}.{s}" for s in ("skip.txt", "certs.jsonl", "report.json"))
-    env_args = ["--python", ws.python] if ENV_MODE else []
+    env_args = ["--python", ws.python] if ENV_MODE and ws.runner == "pytest" else []
     sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "select", "--map", map_path, "--key", ws.key,
         "--skip-out", skip, "--certs-out", certs, "--report-out", report, *env_args])
     v = sh([VERIFY, "--certs", certs, "--map", map_path, "--trusted-key", ws.key_id], check=False)
@@ -223,6 +279,7 @@ def file_level_skips(base_tests: dict, changed: set[str]) -> set[str]:
     skips = set()
     for name, t in base_tests.items():
         files = set(t["files"]) | {p for p, _ in t["functions"]}
+        files |= {p for p, _ in t.get("positions", [])} | {p for p, _ in t.get("lines", [])}
         if t["outcome"] == "passed" and not (files & changed):
             skips.add(name)
     return skips
@@ -264,8 +321,7 @@ class Step:
 
 
 def fails_alone(ws: "Workspace", name: str) -> bool:
-    r = sh([ws.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", name], cwd=ws.repo, check=False)
-    return r.returncode != 0
+    return not passes_alone(ws, name)
 
 
 def measure(kind, base, head, base_tests, head_tests, rep, base_changed, real_fail, ws, note="") -> Step:
@@ -334,6 +390,73 @@ def mutation_sites(source: str) -> list[tuple[int, int, int, str]]:
     return sites
 
 
+_JS_SWAPS = {"===": "!==", "!==": "===", "<=": ">", ">=": "<", "&&": "||", "||": "&&", "+": "-", "-": "+",
+             "true": "false", "false": "true"}
+_JS_TOKEN = re.compile(r"===|!==|<=|>=|&&|\|\||(?<=\s)[+-](?=\s)|\b(?:true|false)\b|\b\d+\b")
+
+
+def js_mutation_sites(source: str) -> list[tuple[int, int, int, str]]:
+    """Token mutants in JS/TS code, outside strings, comments and regexes.
+
+    A small lexer, not a parser: string, template and comment spans are
+    blanked out first, so only code tokens can match. Lines that only
+    declare types or imports are skipped (mutating them doesn't change
+    behaviour)."""
+    code = list(source)
+    i, n = 0, len(source)
+    prev_sig = ""
+    while i < n:
+        c = source[i]
+        if c in "'\"`":
+            j = i + 1
+            while j < n and source[j] != c:
+                j += 2 if source[j] == "\\" else 1
+            for k in range(i, min(j + 1, n)):
+                if code[k] != "\n":
+                    code[k] = " "
+            i = j + 1
+            prev_sig = "x"
+            continue
+        if source.startswith("//", i):
+            j = source.find("\n", i)
+            j = n if j < 0 else j
+            for k in range(i, j):
+                code[k] = " "
+            i = j
+            continue
+        if source.startswith("/*", i):
+            j = source.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            for k in range(i, j):
+                if code[k] != "\n":
+                    code[k] = " "
+            i = j
+            continue
+        if c == "/" and prev_sig in ("", "(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";"):
+            j = i + 1
+            while j < n and source[j] not in "/\n":
+                j += 2 if source[j] == "\\" else 1
+            for k in range(i, min(j + 1, n)):
+                code[k] = " "
+            i = j + 1
+            continue
+        if not c.isspace():
+            prev_sig = c
+        i += 1
+    blanked = "".join(code)
+    sites = []
+    for lineno, line in enumerate(blanked.splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith(("import ", "export type", "type ", "interface ", "export interface", "declare ")):
+            continue
+        for m in _JS_TOKEN.finditer(line):
+            tok = m.group(0)
+            new = _JS_SWAPS.get(tok) or (str(int(tok) + 1) if tok.isdigit() else None)
+            if new is not None:
+                sites.append((lineno, m.start(), m.end(), new))
+    return sites
+
+
 def apply_mutant(path: Path, site: tuple[int, int, int, str]) -> str:
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
@@ -393,13 +516,15 @@ def replay(ws: Workspace, n_commits: int, n_mutants: int, seed: int) -> list[Ste
         # measured, so it is discarded and another one drawn.
         suite_timeout = max(120.0, 10 * (time.monotonic() - t0))
         map_path = build_map(ws, cap, "m")
-        files = sorted({p for pat in ws.cfg["mutate"] for p in ws.repo.glob(pat) if p.is_file()})
+        files = sorted({p for pat in ws.cfg["mutate"] for p in ws.repo.glob(pat) if p.is_file()
+                        and not re.search(r"\.(test|spec|test-d|bench)\.|\.d\.ts$", p.name)})
         attempts = 0
         made = 0
         while made < n_mutants and attempts < n_mutants * 10:
             attempts += 1
             path = rng.choice(files)
-            sites = mutation_sites(path.read_text(encoding="utf-8"))
+            text = path.read_text(encoding="utf-8")
+            sites = js_mutation_sites(text) if path.suffix in (".ts", ".tsx", ".js", ".mjs", ".cjs", ".mts") else mutation_sites(text)
             if not sites:
                 continue
             desc = apply_mutant(path, rng.choice(sites))

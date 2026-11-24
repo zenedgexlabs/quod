@@ -191,8 +191,6 @@ const TEST_CONFIG_PATHS: &[&str] = &[
 /// or environment fingerprint yet (ADR 013). A change runs everything (R006)
 /// in both modes, until the ecosystem's adapter reports package nodes.
 const FOREIGN_DEPENDENCY_PATHS: &[&str] = &[
-    "**/package.json",
-    "**/pnpm-lock.yaml",
     "**/pnpm-workspace.yaml",
     "**/yarn.lock",
     "**/.yarnrc*",
@@ -220,6 +218,62 @@ const FOREIGN_DEPENDENCY_PATHS: &[&str] = &[
     "**/*.csproj",
     "**/packages.lock.json",
     "**/Directory.Packages.props",
+];
+
+/// `package.json` fields that can't change test outcomes: metadata, scripts,
+/// publishing and linting configuration. Dependency ranges are listed in
+/// [`PACKAGE_JSON_DEPENDENCY_FIELDS`]. Every other field (`type`, `exports`,
+/// `imports`, `main`, `module`, `browser`, `workspaces`, `overrides`,
+/// `resolutions`, `pnpm`, `babel`, `browserslist`, `jest`, ...) can change
+/// how modules resolve, transform or run, so it triggers R002.
+const IRRELEVANT_PACKAGE_JSON_FIELDS: &[&str] = &[
+    "name",
+    "version",
+    "description",
+    "keywords",
+    "author",
+    "contributors",
+    "maintainers",
+    "license",
+    "repository",
+    "bugs",
+    "homepage",
+    "funding",
+    "scripts",
+    "files",
+    "publishConfig",
+    "engines",
+    "packageManager",
+    "private",
+    "types",
+    "typings",
+    "typesVersions",
+    "sideEffects",
+    "eslintConfig",
+    "prettier",
+    "lint-staged",
+    "simple-git-hooks",
+    "husky",
+    "commitlint",
+    "release-it",
+    "changelog",
+    "changelogen",
+    "unbuild",
+    "volta",
+    "$schema",
+];
+
+/// Dependency ranges. They don't decide what is installed when a parsed
+/// lockfile (npm, pnpm) changed in the same change: the lockfile's package
+/// delta does. Otherwise they trigger R002.
+const PACKAGE_JSON_DEPENDENCY_FIELDS: &[&str] = &[
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+    "peerDependenciesMeta",
+    "bundleDependencies",
+    "bundledDependencies",
 ];
 
 /// Runtime pins of ecosystems the environment fingerprint doesn't cover
@@ -569,14 +623,37 @@ impl Policy {
         }
     }
 
+    /// R002 for a `package.json`, if it fires.
+    fn package_json_rule(config: Option<&ConfigDelta>, js_lock_changed: bool) -> Option<String> {
+        match config {
+            None => Some("package.json changed".into()),
+            Some(ConfigDelta::Unparseable(e)) => {
+                Some(format!("package.json could not be parsed: {e}"))
+            }
+            Some(ConfigDelta::Sections(fields)) => {
+                let relevant: Vec<&str> = fields
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|f| !IRRELEVANT_PACKAGE_JSON_FIELDS.contains(f))
+                    .filter(|f| !(js_lock_changed && PACKAGE_JSON_DEPENDENCY_FIELDS.contains(f)))
+                    .collect();
+                (!relevant.is_empty())
+                    .then(|| format!("package.json fields changed: {}", relevant.join(", ")))
+            }
+        }
+    }
+
     fn global_rule(
         &self,
         path: &str,
         config: Option<&ConfigDelta>,
         env_mode: bool,
+        js_lock_changed: bool,
     ) -> Option<(&'static str, String)> {
         if self.policy_files.is_match(path) {
             Some(("R004", "Skipcert policy changed".into()))
+        } else if path == "package.json" || path.ends_with("/package.json") {
+            Self::package_json_rule(config, js_lock_changed).map(|d| ("R002", d))
         } else if self.foreign_deps.is_match(path) {
             Some((
                 "R006",
@@ -678,6 +755,13 @@ impl Policy {
             }),
         }
 
+        // A parsed JavaScript lockfile changed: it, not package.json's
+        // dependency ranges, decides what is installed.
+        let js_lock_changed = cs.files.iter().any(|f| {
+            matches!(f.lock, Some(LockDelta::Packages(_)))
+                && sc_change::lock::lock_kind(&f.change.path)
+                    .is_some_and(|k| k.ecosystem() == "npm")
+        });
         for fd in &cs.files {
             let path = fd.change.path.as_str();
             let mut paths = vec![path];
@@ -685,7 +769,8 @@ impl Policy {
                 paths.push(old);
             }
             for p in &paths {
-                if let Some((rule, detail)) = self.global_rule(p, fd.config.as_ref(), env.is_some())
+                if let Some((rule, detail)) =
+                    self.global_rule(p, fd.config.as_ref(), env.is_some(), js_lock_changed)
                 {
                     ev.global.push(Trigger {
                         rule,
@@ -971,7 +1056,7 @@ mod tests {
             (".python-version", "R003"),
             (".nvmrc", "R003"),
             ("rust-toolchain.toml", "R003"),
-            ("web/pnpm-lock.yaml", "R006"),
+            ("web/yarn.lock", "R006"),
             ("go.sum", "R006"),
             ("Cargo.lock", "R006"),
             ("build.gradle.kts", "R006"),
@@ -1419,5 +1504,70 @@ mod tests {
                 (NodeKind::EnvVar, "API_URL"),
             ]
         );
+    }
+
+    #[test]
+    fn package_json_fields() {
+        let p = Policy::default_policy();
+        let fields =
+            |f: &[&str]| ConfigDelta::Sections(f.iter().map(|s| (*s).to_owned()).collect());
+        // Metadata and scripts don't matter.
+        let ev = p.evaluate(
+            &cs(vec![with_config(
+                "package.json",
+                fields(&["version", "scripts", "keywords"]),
+            )]),
+            &FRESH,
+        );
+        assert!(ev.global.is_empty(), "{:?}", ev.global);
+        // Module resolution does, in any workspace package.
+        let ev = p.evaluate(
+            &cs(vec![with_config(
+                "packages/a/package.json",
+                fields(&["exports"]),
+            )]),
+            &FRESH,
+        );
+        assert_eq!(ev.global[0].rule, "R002");
+        // Dependency ranges alone: R002 ...
+        let ev = p.evaluate(
+            &cs(vec![with_config(
+                "package.json",
+                fields(&["devDependencies"]),
+            )]),
+            &FRESH,
+        );
+        assert_eq!(ev.global[0].rule, "R002");
+        // ... unless a parsed lockfile changed with them (it decides what's installed).
+        let lock = fd(
+            "pnpm-lock.yaml",
+            FileStatus::Modified,
+            None,
+            Some(LockDelta::Packages(vec![PackageChange {
+                name: "vitest".into(),
+                old: None,
+                new: None,
+            }])),
+        );
+        let ev = p.evaluate(
+            &cs(vec![
+                with_config("package.json", fields(&["devDependencies"])),
+                lock,
+            ]),
+            &FRESH,
+        );
+        assert!(ev.global.is_empty(), "{:?}", ev.global);
+        assert!(ev.changed.iter().any(|c| c.name == "npm:vitest"));
+        // The file itself is a changed node too (tests that read it re-run).
+        assert!(ev.changed.iter().any(|c| c.name == "package.json"));
+        // Unparseable fails closed.
+        let ev = p.evaluate(
+            &cs(vec![with_config(
+                "package.json",
+                ConfigDelta::Unparseable("x".into()),
+            )]),
+            &FRESH,
+        );
+        assert_eq!(ev.global[0].rule, "R002");
     }
 }

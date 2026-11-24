@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // skipcert-vitest: runs Vitest with the Skipcert probe.
 //
-//   skipcert-vitest record --out capture.jsonl [--root DIR] [-- <vitest args>]
-//   skipcert-vitest run --skip skip.txt [--root DIR] [-- <vitest args>]
+//   skipcert-vitest record --out capture.jsonl [--root DIR] [--dir DIR] [-- <vitest args>]
+//   skipcert-vitest run --skip skip.txt [--root DIR] [--dir DIR] [-- <vitest args>]
+//
+// --root is the repository root (paths in the capture are relative to it);
+// --dir is where Vitest runs (a workspace package), default --root.
 //
 // The user's Vitest config is wrapped, not modified: a generated config
 // (under node_modules/.cache/skipcert) imports it, puts the probe's setup
@@ -30,7 +33,7 @@ function usage(msg) {
 export function parseArgs(argv) {
   const [cmd, ...rest] = argv;
   if (cmd !== 'record' && cmd !== 'run') usage(`unknown command ${cmd ?? ''}`);
-  const opts = { cmd, root: process.cwd(), out: null, skip: null, passthrough: [] };
+  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, passthrough: [] };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === '--') {
@@ -39,11 +42,13 @@ export function parseArgs(argv) {
     } else if (a === '--out') opts.out = rest[++i];
     else if (a === '--skip') opts.skip = rest[++i];
     else if (a === '--root') opts.root = rest[++i];
+    else if (a === '--dir') opts.dir = rest[++i];
     else usage(`unknown option ${a}`);
   }
   if (cmd === 'record' && !opts.out) usage('record needs --out');
   if (cmd === 'run' && !opts.skip) usage('run needs --skip');
   opts.root = path.resolve(opts.root);
+  opts.dir = path.resolve(opts.root, opts.dir ?? '.');
   return opts;
 }
 
@@ -95,14 +100,14 @@ function vitestBin(root) {
 
 export function main(argv) {
   const opts = parseArgs(argv);
-  const userConfig = findUserConfig(opts.root, opts.passthrough);
-  const cache = path.join(opts.root, 'node_modules', '.cache', 'skipcert');
+  const userConfig = findUserConfig(opts.dir, opts.passthrough);
+  const cache = path.join(opts.dir, 'node_modules', '.cache', 'skipcert');
   fs.mkdirSync(cache, { recursive: true });
   const wrapper = path.join(cache, 'vitest.config.mjs');
   fs.writeFileSync(
     wrapper,
     wrapperSource({
-      root: opts.root,
+      root: opts.dir,
       userConfig,
       setup: path.join(HERE, 'setup.mjs'),
       reporter: path.join(HERE, 'reporter.mjs'),
@@ -120,8 +125,8 @@ export function main(argv) {
   } else {
     env.SKIPCERT_SKIP_FILE = path.resolve(opts.skip);
   }
-  const res = spawnSync(process.execPath, [vitestBin(opts.root), 'run', '--config', wrapper, ...opts.passthrough], {
-    cwd: opts.root,
+  const res = spawnSync(process.execPath, [vitestBin(opts.dir), 'run', '--config', wrapper, ...opts.passthrough], {
+    cwd: opts.dir,
     env,
     stdio: 'inherit',
   });
