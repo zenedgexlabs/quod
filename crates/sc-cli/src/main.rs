@@ -101,6 +101,13 @@ enum Cmd {
         /// `py.environment` capability (ADR 012).
         #[arg(long)]
         python: Option<PathBuf>,
+        /// One argument of the probe's fingerprint command for the target
+        /// environment (repeat for each), e.g. `node`,
+        /// `<skipcert-js>/src/cli.mjs`, `fingerprint`, `--root`, `.`.
+        /// Turns on environment mode for maps recorded with an environment
+        /// capability. `--env NAME` arguments are appended.
+        #[arg(long = "fingerprint-cmd", allow_hyphen_values = true)]
+        fingerprint_cmd: Vec<String>,
     },
 }
 
@@ -231,6 +238,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
             report_out,
             json,
             python,
+            fingerprint_cmd,
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
             let opts = SelectOptions {
@@ -241,6 +249,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 advisory: *advisory,
                 repo_id: repo_id(&cli, &repo),
                 python: python.clone(),
+                fingerprint_cmd: (!fingerprint_cmd.is_empty()).then(|| fingerprint_cmd.clone()),
             };
             let res = run_select(&repo, &opts)?;
             if let Some(p) = skip_out {

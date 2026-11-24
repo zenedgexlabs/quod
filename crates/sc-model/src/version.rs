@@ -21,3 +21,8 @@ pub const CAP_PY_INTROSPECTION: &str = "py.introspection";
 /// and per-test environment variable reads, which turns on environment mode
 /// in `skipcert select --python` (ADR 012).
 pub const CAP_PY_ENVIRONMENT: &str = "py.environment";
+
+/// Probe capability: the JavaScript probe's environment fingerprint (Node
+/// runtime, platform, installed packages as `dist.npm:<name>`) and
+/// `process.env` reads (ADR 012 applied to Node).
+pub const CAP_JS_ENVIRONMENT: &str = "js.environment";

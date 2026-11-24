@@ -71,3 +71,38 @@ branch = "main"
 install = ["-e", ".", "--group", "dev"]
 pytest = ["tests", "-q", "-p", "no:cacheprovider", "--ignore=tests/mypy", "--ignore=tests/benchmarks"]
 mutate = ["pydantic/*.py", "pydantic/_internal/*.py"]
+
+# JavaScript / TypeScript (Vitest), ADR 013. `install` is a list of commands
+# run in the repository; `dir` is where Vitest runs; `args` go to Vitest.
+
+[repos.ufo]
+url = "https://github.com/unjs/ufo"
+branch = "main"
+runner = "vitest"
+install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
+args = []
+mutate = ["src/*.ts"]
+
+[repos.remeda]
+url = "https://github.com/remeda/remeda"
+branch = "main"
+runner = "vitest"
+install = [["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]]
+dir = "packages/remeda"
+args = ["--project", "runtime"]
+mutate = ["packages/remeda/src/*.ts"]
+# Real timers: fail in about half of runs on unchanged code under load.
+flaky = [
+    "packages/remeda/src/funnel.remeda-debounce.test.ts::optional param maxWaitMs > should queue a trailing call for subsequent debounced calls after `maxWait`",
+    "packages/remeda/src/funnel.test.ts::non-trivial (>0ms) timer duration > burst timer > maxBurstDurationMs limits the burst duration",
+]
+
+# date-fns' core package runs its tests only in browser mode, which the probe
+# can't observe yet: the replay covers its Node packages (tz, utc, docs).
+[repos.date-fns]
+url = "https://github.com/date-fns/date-fns"
+branch = "main"
+runner = "vitest"
+install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
+args = ["--project", "!*browser*"]
+mutate = ["pkgs/tz/src/*.ts", "pkgs/tz/src/*/index.ts", "pkgs/utc/src/*.ts", "pkgs/utc/src/*/index.ts"]

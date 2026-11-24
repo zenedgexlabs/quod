@@ -12,11 +12,11 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use sc_cert::{Ed25519Signer, Signer};
-use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Repo};
+use sc_change::{ChangeOptions, ChangeSet, DiffOptions, Language, LineMap, Repo};
 use sc_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use sc_hash::{Digest, hash_file};
 use sc_ladder::{RunReason, SelectInput, Selection, select};
-use sc_model::version::{CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
+use sc_model::version::{CAP_JS_ENVIRONMENT, CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
 use sc_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
 use sc_policy::{EnvironmentDelta, EvalContext, Evaluation, Policy};
 
@@ -51,6 +51,10 @@ enum Record {
         environment_digest: String,
         #[serde(default)]
         invocation_digest: String,
+        /// Package ecosystem of the capture's `package` records and package
+        /// references (`pypi` when absent).
+        #[serde(default)]
+        ecosystem: Option<String>,
     },
     Package {
         name: String,
@@ -69,6 +73,10 @@ enum Record {
         flags: Vec<String>,
         #[serde(default)]
         env: Vec<(String, String)>,
+        #[serde(default)]
+        lines: Vec<(String, Vec<(u32, u32)>)>,
+        #[serde(default)]
+        positions: Vec<(String, Vec<(u32, u32)>)>,
     },
     Root {
         files: Vec<String>,
@@ -76,6 +84,10 @@ enum Record {
         packages: Vec<String>,
         #[serde(default)]
         env: Vec<(String, String)>,
+        #[serde(default)]
+        lines: Vec<(String, Vec<(u32, u32)>)>,
+        #[serde(default)]
+        positions: Vec<(String, Vec<(u32, u32)>)>,
     },
 }
 
@@ -97,9 +109,110 @@ struct Ingest<'a> {
     root: &'a Path,
     file_hashes: HashMap<String, Option<Digest>>,
     package_hashes: HashMap<String, Option<Digest>>,
+    /// Line maps of recorded source files (ADR 013). `None`: no entity spec
+    /// for the language, or the file couldn't be read or parsed, so lines
+    /// observe the file node.
+    line_maps: HashMap<String, Option<LineMap>>,
 }
 
 impl Ingest<'_> {
+    /// Nodes observed by executing `ranges` of `path`: the innermost entity
+    /// of each line, and the file node for module-level lines.
+    fn lines(&mut self, path: &str, ranges: &[(u32, u32)]) -> Vec<NodeId> {
+        let name = names::file(path);
+        self.load_map(&name);
+        let resolved = self.line_maps[&name].as_ref().map(|m| {
+            let (ents, module) = m.resolve(ranges);
+            (
+                ents.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+                module,
+            )
+        });
+        let mut out = Vec::new();
+        match resolved {
+            Some((ents, module)) => {
+                for q in &ents {
+                    out.push(self.function(&name, q));
+                }
+                if module || ents.is_empty() {
+                    out.push(self.file(&name));
+                }
+            }
+            None => out.push(self.file(&name)),
+        }
+        out
+    }
+
+    /// Nodes observed by executing the functions that start at `positions`
+    /// (1-based line, 0-based column) in `path`: the innermost entity of
+    /// each, or the file node when a position is outside every entity.
+    fn positions(&mut self, path: &str, positions: &[(u32, u32)]) -> Vec<NodeId> {
+        let name = names::file(path);
+        self.load_map(&name);
+        let quals: Option<Vec<Option<String>>> = self.line_maps[&name].as_ref().map(|m| {
+            positions
+                .iter()
+                .map(|&(l, c)| m.entity_at(l, c).map(str::to_owned))
+                .collect()
+        });
+        let mut out = Vec::new();
+        match quals {
+            Some(qs) => {
+                for q in qs {
+                    match q {
+                        Some(q) => out.push(self.function(&name, &q)),
+                        None => out.push(self.file(&name)),
+                    }
+                }
+            }
+            None => out.push(self.file(&name)),
+        }
+        out
+    }
+
+    /// Module-state widening (ADR 014): for every touched source file that
+    /// keeps mutable state at module or class level, every entity of the
+    /// file and the file itself. A memoised result can be read without
+    /// re-running the function that computed it, possibly in another test.
+    fn stateful_widening(
+        &mut self,
+        files: &[String],
+        functions: &[(String, String)],
+        positions: &[(String, Vec<(u32, u32)>)],
+        lines: &[(String, Vec<(u32, u32)>)],
+    ) -> Vec<NodeId> {
+        let touched: BTreeSet<String> = files
+            .iter()
+            .map(|f| names::file(f))
+            .chain(functions.iter().map(|(p, _)| names::file(p)))
+            .chain(positions.iter().map(|(p, _)| names::file(p)))
+            .chain(lines.iter().map(|(p, _)| names::file(p)))
+            .collect();
+        let mut out = Vec::new();
+        for f in touched {
+            self.load_map(&f);
+            let entities: Vec<String> = match &self.line_maps[&f] {
+                Some(m) if m.module_state() => m.entities().to_vec(),
+                _ => continue,
+            };
+            out.push(self.file(&f));
+            for q in &entities {
+                out.push(self.function(&f, q));
+            }
+        }
+        out
+    }
+
+    fn load_map(&mut self, name: &str) {
+        if !self.line_maps.contains_key(name) {
+            let map = Language::from_path(name).and_then(|lang| {
+                let src = std::fs::read(self.root.join(name)).ok()?;
+                LineMap::new(lang, &src).ok()
+            });
+            self.line_maps.insert(name.to_owned(), map);
+        }
+    }
+
     fn file(&mut self, rel: &str) -> NodeId {
         let name = names::file(rel);
         let root = self.root;
@@ -129,14 +242,23 @@ impl Ingest<'_> {
         )
     }
 
+    /// `name` is ecosystem-qualified (see [`qualify_packages`]).
     fn package(&mut self, name: &str) -> NodeId {
         let hash = self.package_hashes.get(name).copied().flatten();
-        self.b.node(
-            NodeKind::ExtPackage,
-            &names::package(sc_model::Ecosystem::Pypi, name),
-            hash,
-            None,
-        )
+        self.b.node(NodeKind::ExtPackage, name, hash, None)
+    }
+}
+
+/// Rewrites a record's package names to graph node names (`pypi:x`,
+/// `npm:x`) for the capture's ecosystem.
+fn qualify_packages(rec: &mut Record, eco: sc_model::Ecosystem) {
+    let q = |n: &mut String| *n = names::package(eco, n);
+    match rec {
+        Record::Package { name, .. } => q(name),
+        Record::Test { packages, .. } | Record::Root { packages, .. } => {
+            packages.iter_mut().for_each(q)
+        }
+        Record::Header { .. } => {}
     }
 }
 
@@ -160,12 +282,13 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
             File::open(path).with_context(|| format!("opening {}", path.display()))?,
         );
         let mut saw_header = false;
+        let mut eco = sc_model::Ecosystem::Pypi;
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             if line.trim().is_empty() {
                 continue;
             }
-            let rec: Record = serde_json::from_str(&line)
+            let mut rec: Record = serde_json::from_str(&line)
                 .with_context(|| format!("{}:{}: invalid capture record", path.display(), i + 1))?;
             match &rec {
                 Record::Header {
@@ -176,7 +299,16 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     invocation,
                     environment_digest,
                     invocation_digest,
+                    ecosystem,
                 } => {
+                    eco = match ecosystem.as_deref() {
+                        None | Some("pypi") => sc_model::Ecosystem::Pypi,
+                        Some("npm") => sc_model::Ecosystem::Npm,
+                        Some(other) => bail!(
+                            "{}: unsupported package ecosystem {other:?}",
+                            path.display()
+                        ),
+                    };
                     fingerprints.insert((
                         environment.clone(),
                         invocation.clone(),
@@ -203,7 +335,10 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     "{}: capture file does not start with a header",
                     path.display()
                 ),
-                _ => records.push(rec),
+                _ => {
+                    qualify_packages(&mut rec, eco);
+                    records.push(rec);
+                }
             }
         }
         if !saw_header {
@@ -231,6 +366,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
         root: repo_root,
         file_hashes: HashMap::new(),
         package_hashes: HashMap::new(),
+        line_maps: HashMap::new(),
     };
     for rec in &records {
         if let Record::Package { name, dist_hash } = rec {
@@ -253,6 +389,8 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 packages,
                 flags,
                 env,
+                lines,
+                positions,
             } => {
                 let mut f = TestFlags::default();
                 for fl in &flags {
@@ -280,12 +418,27 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                     let n = st.env(name, h);
                     st.b.observe(t, n);
                 }
+                for (path, ranges) in &lines {
+                    for n in st.lines(path, ranges) {
+                        st.b.observe(t, n);
+                    }
+                }
+                for (path, pos) in &positions {
+                    for n in st.positions(path, pos) {
+                        st.b.observe(t, n);
+                    }
+                }
+                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
+                    st.b.observe(t, n);
+                }
             }
             Record::Root {
                 files,
                 functions,
                 packages,
                 env,
+                lines,
+                positions,
             } => {
                 for file in &files {
                     let n = st.file(file);
@@ -301,6 +454,19 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 }
                 for (name, h) in &env {
                     let n = st.env(name, h);
+                    st.b.observe_root(n);
+                }
+                for (path, ranges) in &lines {
+                    for n in st.lines(path, ranges) {
+                        st.b.observe_root(n);
+                    }
+                }
+                for (path, pos) in &positions {
+                    for n in st.positions(path, pos) {
+                        st.b.observe_root(n);
+                    }
+                }
+                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
                     st.b.observe_root(n);
                 }
             }
@@ -327,6 +493,10 @@ pub struct SelectOptions {
     /// Python interpreter of the target environment. With a map recorded by
     /// a `py.environment` probe, this turns on environment mode (ADR 012).
     pub python: Option<PathBuf>,
+    /// The probe's fingerprint command for the target environment, for
+    /// probes other than Python's (for example `node <skipcert-js>/src/cli.mjs
+    /// fingerprint --root <repo>`). `--env NAME` arguments are appended.
+    pub fingerprint_cmd: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -336,15 +506,16 @@ struct Fingerprint {
 }
 
 /// Runs the probe's fingerprint command in the target environment.
-fn fingerprint(python: &Path, env_names: &[String]) -> Result<Fingerprint> {
-    let mut cmd = std::process::Command::new(python);
-    cmd.args(["-m", "skipcert_probe", "fingerprint"]);
+fn fingerprint(argv: &[String], env_names: &[String]) -> Result<Fingerprint> {
+    let (program, args) = argv.split_first().context("empty fingerprint command")?;
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
     for n in env_names {
         cmd.arg("--env").arg(n);
     }
     let out = cmd
         .output()
-        .with_context(|| format!("running {} -m skipcert_probe fingerprint", python.display()))?;
+        .with_context(|| format!("running the fingerprint command {}", argv.join(" ")))?;
     if !out.status.success() {
         bail!(
             "fingerprint command failed: {}",
@@ -550,16 +721,26 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     )?;
     let behind = repo.commits_between(&base, &change.head).ok();
     let policy = load_policy(repo, opts.policy.as_deref())?;
-    let env_mode = opts.python.is_some()
+    let fingerprint_cmd: Option<Vec<String>> = match (&opts.fingerprint_cmd, &opts.python) {
+        (Some(cmd), _) => Some(cmd.clone()),
+        (None, Some(py)) => Some(vec![
+            py.to_string_lossy().into_owned(),
+            "-m".into(),
+            "skipcert_probe".into(),
+            "fingerprint".into(),
+        ]),
+        (None, None) => None,
+    };
+    let env_mode = fingerprint_cmd.is_some()
         && graph
             .meta()
             .capabilities
             .iter()
-            .any(|c| c == CAP_PY_ENVIRONMENT);
-    let environment = match (&opts.python, env_mode) {
-        (Some(py), true) => Some(environment_delta(
+            .any(|c| c == CAP_PY_ENVIRONMENT || c == CAP_JS_ENVIRONMENT);
+    let environment = match (&fingerprint_cmd, env_mode) {
+        (Some(cmd), true) => Some(environment_delta(
             &graph,
-            &fingerprint(py, &env_var_names(&graph))?,
+            &fingerprint(cmd, &env_var_names(&graph))?,
         )),
         _ => None,
     };

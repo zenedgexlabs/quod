@@ -125,3 +125,24 @@ In environment mode:
   scope observes all distribution metadata (ADR 011).
 - **New moving part.** `select` needs the target interpreter. The default CI
   recipe already has it installed before tests run.
+
+## Addendum: Node (`js.environment`, 2026-11-24)
+
+The JavaScript probe implements the same contract:
+
+- **Fingerprint keys.** `interpreter.*` covers Node, its bundled libraries
+  (`process.versions`) and `execArgv`. `system.*` covers the OS release, time
+  zone, locale and CPU count. `process_env.*` covers `NODE_*`, `UV_*`, `TZ`,
+  `LANG` and `LC_*`. `dist.npm:<name>` covers every installed copy's version
+  and `package.json` hash, under every `node_modules` from the test directory
+  up to the filesystem root, including pnpm's `.pnpm` store.
+- **Per-test variable reads.** `process.env` reads are recorded through a
+  Proxy (enumeration is `env:*`). Writes, including `vi.stubEnv`, are
+  in-process state, not inputs.
+- **Where fingerprints come from.** The CLI computes them before Vitest starts,
+  because Vitest sets `NODE_ENV` itself. `skipcert-vitest fingerprint`
+  serves `select --fingerprint-cmd`, and `skipcert-vitest run` checks the
+  skip-file header in that same context. On any mismatch it runs every test.
+- **Generic select option.** `select --fingerprint-cmd ARG...` (one flag per
+  argument) runs any probe's fingerprint command. `--python` is shorthand
+  for the Python probe's.

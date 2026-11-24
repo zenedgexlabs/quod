@@ -21,4 +21,10 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
     Write-Host "`n(skipping python probe: uv not found)"
 }
 
+if (Get-Command npm -ErrorAction SilentlyContinue) {
+    Invoke-Step 'js probe' { Push-Location probes/js; try { npm ci --silent; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }; npm test --silent; if ($LASTEXITCODE -ne 0) { throw 'js probe tests failed' } } finally { Pop-Location } }
+} else {
+    Write-Host "`n(skipping js probe: npm not found)"
+}
+
 Write-Host "`nlocal CI passed"

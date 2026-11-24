@@ -18,6 +18,8 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [010](0010-offline-first.md) | Accepted | Offline-first selection; control-plane calls are opportunistic | Agent sandboxes without network, and air-gapped sites |
 | [011](0011-def-header-splitting.md) | Accepted | Split `def` headers by what the enclosing scope evaluates; gated on the probe's `py.introspection` capability | Method-header edits made whole classes root-scope changes (click, E1 run 3) |
 | [012](0012-environment-fingerprint.md) | Accepted | Environment fingerprinting replaces path-based environment rules (R001, R003, most of R002, lockfiles); new R018 | Path rules were both imprecise (most CI/tox edits change nothing) and incomplete (runner images, env vars) |
+| [013](0013-language-adapters.md) | Accepted | Any language: probes report executed lines, Skipcert maps them to entities with the same tree-sitter extractor that diffs changes; JS/TS, Go, Rust, Java specs; static languages need the build closure | One bespoke probe per language doesn't scale, and probe/diff naming must never disagree |
+| [014](0014-module-state-widening.md) | Accepted | A test that touches a file with module- or class-level mutable state observes every entity of that file | date-fns: a memoised result was read by 90 tests that never ran the function computing it |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.

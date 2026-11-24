@@ -133,6 +133,7 @@ fn select(f: &Fixture) -> sc_cli::SelectResult {
             advisory: false,
             repo_id: "acme/app".into(),
             python: None,
+            fingerprint_cmd: None,
         },
     )
     .unwrap()
@@ -258,6 +259,7 @@ fn advisory_output_is_not_accepted_by_the_verifier() {
             advisory: true,
             repo_id: "acme/app".into(),
             python: None,
+            fingerprint_cmd: None,
             ..SelectOptions::default()
         },
     )
@@ -418,6 +420,7 @@ fn select_with(f: &Fixture, python: Option<std::path::PathBuf>) -> sc_cli::Selec
             advisory: false,
             repo_id: "acme/app".into(),
             python,
+            fingerprint_cmd: None,
         },
     )
     .unwrap()
@@ -564,4 +567,173 @@ fn ignored_observed_files_are_rehashed() {
         res.report.changed
     );
     verify_ok(&f, &res);
+}
+
+const CALC_JS: &str = "export const RATE = 2;
+export function add(a, b) {
+  return a + b;
+}
+export const mul = (a, b) => {
+  return a * b * RATE;
+};
+";
+
+/// A JavaScript repository recorded by a line-reporting probe (ADR 013):
+/// `test_add` executed only `add`, `test_mul` executed `mul` and the module
+/// top level. Lines are mapped to entities at ingest.
+fn setup_js() -> (
+    tempfile::TempDir,
+    std::path::PathBuf,
+    std::path::PathBuf,
+    std::path::PathBuf,
+) {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("repo");
+    fs::create_dir_all(root.join("src")).unwrap();
+    fs::create_dir_all(root.join("test")).unwrap();
+    fs::write(root.join("src/calc.js"), CALC_JS).unwrap();
+    fs::write(
+        root.join("test/calc.test.js"),
+        "test('add', () => {});\ntest('mul', () => {});\n",
+    )
+    .unwrap();
+    git(&root, &["init", "-q", "-b", "main"]);
+    git(&root, &["add", "-A"]);
+    git(&root, &["commit", "-q", "-m", "base"]);
+    let header = r#"{"type":"header","v":1,"probe":"js-probe/0.0.1","capabilities":[],"language":"javascript"}"#;
+    let t_add = r#"{"type":"test","name":"test/calc.test.js::add","path":"test/calc.test.js","qual":"add","params":"","outcome":"passed","duration_ms":100,"files":[],"functions":[],"packages":[],"flags":[],"lines":[["src/calc.js",[[3,3]]],["test/calc.test.js",[[1,1]]]]}"#;
+    let t_mul = r#"{"type":"test","name":"test/calc.test.js::mul","path":"test/calc.test.js","qual":"mul","params":"","outcome":"passed","duration_ms":100,"files":[],"functions":[],"packages":[],"flags":[],"lines":[["src/calc.js",[[1,1],[5,7]]],["test/calc.test.js",[[2,2]]]]}"#;
+    let root_rec = r#"{"type":"root","files":[],"functions":[],"packages":[]}"#;
+    let cap = dir.path().join("cap.jsonl");
+    fs::write(&cap, [header, t_add, t_mul, root_rec].join("\n")).unwrap();
+    let repo = Repo::discover(&root).unwrap();
+    let meta = MapMeta {
+        repo: "acme/web".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    let graph = ingest(&[cap], repo.root(), meta).unwrap();
+    let map = dir.path().join("map.scmap");
+    fs::write(&map, graph.encode().unwrap().0).unwrap();
+    let key = dir.path().join("key.hex");
+    fs::write(&key, Ed25519Signer::generate().unwrap().seed_hex()).unwrap();
+    (dir, root, map, key)
+}
+
+fn select_js(root: &Path, map: &Path, key: &Path) -> Vec<String> {
+    let repo = Repo::discover(root).unwrap();
+    let res = run_select(
+        &repo,
+        &SelectOptions {
+            map: map.to_path_buf(),
+            key: Some(key.to_path_buf()),
+            repo_id: "acme/web".into(),
+            ..SelectOptions::default()
+        },
+    )
+    .unwrap();
+    run_names(&res)
+}
+
+#[test]
+fn javascript_lines_map_to_functions() {
+    let (_d, root, map, key) = setup_js();
+    let graph = FootprintGraph::decode(&fs::read(&map).unwrap()).unwrap().0;
+    assert!(
+        graph
+            .find_node(sc_model::NodeKind::Function, "src/calc.js::add")
+            .is_some()
+    );
+    assert!(
+        graph
+            .find_node(sc_model::NodeKind::Function, "src/calc.js::mul")
+            .is_some()
+    );
+
+    // A body edit in `add` runs only the test that executed it.
+    fs::write(root.join("src/calc.js"), CALC_JS.replace("a + b", "b + a")).unwrap();
+    assert_eq!(select_js(&root, &map, &key), vec!["test/calc.test.js::add"]);
+
+    // A module-level edit runs the tests that evaluated the module's top level.
+    fs::write(
+        root.join("src/calc.js"),
+        CALC_JS.replace("RATE = 2", "RATE = 3"),
+    )
+    .unwrap();
+    assert_eq!(select_js(&root, &map, &key), vec!["test/calc.test.js::mul"]);
+
+    // A dependency manifest without a delta parser runs everything (R006).
+    fs::write(root.join("src/calc.js"), CALC_JS).unwrap();
+    fs::write(root.join("package-lock.json"), "{}\n").unwrap();
+    assert_eq!(
+        select_js(&root, &map, &key),
+        vec!["test/calc.test.js::add", "test/calc.test.js::mul"]
+    );
+}
+
+/// Module-state widening (ADR 014), reproducing the date-fns escape: the
+/// second test only reads the cache that the first test filled through
+/// `calc`. A change to `calc` must re-run it.
+#[test]
+fn memoised_module_state_widens_to_the_whole_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("repo");
+    fs::create_dir_all(root.join("src")).unwrap();
+    let src = "const cache = {};
+export function lookup(k) {
+  if (k in cache) return cache[k];
+  return calc(k);
+}
+function calc(k) {
+  return (cache[k] = k * 2);
+}
+export function other() {
+  return 1;
+}
+";
+    fs::write(root.join("src/memo.js"), src).unwrap();
+    fs::write(
+        root.join("src/plain.js"),
+        "export function a() {\n  return 1;\n}\nexport function b() {\n  return 2;\n}\n",
+    )
+    .unwrap();
+    git(&root, &["init", "-q", "-b", "main"]);
+    git(&root, &["add", "-A"]);
+    git(&root, &["commit", "-q", "-m", "base"]);
+    let header =
+        r#"{"type":"header","v":1,"probe":"js-probe/0.0.1","capabilities":[],"ecosystem":"npm"}"#;
+    let first = r#"{"type":"test","name":"t.test.js::first","path":"t.test.js","qual":"first","params":"","outcome":"passed","duration_ms":1,"files":[],"functions":[],"packages":[],"flags":[],"positions":[["src/memo.js",[[2,7],[6,0]]]]}"#;
+    let second = r#"{"type":"test","name":"t.test.js::second","path":"t.test.js","qual":"second","params":"","outcome":"passed","duration_ms":1,"files":[],"functions":[],"packages":[],"flags":[],"positions":[["src/memo.js",[[2,7]]],["src/plain.js",[[1,7]]]]}"#;
+    let root_rec = r#"{"type":"root","files":[],"functions":[],"packages":[]}"#;
+    let cap = dir.path().join("cap.jsonl");
+    fs::write(&cap, [header, first, second, root_rec].join("\n")).unwrap();
+    let repo = Repo::discover(&root).unwrap();
+    let meta = MapMeta {
+        repo: "acme/web".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    let graph = ingest(&[cap], repo.root(), meta).unwrap();
+    let map = dir.path().join("map.scmap");
+    fs::write(&map, graph.encode().unwrap().0).unwrap();
+    let key = dir.path().join("key.hex");
+    fs::write(&key, Ed25519Signer::generate().unwrap().seed_hex()).unwrap();
+
+    // `second` never ran `calc`, but read what it cached: it re-runs.
+    fs::write(root.join("src/memo.js"), src.replace("k * 2", "k * 3")).unwrap();
+    assert_eq!(
+        select_js(&root, &map, &key),
+        vec!["t.test.js::first", "t.test.js::second"]
+    );
+
+    // A stateless file stays function-precise: `b` ran in no test.
+    fs::write(root.join("src/memo.js"), src).unwrap();
+    fs::write(
+        root.join("src/plain.js"),
+        "export function a() {\n  return 1;\n}\nexport function b() {\n  return 3;\n}\n",
+    )
+    .unwrap();
+    assert!(select_js(&root, &map, &key).is_empty());
 }
