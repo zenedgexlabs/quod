@@ -244,6 +244,7 @@ def failing(tests: dict) -> set[str]:
 
 def build_map(ws: Workspace, cap: Path, tag: str) -> Path:
     out = ws.artifacts / f"{tag}.scmap"
+    ws.git("clean", "-fdq")  # tests may leave untracked files; ingest wants a clean tree
     caps = sorted(cap.parent.glob(cap.name + "*"))
     sh([SKIPCERT, "--repo-dir", ws.repo, "--repo-id", ws.name, "ingest", *[a for c in caps for a in ("--capture", c)], "--out", out])
     return out

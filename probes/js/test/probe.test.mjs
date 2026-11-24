@@ -9,7 +9,7 @@ import { before, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { decodeMappings, executedFunctions, executedMask } from '../src/coverage.mjs';
 import { main } from '../src/cli.mjs';
-import { digest, envValueHash } from '../src/fingerprint.mjs';
+import { digest, environHash, envValueHash } from '../src/fingerprint.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(HERE, 'fixtures', 'basic');
@@ -79,6 +79,7 @@ describe('recorded Vitest run', () => {
       'test/concurrent.test.ts::c2',
       'test/env.test.ts::enumerates env',
       'test/env.test.ts::reads env',
+      'test/env.test.ts::reads runner env',
       'test/env.test.ts::stubs env',
     ]);
   });
@@ -100,6 +101,15 @@ describe('recorded Vitest run', () => {
     assert.ok(!('FIXTURE_STUB' in env('test/env.test.ts::stubs env')), 'a stubbed variable is not an input');
     assert.ok('*' in env('test/env.test.ts::enumerates env'));
     assert.ok(!('FIXTURE_VAR' in env('test/calc.test.ts::calc > add')));
+  });
+
+  test('env reads are recorded against the environment select sees', () => {
+    const env = (name) => Object.fromEntries(tests[name].env);
+    // Vitest sets these in its workers; this process (as `select`) has neither.
+    const runner = env('test/env.test.ts::reads runner env');
+    assert.equal(runner.VITEST, envValueHash(process.env.VITEST));
+    assert.equal(runner.TEST, envValueHash(process.env.TEST));
+    assert.equal(env('test/env.test.ts::enumerates env')['*'], environHash());
   });
 
   test('skip-file checks fail open to running everything', () => {

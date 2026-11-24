@@ -25,12 +25,29 @@ export function envValueHash(value) {
   return createHash('sha256').update(HASH_PREFIX + data, 'utf8').digest('hex');
 }
 
-/** Hash of the whole environment (the `env:*` node). */
+/** Hash of the whole environment (the `env:*` node), minus Skipcert's own variables. */
 export function environHash(env = process.env) {
   const items = Object.keys(env)
     .map((k) => [envKey(k), env[k]])
+    .filter(([k]) => !k.startsWith('SKIPCERT_'))
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return createHash('sha256').update(HASH_PREFIX + JSON.stringify(items), 'utf8').digest('hex');
+}
+
+/**
+ * The environment as `skipcert select` sees it, as value hashes: what a test
+ * read is recorded against this, not against the worker's environment, which
+ * Vitest changes (VITEST, TEST, VITEST_WORKER_ID, NODE_ENV when unset, ...).
+ * The in-worker values follow from these, the Vitest version (`dist.*`) and
+ * the config (a root file).
+ */
+export function outerEnv(env = process.env) {
+  const values = {};
+  for (const k of Object.keys(env)) {
+    const key = envKey(k);
+    if (!key.startsWith('SKIPCERT_')) values[key] = envValueHash(env[k]);
+  }
+  return { all: environHash(env), values };
 }
 
 /** Canonical digest: keys sorted, compact JSON. */

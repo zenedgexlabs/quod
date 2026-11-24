@@ -40,6 +40,21 @@ _PYTEST_ENV_NAMES = ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTEST_DISABLE_PLUGIN_
 
 _SKIPCERT_OPTIONS = ("--skipcert-record", "--skipcert-skip", "--skipcert-root")
 
+# Variables the test runner sets in its own process (pytest, pytest-xdist).
+# They aren't inputs: their values follow from the installed distributions,
+# which ``dist.*`` covers, and they are absent where ``skipcert select``
+# fingerprints the environment. Reads of them aren't recorded, and ``env:*``
+# leaves them out.
+RUNNER_ENV_NAMES = frozenset(
+    {
+        "PYTEST_VERSION",
+        "PYTEST_CURRENT_TEST",
+        "PYTEST_XDIST_WORKER",
+        "PYTEST_XDIST_WORKER_COUNT",
+        "PYTEST_XDIST_TESTRUNUID",
+    }
+)
+
 
 def env_key(name: str) -> str:
     """The canonical spelling of an environment variable name (upper case
@@ -54,9 +69,14 @@ def env_value_hash(value: str | None) -> str:
 
 
 def environ_hash(environ: dict[str, str] | None = None) -> str:
-    """Hash of the whole environment (the ``env:*`` node)."""
+    """Hash of the whole environment (the ``env:*`` node), minus the
+    variables the test runner sets itself and Skipcert's own."""
     env = os.environ if environ is None else environ
-    items = sorted((env_key(k), v) for k, v in env.items())
+    items = sorted(
+        (key, v)
+        for key, v in ((env_key(k), v) for k, v in env.items())
+        if key not in RUNNER_ENV_NAMES and not key.startswith("SKIPCERT_")
+    )
     return hashlib.sha256(_HASH_PREFIX + json.dumps(items).encode("utf-8", "surrogateescape")).hexdigest()
 
 

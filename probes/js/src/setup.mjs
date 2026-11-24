@@ -25,6 +25,16 @@ import { fileURLToPath } from 'node:url';
 import { executedFunctions } from './coverage.mjs';
 import { envKey, envValueHash, environHash } from './fingerprint.mjs';
 
+/** The CLI's environment (`outerEnv`), or null when Vitest was started directly. */
+function readOuterEnv() {
+  try {
+    const f = process.env.SKIPCERT_FINGERPRINT_FILE;
+    return f ? (JSON.parse(fs.readFileSync(f, 'utf8')).env ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
 const ROOT = path.resolve(process.env.SKIPCERT_ROOT || process.cwd());
 const RECORD_DIR = process.env.SKIPCERT_RECORD_DIR;
 const SKIP_FILE = process.env.SKIPCERT_SKIP_FILE;
@@ -136,12 +146,18 @@ const empty = () => ({
  * into the same windows as coverage. Enumerating the environment
  * (`Object.keys`, spreading) depends on all of it: `env:*`. Keys the process
  * wrote itself (`vi.stubEnv`, fixtures) are in-process state, not inputs.
+ *
+ * Values are recorded as the CLI saw them before starting Vitest (`outerEnv`),
+ * the environment `skipcert select` compares with.
  */
 function trackEnv(sc) {
   const target = process.env;
   const written = new Set();
+  const outer = readOuterEnv();
   const note = (k, h) => {
-    if (!k.startsWith('SKIPCERT_') && !sc.env.has(k)) sc.env.set(k, h);
+    if (k.startsWith('SKIPCERT_') || sc.env.has(k)) return;
+    if (outer) h = k === '*' ? outer.all : (outer.values[k] ?? envValueHash(undefined));
+    sc.env.set(k, h);
   };
   process.env = new Proxy(target, {
     get(t, k) {
@@ -202,8 +218,10 @@ async function take() {
       out.packages.add(packageInfo(sc, pkg).name);
       continue;
     }
-    if (!slash(abs).startsWith(slash(ROOT) + '/')) continue;
+    // path.relative, not a prefix test: Windows paths are case-insensitive
+    // (the drive letter's case differs between V8's URLs and a cwd).
     const file = rel(abs);
+    if (file === '' || file.startsWith('../') || path.isAbsolute(file)) continue;
     // Over-approximation when positions can't be mapped: every line ran.
     const whole = () => {
       if (!sc.lineCounts.has(file)) {

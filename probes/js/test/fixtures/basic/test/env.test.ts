@@ -13,3 +13,8 @@ test('stubs env', () => {
 test('enumerates env', () => {
   expect(Object.keys(process.env).length).toBeGreaterThan(0);
 });
+
+test('reads runner env', () => {
+  expect(process.env.VITEST).toBeTruthy();
+  expect(process.env.TEST).toBeTruthy();
+});

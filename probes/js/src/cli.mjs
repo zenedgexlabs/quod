@@ -18,7 +18,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { digest, environHash, envValueHash, environment, invocation } from './fingerprint.mjs';
+import { digest, environHash, envValueHash, environment, invocation, outerEnv } from './fingerprint.mjs';
 import { PROBE_ID } from './version.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -186,7 +186,11 @@ export function main(argv) {
       const fp = path.join(recordDir, 'fingerprint.json');
       fs.writeFileSync(
         fp,
-        JSON.stringify({ environment: environment(opts.root, opts.dir), invocation: invocation(opts.passthrough) }),
+        JSON.stringify({
+          environment: environment(opts.root, opts.dir),
+          invocation: invocation(opts.passthrough),
+          env: outerEnv(),
+        }),
       );
       env.SKIPCERT_FINGERPRINT_FILE = fp;
     } catch (e) {
