@@ -19,6 +19,10 @@
 //! list of changed nodes is *complete* (that needs the repository to
 //! re-derive the change). Full re-derivation is a later verifier mode.
 
+pub mod verdict;
+
+pub use verdict::{VerdictCheck, verify_verdict};
+
 use std::collections::{HashMap, HashSet};
 
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};

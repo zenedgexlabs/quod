@@ -976,3 +976,86 @@ fn mcp_server_answers_agent_tools() {
     assert_eq!(text(3)["decision"], "skip");
     assert_eq!(replies[4]["error"]["code"], -32601);
 }
+
+/// The independent verifier accepts an honest Verdict (with its map and
+/// certificates) and rejects signed forgeries: a false Flake-proof claim and
+/// a status that doesn't follow from the findings.
+#[test]
+fn independent_verifier_checks_verdicts() {
+    use quod_verify::{VerdictCheck, verify_verdict};
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let out = verdict(
+        &f,
+        &[
+            ("tests/test_pay.py::test_charge", "passed"),
+            ("tests/test_misc.py::test_broken", "passed"),
+            ("tests/test_misc.py::test_ok", "failed"),
+        ],
+    );
+    let (graph, root) = FootprintGraph::decode(&fs::read(&f.map).unwrap()).unwrap();
+    let certs = select(&f).certificates;
+    let cfg = VerifyConfig {
+        trusted_keys: vec![f.signer.key_id()],
+        ..VerifyConfig::default()
+    };
+    let check = VerdictCheck {
+        cfg: &cfg,
+        map: Some((&graph, root)),
+        certs: Some(&certs),
+    };
+    let json = serde_json::to_string(&out.envelope).unwrap();
+    let r = verify_verdict(&json, &check);
+    assert!(r.ok(), "{:?}", r.violations);
+
+    // Forgeries, sealed with the real key: only the content checks catch them.
+    let forge = |edit: &dyn Fn(&mut quod_verdict::Verdict)| -> Vec<String> {
+        let mut v = out.verdict.clone();
+        edit(&mut v);
+        let env = quod_verdict::seal(&quod_verdict::statement(v), Some(&f.signer)).unwrap();
+        verify_verdict(&serde_json::to_string(&env).unwrap(), &check)
+            .violations
+            .into_iter()
+            .map(|v| v.reason)
+            .collect()
+    };
+    // test_charge executes the changed `charge`: it can't be "not caused".
+    let reasons = forge(&|v| {
+        v.findings.push(quod_verdict::Finding {
+            kind: quod_verdict::Kind::FlakeProof,
+            severity: quod_verdict::Severity::Info,
+            rule: "F001".into(),
+            subject: "tests/test_pay.py::test_charge".into(),
+            detail: String::new(),
+        });
+        v.obligations.failed += 1;
+        v.obligations.failed_not_caused += 1;
+    });
+    assert!(
+        reasons
+            .iter()
+            .any(|r| r.contains("in the test's footprint")),
+        "{reasons:?}"
+    );
+    // A failure nobody cleared, reported as a pass.
+    let reasons = forge(&|v| v.obligations.failed += 1);
+    assert!(reasons.iter().any(|r| r.contains("status")), "{reasons:?}");
+    // Unsigned or wrongly keyed envelopes.
+    let other = VerifyConfig {
+        trusted_keys: vec![Ed25519Signer::generate().unwrap().key_id()],
+        ..VerifyConfig::default()
+    };
+    let r = verify_verdict(
+        &json,
+        &VerdictCheck {
+            cfg: &other,
+            map: None,
+            certs: None,
+        },
+    );
+    assert!(!r.ok());
+}

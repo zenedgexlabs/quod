@@ -1,6 +1,6 @@
 [package]
 name = "quod-verify"
-description = "Independent verifier for Quod skip certificates"
+description = "Independent verifier for Quod skip certificates and Verdicts"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

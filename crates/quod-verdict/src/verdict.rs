@@ -155,6 +155,9 @@ pub struct Verdict {
     pub change: ChangeRef,
     /// Pinned inputs.
     pub inputs: Inputs,
+    /// The changed graph nodes, as canonical node references (sorted). With
+    /// the map, this lets a verifier re-check every Flake-proof claim.
+    pub changed: Vec<String>,
     /// Obligations and results.
     pub obligations: Obligations,
     /// Lens findings, sorted.
@@ -193,6 +196,8 @@ pub struct CompileInput {
     pub change: ChangeRef,
     /// Pinned inputs.
     pub inputs: Inputs,
+    /// Changed node references.
+    pub changed: Vec<String>,
     /// Advisory output.
     pub advisory: bool,
     /// Tests the change obligated (names).
@@ -270,6 +275,12 @@ pub fn compile(input: CompileInput, mut findings: Vec<Finding>) -> Verdict {
         advisory: input.advisory,
         change: input.change,
         inputs: input.inputs,
+        changed: {
+            let mut c = input.changed;
+            c.sort();
+            c.dedup();
+            c
+        },
         obligations: Obligations {
             obligated: input.obligated.len(),
             ran: input.results.len() - count(Outcome::Skipped),

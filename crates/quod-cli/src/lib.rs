@@ -1026,6 +1026,7 @@ pub fn run_verdict(
                 .environment_checked
                 .then(|| res.graph.meta().environment_digest.clone()),
         },
+        changed: res.report.changed.clone(),
         advisory: res.report.advisory,
         obligated: res.report.run.iter().map(|r| r.name.clone()).collect(),
         changed_test_files,
