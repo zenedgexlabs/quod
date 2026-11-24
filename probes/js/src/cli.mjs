@@ -69,12 +69,13 @@ function findUserConfig(root, passthrough) {
   return null;
 }
 
-export function wrapperSource({ root, userConfig, setup, reporter }) {
+export function wrapperSource({ root, userConfig, setup, reporter, cacheDir }) {
   const imp = userConfig
     ? `import userExport from ${JSON.stringify(pathToFileURL(userConfig).href)};`
     : 'const userExport = {};';
   return `${imp}
 import { mergeConfig } from 'vitest/config';
+import { wrapProjects } from ${JSON.stringify(pathToFileURL(path.join(HERE, 'projects.mjs')).href)};
 
 export default async (env) => {
   const user = typeof userExport === 'function' ? await userExport(env) : await userExport;
@@ -83,6 +84,21 @@ export default async (env) => {
   const userSetup = [].concat(config.test.setupFiles ?? []);
   // The probe's setup file must come first: its hooks bound each test's window.
   config.test.setupFiles = [${JSON.stringify(setup)}, ...userSetup.filter((s) => s !== ${JSON.stringify(setup)})];
+  if (process.env.SKIPCERT_RECORD_DIR) {
+    // Recording runs one test at a time, so every test gets its own coverage
+    // window. Concurrency doesn't change what code a test executes; skip
+    // runs keep the project's own concurrency.
+    config.test.maxConcurrency = 1;
+    config.test.sequence = { ...(config.test.sequence ?? {}), concurrent: false };
+    process.env.SKIPCERT_SERIAL = '1';
+  }
+  if (Array.isArray(config.test.projects)) {
+    config.test.projects = wrapProjects(config.test.projects, {
+      root: ${JSON.stringify(root)},
+      setup: ${JSON.stringify(setup)},
+      cacheDir: ${JSON.stringify(cacheDir ?? root)},
+    });
+  }
   const reporters = [].concat(config.test.reporters ?? ['default']);
   config.test.reporters = [...reporters, ${JSON.stringify(reporter)}];
   return config;
@@ -111,6 +127,7 @@ export function main(argv) {
       userConfig,
       setup: path.join(HERE, 'setup.mjs'),
       reporter: path.join(HERE, 'reporter.mjs'),
+      cacheDir: cache,
     }),
   );
   const env = { ...process.env, SKIPCERT_ROOT: opts.root };
@@ -131,6 +148,12 @@ export function main(argv) {
     stdio: 'inherit',
   });
   if (recordDir) fs.rmSync(recordDir, { recursive: true, force: true });
+  // Project wrappers generated next to project configs (projects.mjs).
+  const generated = path.join(cache, 'generated.txt');
+  if (fs.existsSync(generated)) {
+    for (const f of fs.readFileSync(generated, 'utf8').split(/\r?\n/).filter(Boolean)) fs.rmSync(f, { force: true });
+    fs.rmSync(generated, { force: true });
+  }
   return res.status ?? 1;
 }
 

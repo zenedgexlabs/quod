@@ -11,7 +11,8 @@
 //   early `beforeEach` hooks of the next) is attributed to *both* tests;
 // - module evaluation, `beforeAll` and `afterAll` (outside every window) are
 //   attributed to every test of the module;
-// - concurrent tests share windows, so they are flagged `untraced`.
+// - recording runs one test at a time (maxConcurrency 1); if tests still
+//   overlap (no serialising wrapper), they are flagged `untraced`.
 //
 // Skip mode (SKIPCERT_SKIP_FILE set): tests named in the file are skipped
 // before their own hooks run.
@@ -250,7 +251,8 @@ if (RECORD_DIR) {
 
   beforeEach(async (ctx) => {
     moduleFile ??= ctx.task.file.filepath;
-    if (ctx.task.concurrent) concurrent = true;
+    // Concurrent tests share windows, unless recording serialised them.
+    if (ctx.task.concurrent && process.env.SKIPCERT_SERIAL !== '1') concurrent = true;
     const name = testName(ctx.task);
     const cov = await take();
     if (!own.has(name)) own.set(name, empty());

@@ -92,10 +92,12 @@ dir = "packages/remeda"
 args = ["--project", "runtime"]
 mutate = ["packages/remeda/src/*.ts"]
 
+# date-fns' core package runs its tests only in browser mode, which the probe
+# can't observe yet: the replay covers its Node packages (tz, utc, docs).
 [repos.date-fns]
 url = "https://github.com/date-fns/date-fns"
 branch = "main"
 runner = "vitest"
 install = [["npx", "--yes", "pnpm@10", "install", "--frozen-lockfile", "--ignore-scripts"]]
-args = []
-mutate = ["src/*/index.ts"]
+args = ["--project", "!*browser*"]
+mutate = ["pkgs/tz/src/*.ts", "pkgs/tz/src/*/index.ts", "pkgs/utc/src/*.ts", "pkgs/utc/src/*/index.ts"]

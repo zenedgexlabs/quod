@@ -94,8 +94,10 @@ describe('recorded Vitest run', () => {
     }
   });
 
-  test('concurrent tests are untraced', () => {
-    assert.deepEqual(tests['test/concurrent.test.ts::c1'].flags, ['untraced']);
+  test('recording serialises concurrent tests, so they get their own windows', () => {
+    const c1 = tests['test/concurrent.test.ts::c1'];
+    assert.deepEqual(c1.flags, []);
+    assert.ok(positions(c1, 'src/calc.ts').includes('2:7'));
     assert.deepEqual(tests['test/calc.test.ts::calc > add'].flags, []);
   });
 
