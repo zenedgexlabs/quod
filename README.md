@@ -17,7 +17,15 @@ environment variables and module state. From that evidence graph it derives:
 An independent open verifier re-checks every claim. See
 [docs/architecture-v5-verdict.md](docs/architecture-v5-verdict.md).
 
-> Status: the selection engine and its certificates work for Python (pytest) and JS/TS (Vitest), with 0 dependency escapes on 11 open-source repositories ([E1](docs/benchmarks/e1.md)). Verdict lenses are next (V1).
+> **Status (V1).**
+>
+> - The selection engine, certificates and signed Verdicts work for Python
+>   (pytest) and JS/TS (Vitest, Jest).
+> - E1 measured 0 dependency escapes on open-source repositories in both
+>   languages ([E1](docs/benchmarks/e1.md)).
+> - Agents get advisory answers over MCP (`quod mcp`).
+> - The GitHub Action is in
+>   [integrations/github-action](integrations/github-action/README.md).
 
 ## Quickstart (Python / pytest)
 
@@ -30,17 +38,35 @@ quod keygen --out ci-key.seed           # keep the seed secret; note the printed
 # On a clean checkout of the base commit (e.g. main, after merge):
 quod record --out .quod/map.qmap -- python -m pytest
 
-# On a PR (working tree or --head <rev>):
+# On a PR (working tree or --head <rev>): plan, run, seal.
 quod select --map .quod/map.qmap --key ci-key.seed \
   --skip-out skip.txt --certs-out certs.jsonl --report-out report.json
-python -m pytest --quod-skip=skip.txt   # runs everything not certified as skippable
+python -m pytest --quod-skip=skip.txt --quod-results=results.jsonl
+quod verdict --map .quod/map.qmap --key ci-key.seed --results results.jsonl \
+  --out verdict.json --card card.md      # exit 0 = PASS
 
-# Anyone can re-check the skips independently:
+# Anyone can re-check the skips and the Verdict independently:
 quod-verify --certs certs.jsonl --map .quod/map.qmap --trusted-key ed25519:<key id>
+quod-verify --verdict verdict.json --map .quod/map.qmap --certs certs.jsonl \
+  --trusted-key ed25519:<key id>
 ```
 
-Agents and local runs use `--advisory` (no key). Advisory certificates are never
-accepted as proof by the verifier.
+Agents and local runs use `--advisory` (no key). Advisory certificates and
+Verdicts are never accepted as proof. Inside an agent's sandbox,
+`quod mcp --map .quod/map.qmap` serves `tests_for`, `why` and `check` over
+MCP.
+
+## JS/TS (Vitest, Jest)
+
+```sh
+node probes/js/src/cli.mjs record --out capture.jsonl --root . -- <runner args>
+quod ingest --capture capture.jsonl --out .quod/map.qmap
+node probes/js/src/cli.mjs run --skip skip.txt --results results.jsonl --root . -- <runner args>
+```
+
+The runner is detected (Vitest if configured, else Jest), or set it with
+`--runner vitest|jest`. Your config is wrapped, never modified. Jest needs
+Node 22.12 or later.
 
 ## Layout
 
@@ -48,12 +74,18 @@ accepted as proof by the verifier.
 |---|---|
 | `crates/quod-hash` | BLAKE3 hashing with domain separation, canonical CBOR, Merkle roots |
 | `crates/quod-model` | v1 schemas: stable test IDs, footprint vocabulary, outcome-key envelope, certificates, journal events |
-| `docs/architecture.md` | Production architecture (v4) |
-| `docs/adr/` | Architecture decision records |
-
-Planned crates (see the architecture doc): `quod-graph`, `quod-change`, `quod-policy`,
-`quod-ladder`, `quod-cert`, `sc-store`, `quod-client`, `quod-cli`, `sc-mcp`, plus a
-separate `verifier`, language `probes/`, and the `server/` control plane.
+| `crates/quod-graph` | Footprint graph (`.qmap`): bidirectional CSR, Merkle-rooted encoding |
+| `crates/quod-change` | Git diffs, tree-sitter entity diffs (Python, JS/TS, Go, Rust, Java), lockfile and config deltas |
+| `crates/quod-policy` | Fail-closed rule catalog (R001–R018), integrity rules, environment deltas |
+| `crates/quod-ladder` | Selection: changed nodes ∩ footprints, certificates |
+| `crates/quod-cert` | Ed25519 signing, certificate I/O |
+| `crates/quod-verdict` | Lenses (Untested-change, Integrity, Flake-proof) and the signed in-toto Verdict |
+| `crates/quod-cli` | The `quod` binary, including `quod mcp` |
+| `verifier/` | `quod-verify`: independent checks of certificates and Verdicts |
+| `probes/python`, `probes/js` | pytest plugin; Vitest and Jest probe |
+| `integrations/github-action` | GitHub Action (record, shadow, enforce) |
+| `conformance/` | E1 replay harness over real repositories |
+| `docs/` | Architecture ([v4](docs/architecture.md) engine, [v5](docs/architecture-v5-verdict.md) Verdict), [ADRs](docs/adr/README.md), benchmarks |
 
 ## Development
 
