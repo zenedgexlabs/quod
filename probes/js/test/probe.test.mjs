@@ -184,3 +184,78 @@ describe('recorded Vitest run', () => {
     assert.equal(states['calc add'], 'passed');
   });
 });
+
+describe('coverage math: functions at offset 0', () => {
+  test('a function at the very start of a wrapper-less script is a function, not the module', () => {
+    // Jest 30 and Node compile modules without a wrapper: `add` starts at 0.
+    const src = 'function add(a, b) {\n  return a + b;\n}\nfunction mul(a, b) {\n  return a * b;\n}\n';
+    const functions = [
+      { functionName: '', ranges: [{ startOffset: 0, endOffset: src.length, count: 1 }] },
+      { functionName: 'add', ranges: [{ startOffset: 0, endOffset: 37, count: 1 }] },
+      { functionName: 'mul', ranges: [{ startOffset: 38, endOffset: src.length - 1, count: 0 }] },
+    ];
+    const res = executedFunctions({ functions, scriptSource: src, code: null, map: null });
+    assert.equal(res.module, true);
+    assert.deepEqual(res.starts, [[1, 0]]);
+  });
+});
+
+const JEST_FIXTURE = path.join(HERE, 'fixtures', 'jest-basic');
+
+describe('recorded Jest run', () => {
+  let tests;
+  let results;
+  let tmp;
+  before(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-jest-'));
+    process.env.FIXTURE_VAR = '1';
+    const out = path.join(tmp, 'cap.jsonl');
+    const status = main(['record', '--runner', 'jest', '--out', out, '--results', path.join(tmp, 'res.jsonl'), '--root', JEST_FIXTURE]);
+    assert.equal(status, 0);
+    const recs = fs.readFileSync(out, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    assert.equal(recs[0].type, 'header');
+    assert.match(recs[0].runner, /^jest@/);
+    tests = Object.fromEntries(recs.filter((r) => r.type === 'test').map((r) => [r.name, r]));
+    results = fs.readFileSync(path.join(tmp, 'res.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  });
+
+  const positions = (t, file) => (t.positions.find(([f]) => f === file)?.[1] ?? []).map(([l, c]) => `${l}:${c}`);
+
+  test('tests are named suite > test, like Vitest', () => {
+    assert.deepEqual(Object.keys(tests).sort(), [
+      'test/calc.test.js::calc > add',
+      'test/calc.test.js::calc > mul',
+      'test/calc.test.js::reads env',
+    ]);
+    assert.ok(Object.values(tests).every((t) => t.flags.length === 0), 'every test traced');
+  });
+
+  test('a test observes the functions it ran, not the others', () => {
+    assert.deepEqual(positions(tests['test/calc.test.js::calc > add'], 'src/calc.js'), ['1:0']);
+    assert.deepEqual(positions(tests['test/calc.test.js::calc > mul'], 'src/calc.js'), ['5:0']);
+    assert.deepEqual(positions(tests['test/calc.test.js::reads env'], 'src/calc.js'), []);
+    // Module evaluation of calc.js is shared by every test of the module.
+    assert.ok(tests['test/calc.test.js::reads env'].files.includes('src/calc.js'));
+  });
+
+  test('process.env reads are recorded per test', () => {
+    const env = Object.fromEntries(tests['test/calc.test.js::reads env'].env);
+    assert.equal(env.FIXTURE_VAR, envValueHash('1'));
+    assert.ok(!('FIXTURE_VAR' in Object.fromEntries(tests['test/calc.test.js::calc > add'].env)));
+  });
+
+  test('results are named exactly as recorded', () => {
+    assert.deepEqual(results.map((r) => r.name).sort(), Object.keys(tests).sort());
+  });
+
+  test('skip mode skips exactly the named tests', () => {
+    const skip = path.join(tmp, 'skip.txt');
+    fs.writeFileSync(skip, 'test/calc.test.js::calc > mul\n');
+    const res = path.join(tmp, 'res-skip.jsonl');
+    assert.equal(main(['run', '--runner', 'jest', '--skip', skip, '--results', res, '--root', JEST_FIXTURE]), 0);
+    const ran = fs.readFileSync(res, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    // Certified skips aren't results; everything else ran and passed.
+    assert.deepEqual(ran.map((r) => r.name).sort(), ['test/calc.test.js::calc > add', 'test/calc.test.js::reads env']);
+    assert.ok(ran.every((r) => r.outcome === 'passed'));
+  });
+});

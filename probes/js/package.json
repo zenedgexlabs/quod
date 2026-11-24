@@ -1,25 +1,30 @@
 {
   "name": "quod-js",
   "version": "0.1.0",
-  "description": "Quod probe for JavaScript and TypeScript test runners (Vitest): per-test executed lines via V8 precise coverage",
+  "description": "Quod probe for JavaScript and TypeScript test runners (Vitest, Jest): per-test executed functions via V8 precise coverage",
   "type": "module",
   "license": "Apache-2.0",
   "private": true,
   "bin": {
+    "quod-js": "src/cli.mjs",
     "quod-vitest": "src/cli.mjs"
   },
   "exports": {
     "./reporter": "./src/reporter.mjs",
     "./setup": "./src/setup.mjs",
-    "./coverage": "./src/coverage.mjs"
+    "./coverage": "./src/coverage.mjs",
+    "./jest-reporter": "./src/jest-reporter.mjs",
+    "./jest-env": "./src/jest-env.mjs",
+    "./jest-setup": "./src/jest-setup.cjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "test": "node --test test/probe.test.mjs"
   },
   "devDependencies": {
+    "jest": "^30.5.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
   }

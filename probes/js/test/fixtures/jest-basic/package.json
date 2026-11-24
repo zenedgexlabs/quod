@@ -1,0 +1,1 @@
+{ "name": "jest-basic", "private": true, "jest": { "testEnvironment": "node" } }

@@ -145,7 +145,11 @@ export function executedFunctions({ functions, scriptSource, code, map }) {
     const top = f.ranges[0];
     if (!top || top.count <= 0) continue;
     const off = top.startOffset - delta;
-    if (off < 0 || top.startOffset === 0) {
+    // The script's own entry covers the whole script. A function can also
+    // start at offset 0 (Jest 30 and Node compile modules without a
+    // wrapper), so the start alone doesn't identify the script.
+    const isScript = top.startOffset === 0 && top.endOffset >= scriptSource.length;
+    if (off < 0 || isScript) {
       out.module = true;
       continue;
     }

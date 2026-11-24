@@ -1,16 +1,18 @@
 #!/usr/bin/env node
-// quod-vitest: runs Vitest with the Quod probe.
+// quod-js: runs Vitest or Jest with the Quod probe.
 //
-//   quod-vitest record --out capture.jsonl [--root DIR] [--dir DIR] [-- <vitest args>]
-//   quod-vitest run --skip skip.txt [--root DIR] [--dir DIR] [-- <vitest args>]
+//   quod-js record --out capture.jsonl [--runner vitest|jest] [--root DIR] [--dir DIR] [-- <runner args>]
+//   quod-js run --skip skip.txt [--runner vitest|jest] [--root DIR] [--dir DIR] [-- <runner args>]
 //
 // --root is the repository root (paths in the capture are relative to it);
-// --dir is where Vitest runs (a workspace package), default --root.
+// --dir is where the tests run (a workspace package), default --root.
+// --runner defaults to Vitest when a Vitest/Vite config exists or Vitest is
+// installed, else Jest.
 //
-// The user's Vitest config is wrapped, not modified: a generated config
-// (under node_modules/.cache/quod) imports it, puts the probe's setup
-// file first and adds the reporter. The repository's working tree is left
-// untouched, so the wrapper can't show up as a change.
+// The user's config is wrapped, not modified: a generated config (under
+// node_modules/.cache/quod) loads it, puts the probe's setup file first and
+// adds the reporter. The repository's working tree is left untouched, so
+// the wrapper can't show up as a change.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -24,19 +26,20 @@ import { PROBE_ID } from './version.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_NAMES = ['vitest.config', 'vite.config'];
 const CONFIG_EXTS = ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'];
+const JEST_CONFIG_EXTS = ['.js', '.ts', '.mjs', '.cjs', '.mts', '.cts', '.json'];
 
 function usage(msg) {
-  if (msg) console.error(`quod-vitest: ${msg}`);
-  console.error('usage: quod-vitest record --out FILE [--results FILE] [--root DIR] [-- vitest args]');
-  console.error('       quod-vitest run --skip FILE [--results FILE] [--root DIR] [-- vitest args]');
-  console.error('       quod-vitest fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
+  if (msg) console.error(`quod-js: ${msg}`);
+  console.error('usage: quod-js record --out FILE [--results FILE] [--runner vitest|jest] [--root DIR] [-- runner args]');
+  console.error('       quod-js run --skip FILE [--results FILE] [--runner vitest|jest] [--root DIR] [-- runner args]');
+  console.error('       quod-js fingerprint [--root DIR] [--dir DIR] [--env NAME]...');
   process.exit(2);
 }
 
 export function parseArgs(argv) {
   const [cmd, ...rest] = argv;
   if (!['record', 'run', 'fingerprint'].includes(cmd)) usage(`unknown command ${cmd ?? ''}`);
-  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, results: null, env: [], passthrough: [] };
+  const opts = { cmd, root: process.cwd(), dir: null, out: null, skip: null, results: null, runner: null, env: [], passthrough: [] };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === '--') {
@@ -45,6 +48,7 @@ export function parseArgs(argv) {
     } else if (a === '--out') opts.out = rest[++i];
     else if (a === '--skip') opts.skip = rest[++i];
     else if (a === '--results') opts.results = rest[++i];
+    else if (a === '--runner') opts.runner = rest[++i];
     else if (a === '--root') opts.root = rest[++i];
     else if (a === '--dir') opts.dir = rest[++i];
     else if (a === '--env') opts.env.push(rest[++i]);
@@ -52,6 +56,7 @@ export function parseArgs(argv) {
   }
   if (cmd === 'record' && !opts.out) usage('record needs --out');
   if (cmd === 'run' && !opts.skip) usage('run needs --skip');
+  if (opts.runner && !['vitest', 'jest'].includes(opts.runner)) usage(`unknown runner ${opts.runner}`);
   opts.root = path.resolve(opts.root);
   opts.dir = path.resolve(opts.root, opts.dir ?? '.');
   return opts;
@@ -111,6 +116,84 @@ export default async (env) => {
 `;
 }
 
+/** The user's Jest config: `--config` in the args, a jest.config.*, or package.json's `jest`. */
+function findJestConfig(root, passthrough) {
+  const i = passthrough.findIndex((a) => a === '--config' || a === '-c' || a.startsWith('--config='));
+  if (i >= 0) {
+    const a = passthrough[i];
+    const value = a.startsWith('--config=') ? a.slice('--config='.length) : passthrough[i + 1];
+    passthrough.splice(i, a.startsWith('--config=') ? 1 : 2);
+    return path.resolve(root, value);
+  }
+  for (const e of JEST_CONFIG_EXTS) {
+    const p = path.join(root, `jest.config${e}`);
+    if (fs.existsSync(p)) return p;
+  }
+  try {
+    const pkg = path.join(root, 'package.json');
+    if (JSON.parse(fs.readFileSync(pkg, 'utf8')).jest) return pkg;
+  } catch {
+    // no package.json
+  }
+  return null;
+}
+
+function installed(root, name) {
+  try {
+    createRequire(path.join(root, 'package.json')).resolve(`${name}/package.json`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Vitest if configured or installed, else Jest. */
+export function detectRunner(root) {
+  if (CONFIG_NAMES.some((n) => CONFIG_EXTS.some((e) => fs.existsSync(path.join(root, n + e))))) return 'vitest';
+  if (installed(root, 'vitest')) return 'vitest';
+  if (installed(root, 'jest')) return 'jest';
+  return 'vitest';
+}
+
+/**
+ * The generated Jest config: the user's options as Jest itself reads them,
+ * with the probe's setup file first and the reporter added.
+ */
+export function jestWrapperSource({ root, userConfig, setup, reporter, environment }) {
+  return `'use strict';
+const path = require('node:path');
+const { createRequire } = require('node:module');
+const req = createRequire(${JSON.stringify(path.join(root, 'package.json'))});
+const { readInitialOptions } = req('jest-config');
+
+module.exports = async () => {
+  const { config } = await readInitialOptions(${JSON.stringify(userConfig ?? undefined) ?? 'undefined'}, {
+    packageRootOrConfig: ${JSON.stringify(root)},
+    readFromCwd: false,
+    skipMultipleConfigError: true,
+  });
+  const rootDir = config.rootDir ?? ${JSON.stringify(root)};
+  // The Quod environment extends the project's own.
+  process.env.QUOD_JEST_BASE_ENV = config.testEnvironment ?? 'node';
+  return {
+    ...config,
+    rootDir,
+    testEnvironment: ${JSON.stringify(environment)},
+    setupFilesAfterEnv: [${JSON.stringify(setup)}, ...(config.setupFilesAfterEnv ?? [])],
+    reporters: [...(config.reporters ?? ['default']), ${JSON.stringify(reporter)}],
+  };
+};
+`;
+}
+
+function jestBin(root) {
+  const require = createRequire(path.join(root, 'package.json'));
+  const pkgPath = require.resolve('jest/package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  const bin = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.jest;
+  return path.join(path.dirname(pkgPath), bin);
+}
+
 function vitestBin(root) {
   const require = createRequire(path.join(root, 'package.json'));
   const pkgPath = require.resolve('vitest/package.json');
@@ -133,7 +216,7 @@ export function checkSkipFile(file, { root, dir, args }) {
       envFp ??= environment(root, dir);
       if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
     } else if (kind === 'invocation' && rest.length === 1) {
-      if (digest(invocation(args)) !== rest[0]) return 'the Vitest invocation differs from the recorded one';
+      if (digest(invocation(args)) !== rest[0]) return 'the test runner invocation differs from the recorded one';
     } else if (kind === 'env' && rest.length === 2) {
       const [name, expected] = rest;
       const actual = name === '*' ? environHash() : envValueHash(process.env[name]);
@@ -154,19 +237,29 @@ export function main(argv) {
     process.stdout.write(`${JSON.stringify({ probe: PROBE_ID, environment: environment(opts.root, opts.dir), env })}\n`);
     return 0;
   }
-  const userConfig = findUserConfig(opts.dir, opts.passthrough);
+  const runner = opts.runner ?? detectRunner(opts.dir);
+  const jest = runner === 'jest';
+  const userConfig = jest ? findJestConfig(opts.dir, opts.passthrough) : findUserConfig(opts.dir, opts.passthrough);
   const cache = path.join(opts.dir, 'node_modules', '.cache', 'quod');
   fs.mkdirSync(cache, { recursive: true });
-  const wrapper = path.join(cache, 'vitest.config.mjs');
+  const wrapper = path.join(cache, jest ? 'jest.config.cjs' : 'vitest.config.mjs');
   fs.writeFileSync(
     wrapper,
-    wrapperSource({
-      root: opts.dir,
-      userConfig,
-      setup: path.join(HERE, 'setup.mjs'),
-      reporter: path.join(HERE, 'reporter.mjs'),
-      cacheDir: cache,
-    }),
+    jest
+      ? jestWrapperSource({
+          root: opts.dir,
+          userConfig,
+          setup: path.join(HERE, 'jest-setup.cjs'),
+          reporter: path.join(HERE, 'jest-reporter.mjs'),
+          environment: path.join(HERE, 'jest-env.mjs'),
+        })
+      : wrapperSource({
+          root: opts.dir,
+          userConfig,
+          setup: path.join(HERE, 'setup.mjs'),
+          reporter: path.join(HERE, 'reporter.mjs'),
+          cacheDir: cache,
+        }),
   );
   const env = {
     ...process.env,
@@ -177,13 +270,15 @@ export function main(argv) {
   if (opts.results) env.QUOD_RESULTS_OUT = path.resolve(opts.results);
   let recordDir = null;
   if (opts.cmd === 'record') {
-    recordDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-vitest-'));
+    recordDir = fs.mkdtempSync(path.join(os.tmpdir(), `quod-${runner}-`));
+    // Jest: one test at a time within a file, so windows never overlap.
+    if (jest) env.QUOD_SERIAL = '1';
     env.QUOD_RECORD_DIR = recordDir;
     env.QUOD_RECORD_OUT = path.resolve(opts.out);
     env.QUOD_ROOT_FILES = JSON.stringify(
       userConfig ? [path.relative(opts.root, userConfig).split(path.sep).join('/')] : [],
     );
-    // Fingerprints in this process, before Vitest changes its environment.
+    // Fingerprints in this process, before the runner changes its environment.
     try {
       const fp = path.join(recordDir, 'fingerprint.json');
       fs.writeFileSync(
@@ -208,7 +303,10 @@ export function main(argv) {
     if (problem) process.stderr.write(`quod: not skipping any tests: ${problem}\n`);
     else env.QUOD_SKIP_FILE = path.resolve(opts.skip);
   }
-  const res = spawnSync(process.execPath, [vitestBin(opts.dir), 'run', '--config', wrapper, ...opts.passthrough], {
+  const runArgs = jest
+    ? [jestBin(opts.dir), '--config', wrapper, ...(opts.cmd === 'record' ? ['--maxConcurrency=1'] : []), ...opts.passthrough]
+    : [vitestBin(opts.dir), 'run', '--config', wrapper, ...opts.passthrough];
+  const res = spawnSync(process.execPath, runArgs, {
     cwd: opts.dir,
     env,
     stdio: 'inherit',
