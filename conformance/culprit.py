@@ -162,8 +162,16 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     elif ws.runner in R.JS_RUNNERS:
         cmd = ["node", R.JS_PROBE, "fingerprint", "--root", ws.repo, "--dir", ws.test_dir]
         env_args = [x for c in cmd for x in ("--fingerprint-cmd", c)]
+    # Failing tests go in a results file: names can contain characters no
+    # command line can carry (ufo has NUL in test titles), and there can be
+    # hundreds of them.
+    failed_file = ws.artifacts / f"c{t}-failed.jsonl"
+    failed_file.write_text(
+        "".join(json.dumps({"type": "result", "name": n, "outcome": "failed"}) + "\n" for n in broken),
+        encoding="utf-8",
+    )
     out = R.sh([R.QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "culprit", "--map", map_path,
-                "--good", good, "--bad", bad, *[x for n in broken for x in ("--failed", n)], *env_args, "--json"])
+                "--good", good, "--bad", bad, "--results", failed_file, *env_args, "--json"])
     report = json.loads(out.stdout)
     tests = []
     for f in report["findings"]:
