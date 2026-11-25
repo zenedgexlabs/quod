@@ -404,7 +404,7 @@ These items follow from the same graph and are the long-term differentiators. Ea
 | [015](adr/0015-verdict.md) | Accepted | The Verdict is the product primitive (in-toto Statement, DSSE, pinned changed set); lenses are pure functions over pinned inputs |
 | [016](adr/0016-flake-proof.md) | Accepted | Flake-proof clears a failure only when its footprint is complete and untouched; never a footprint-intersecting failure |
 | [017](adr/0017-advisory-verdicts.md) | Accepted | Advisory Verdicts (sandbox, MCP) and sealed Verdicts (trusted CI) are separate; the verifier rejects advisory where proof is required |
-| 018 | Proposed | Culprit naming is evidence (shared nodes). Auto-revert is opt-in policy, never a default |
+| [018](adr/0018-culprit.md) | Accepted | Culprit naming is evidence (shared nodes), revert-sufficient when one commit is named; auto-revert is opt-in policy, never a default |
 | 019 | Proposed | Maps are commit-versioned with structural sharing, to serve Culprit and Audit |
 
 ---

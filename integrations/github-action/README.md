@@ -13,7 +13,7 @@ covers:
 
 | Mode | Where | What happens |
 |---|---|---|
-| `record` | push to the default branch | Runs the suite with the probe and caches the footprint map for that commit |
+| `record` | push to the default branch | Runs the suite with the probe and caches the footprint map for that commit. A green commit is remembered; when a push turns main red, the job summary names the commit that broke each failing test (`quod culprit`) |
 | `shadow` (default) | pull requests | The full suite still runs. The card shows what Quod would have skipped, and the job passes or fails exactly as before |
 | `enforce` | pull requests | Certified tests are skipped, and the Verdict decides: failures the change didn't cause don't fail the job, and unmet obligations do |
 

@@ -57,6 +57,7 @@ runs:
   steps:
     # ---- record (default branch) ------------------------------------------
     - name: Record footprints
+      id: record
       if: inputs.mode == 'record'
       shell: bash
       env:
@@ -67,13 +68,25 @@ runs:
         MAP: ${{ inputs.map-path }}
       run: |
         set -euo pipefail
-        mkdir -p "$(dirname "$MAP")"
-        if [ "$RUNNER" = vitest ]; then
+        mkdir -p "$(dirname "$MAP")" "$RUNNER_TEMP/quod"
+        res="$RUNNER_TEMP/quod/results.jsonl"
+        if [ "$RUNNER" != pytest ]; then
           cap="$RUNNER_TEMP/quod-capture.jsonl"
-          node "$PROBE_JS" record --out "$cap" -- $CMD || echo "::warning::tests failed; failing tests are recorded as untraced and always run"
+          node "$PROBE_JS" record --runner "$RUNNER" --out "$cap" --results "$res" -- $CMD || true
           "$QUOD" ingest --capture "$cap" --out "$MAP" --allow-dirty
         else
-          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD
+          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD --quod-results "$res"
+        fi
+        # Green: every test passed. The commit becomes the reference for
+        # Culprit when a later push turns main red.
+        if [ -f "$res" ] && ! grep -Eq '"outcome": ?"failed"' "$res"; then
+          echo "green=true" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/quod/green"
+          cp "$MAP" "$RUNNER_TEMP/quod/green/map.qmap"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/quod/green/sha.txt"
+        else
+          echo "green=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::tests failed; failing tests are recorded as untraced and always run"
         fi
 
     - name: Save map
@@ -82,6 +95,58 @@ runs:
       with:
         path: ${{ inputs.map-path }}
         key: quod-map-${{ github.sha }}
+
+    - name: Mark green
+      if: inputs.mode == 'record' && steps.record.outputs.green == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/quod/green
+        key: quod-green-${{ github.sha }}
+
+    # ---- record, red: which commit broke main? ---------------------------
+    - name: Restore the last green map
+      id: green
+      if: inputs.mode == 'record' && steps.record.outputs.green == 'false'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/quod/green
+        key: quod-green-none-${{ github.sha }}
+        restore-keys: quod-green-
+
+    - name: Find the culprit
+      if: inputs.mode == 'record' && steps.record.outputs.green == 'false'
+      shell: bash
+      env:
+        QUOD: ${{ inputs.quod-bin }}
+        PY: ${{ inputs.python }}
+        HIT: ${{ steps.green.outputs.cache-matched-key }}
+      run: |
+        set -uo pipefail
+        dir="$RUNNER_TEMP/quod"
+        green_map="$dir/green/map.qmap"
+        green_sha="$(cat "$dir/green/sha.txt" 2>/dev/null || true)"
+        if [ -z "$HIT" ] || [ ! -f "$green_map" ] || [ -z "$green_sha" ]; then
+          echo "::notice::Quod: no green commit recorded yet; can't name a culprit"
+          exit 0
+        fi
+        git fetch --no-tags --quiet origin "$green_sha" 2>/dev/null || true
+        args=(culprit --map "$green_map" --good "$green_sha" --bad HEAD --results "$dir/results.jsonl")
+        [ -n "$PY" ] && args+=(--python "$PY")
+        {
+          echo "### Quod Culprit: which commit broke main"
+          echo
+          echo '```'
+          "$QUOD" "${args[@]}" || echo "(culprit failed)"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Record outcome
+      if: inputs.mode == 'record'
+      shell: bash
+      env:
+        GREEN: ${{ steps.record.outputs.green }}
+      run: |
+        [ "$GREEN" = true ] || { echo "tests failed (see the Quod Culprit summary)"; exit 1; }
 
     # ---- PR: plan --------------------------------------------------------
     - name: Find the merge base
