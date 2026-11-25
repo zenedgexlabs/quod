@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 
 use quod_change::Repo;
 
-use crate::{SelectOptions, VerdictOptions, run_select, run_verdict};
+use crate::{CulpritOptions, SelectOptions, VerdictOptions, run_culprit, run_select, run_verdict};
 
 /// Protocol version this server implements by default.
 pub const PROTOCOL_VERSION: &str = "2025-06-18";
@@ -66,6 +66,23 @@ fn tools() -> Value {
                 "type": "object",
                 "properties": {"test": {"type": "string", "description": "Test name, e.g. tests/test_a.py::test_x"}},
                 "required": ["test"],
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "culprit",
+            "description": "Which commit between the last green commit and HEAD broke the given \
+                failing tests: the commit(s) that changed code each test executes, or 'not_code' \
+                when no commit did (flaky or environment). Needs a map recorded at or before \
+                the last green commit.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "good": {"type": "string", "description": "Last commit where the tests passed"},
+                    "bad": {"type": "string", "description": "Failing commit (default HEAD)"},
+                    "failed": {"type": "array", "items": {"type": "string"}, "description": "Failing test names"}
+                },
+                "required": ["good", "failed"],
                 "additionalProperties": false
             }
         },
@@ -154,6 +171,33 @@ fn call(ctx: &McpContext, params: &Value) -> Value {
             Some(t) => why(ctx, &t),
             None => Err(anyhow::anyhow!("missing argument: test")),
         },
+        "culprit" => {
+            let failed: Vec<String> = args
+                .get("failed")
+                .and_then(Value::as_array)
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default();
+            match (arg("good"), failed.is_empty()) {
+                (Some(good), false) => run_culprit(
+                    &ctx.repo,
+                    &CulpritOptions {
+                        map: ctx.map.clone(),
+                        good,
+                        bad: arg("bad").unwrap_or_else(|| "HEAD".into()),
+                        policy: ctx.policy.clone(),
+                        failed,
+                        python: None,
+                        fingerprint_cmd: None,
+                    },
+                )
+                .and_then(|r| Ok(serde_json::to_value(r)?)),
+                _ => Err(anyhow::anyhow!("missing argument: good and failed")),
+            }
+        }
         "check" => match arg("results") {
             Some(p) => check(ctx, &p),
             None => Err(anyhow::anyhow!("missing argument: results")),

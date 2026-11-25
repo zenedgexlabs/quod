@@ -953,7 +953,7 @@ fn mcp_server_answers_agent_tools() {
         .iter()
         .map(|t| t["name"].as_str().unwrap())
         .collect();
-    assert_eq!(names, ["tests_for", "why", "check"]);
+    assert_eq!(names, ["tests_for", "why", "culprit", "check"]);
     let text = |i: usize| -> Value {
         serde_json::from_str(replies[i]["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
     };
