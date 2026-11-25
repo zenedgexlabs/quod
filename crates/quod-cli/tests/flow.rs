@@ -1077,6 +1077,8 @@ fn culprit(f: &Fixture, good: &str, bad: &str, failed: &[&str]) -> quod_cli::Cul
             bad: bad.into(),
             policy: None,
             failed: failed.iter().map(|s| s.to_string()).collect(),
+            python: None,
+            fingerprint_cmd: None,
         },
     )
     .unwrap()

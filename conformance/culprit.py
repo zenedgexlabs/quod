@@ -112,8 +112,14 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     if not broken:
         return {"trial": t, "mutant": desc, "position": p, "broken": 0, "tests": []}
 
+    env_args: list = []
+    if ws.runner == "pytest":
+        env_args = ["--python", ws.python]
+    elif ws.runner in R.JS_RUNNERS:
+        cmd = ["node", R.JS_PROBE, "fingerprint", "--root", ws.repo, "--dir", ws.test_dir]
+        env_args = [x for c in cmd for x in ("--fingerprint-cmd", c)]
     out = R.sh([R.QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "culprit", "--map", map_path,
-                "--good", good, "--bad", bad, *[x for n in broken for x in ("--failed", n)], "--json"])
+                "--good", good, "--bad", bad, *[x for n in broken for x in ("--failed", n)], *env_args, "--json"])
     report = json.loads(out.stdout)
     tests = []
     for f in report["findings"]:
@@ -143,7 +149,7 @@ def main() -> int:
 
     cfg = tomllib.loads((R.ROOT / "conformance" / "repos.toml").read_text(encoding="utf-8"))["repos"][args.repo]
     os.environ.update({k: str(v) for k, v in cfg.get("env", {}).items()})
-    R.ENV_MODE = False
+    R.ENV_MODE = True
     ws = R.setup(args.repo, cfg, args.work / args.repo, args.python)
     branch = cfg["branch"]
     ws.git("fetch", "-q", "origin", branch, check=False)

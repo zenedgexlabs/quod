@@ -394,8 +394,9 @@ pub struct CommitEval<'a> {
 /// of `commits` that passed at the start (the last green commit, G):
 ///
 /// - the test's recorded footprint F is what it executed at G, provided
-///   the map was recorded at G, or `map_to_green` (the change from the
-///   map's commit to G) touched nothing in F;
+///   nothing in `drift` touched F: the change from the map's commit to G,
+///   and (environment mode) how the failing run's environment differs from
+///   the recorded one;
 /// - a commit that changes nothing in F (or the root scope) can't, by
 ///   itself, change what the test executes; without the commits that do,
 ///   the test runs exactly G's code and passes. So any code-caused failure
@@ -403,11 +404,11 @@ pub struct CommitEval<'a> {
 ///   alone restores G's behaviour for everything the test executes.
 ///
 /// No claim for tests not in the map, with incomplete footprints, or when
-/// `map_to_green` touched their footprint. A commit whose change fired a
-/// global rule can't be ruled out and is always a suspect.
+/// a drift touched their footprint or fired a global rule. A commit whose
+/// change fired a global rule can't be ruled out and is always a suspect.
 pub fn culprit(
     graph: &FootprintGraph,
-    map_to_green: Option<&Evaluation>,
+    drift: &[&Evaluation],
     commits: &[CommitEval<'_>],
     failed: &[String],
 ) -> Vec<CulpritFinding> {
@@ -428,10 +429,13 @@ pub fn culprit(
             (nodes.into_iter().collect(), globals)
         })
         .collect();
-    let drift: Option<(HashSet<NodeId>, bool)> = map_to_green.map(|e| {
-        let (nodes, _) = resolve_changes(graph, &e.changed);
-        (nodes.into_iter().collect(), e.runs_everything())
-    });
+    let drift: Vec<(HashSet<NodeId>, bool)> = drift
+        .iter()
+        .map(|e| {
+            let (nodes, _) = resolve_changes(graph, &e.changed);
+            (nodes.into_iter().collect(), e.runs_everything())
+        })
+        .collect();
 
     let mut out = Vec::new();
     for name in failed {
@@ -454,13 +458,14 @@ pub fn culprit(
         }
         // What the test executed at G: its footprint plus the root scope.
         let fp: HashSet<NodeId> = graph.footprint(t).chain(root.iter().copied()).collect();
-        if let Some((nodes, global)) = &drift {
-            if *global || nodes.iter().any(|n| fp.contains(n)) {
-                out.push(unknown(
-                    "the map predates changes to what this test executes; record a map at the last green commit",
-                ));
-                continue;
-            }
+        if drift
+            .iter()
+            .any(|(nodes, global)| *global || nodes.iter().any(|n| fp.contains(n)))
+        {
+            out.push(unknown(
+                "what this test executes changed outside the searched commits (the map predates the last green commit, or the environment differs); record a map at the last green commit, in the same environment",
+            ));
+            continue;
         }
         let mut suspects = Vec::new();
         for (c, (nodes, globals)) in commits.iter().zip(&resolved) {

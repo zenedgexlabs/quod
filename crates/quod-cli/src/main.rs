@@ -131,6 +131,15 @@ enum Cmd {
         /// Policy file (default: quod.toml at the repository root, if present).
         #[arg(long)]
         policy: Option<PathBuf>,
+        /// Python interpreter of the environment the failing run used
+        /// (environment mode: CI and lockfile edits stop being suspects
+        /// when the environment is unchanged).
+        #[arg(long)]
+        python: Option<PathBuf>,
+        /// One argument of the probe's fingerprint command (repeat), for
+        /// other probes; see `select --fingerprint-cmd`.
+        #[arg(long = "fingerprint-cmd", allow_hyphen_values = true)]
+        fingerprint_cmd: Vec<String>,
         /// Print the JSON report.
         #[arg(long)]
         json: bool,
@@ -400,6 +409,8 @@ fn run(cli: Cli) -> Result<ExitCode> {
             failed,
             results,
             policy,
+            python,
+            fingerprint_cmd,
             json,
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
@@ -423,6 +434,8 @@ fn run(cli: Cli) -> Result<ExitCode> {
                     bad: bad.clone(),
                     policy: policy.clone(),
                     failed,
+                    python: python.clone(),
+                    fingerprint_cmd: (!fingerprint_cmd.is_empty()).then(|| fingerprint_cmd.clone()),
                 },
             )?;
             if *json {

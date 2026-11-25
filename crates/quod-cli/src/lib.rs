@@ -745,22 +745,9 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     )?;
     let behind = repo.commits_between(&base, &change.head).ok();
     let policy = load_policy(repo, opts.policy.as_deref())?;
-    let fingerprint_cmd: Option<Vec<String>> = match (&opts.fingerprint_cmd, &opts.python) {
-        (Some(cmd), _) => Some(cmd.clone()),
-        (None, Some(py)) => Some(vec![
-            py.to_string_lossy().into_owned(),
-            "-m".into(),
-            "quod_probe".into(),
-            "fingerprint".into(),
-        ]),
-        (None, None) => None,
-    };
-    let env_mode = fingerprint_cmd.is_some()
-        && graph
-            .meta()
-            .capabilities
-            .iter()
-            .any(|c| c == CAP_PY_ENVIRONMENT || c == CAP_JS_ENVIRONMENT);
+    let fingerprint_cmd =
+        fingerprint_command(opts.python.as_deref(), opts.fingerprint_cmd.as_ref());
+    let env_mode = fingerprint_cmd.is_some() && env_capable(&graph);
     let environment = match (&fingerprint_cmd, env_mode) {
         (Some(cmd), true) => Some(environment_delta(
             &graph,
@@ -1078,6 +1065,35 @@ pub struct CulpritOptions {
     pub policy: Option<PathBuf>,
     /// Failing tests.
     pub failed: Vec<String>,
+    /// Python interpreter of the environment the failing run used
+    /// (environment mode, as in [`SelectOptions::python`]).
+    pub python: Option<PathBuf>,
+    /// The probe's fingerprint command, for other probes.
+    pub fingerprint_cmd: Option<Vec<String>>,
+}
+
+/// The probe's fingerprint command: explicit, or the Python probe's for an
+/// interpreter.
+fn fingerprint_command(python: Option<&Path>, cmd: Option<&Vec<String>>) -> Option<Vec<String>> {
+    match (cmd, python) {
+        (Some(cmd), _) => Some(cmd.clone()),
+        (None, Some(py)) => Some(vec![
+            py.to_string_lossy().into_owned(),
+            "-m".into(),
+            "quod_probe".into(),
+            "fingerprint".into(),
+        ]),
+        (None, None) => None,
+    }
+}
+
+/// True if the map was recorded by a probe that fingerprints environments.
+fn env_capable(graph: &FootprintGraph) -> bool {
+    graph
+        .meta()
+        .capabilities
+        .iter()
+        .any(|c| c == CAP_PY_ENVIRONMENT || c == CAP_JS_ENVIRONMENT)
 }
 
 /// The Culprit report.
@@ -1114,10 +1130,22 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
             .iter()
             .any(|c| c == CAP_PY_INTROSPECTION),
     };
-    // Staleness is handled here (the map-to-green check), not by R007.
+    // Environment mode (ADR 012): commits are evaluated as if the
+    // environment were unchanged, so CI, workflow and lockfile edits don't
+    // make every commit a suspect; how the failing run's environment really
+    // differs is checked separately, as a drift. Staleness is handled by
+    // the map-to-green drift, not by R007.
+    let env_delta = match fingerprint_command(opts.python.as_deref(), opts.fingerprint_cmd.as_ref())
+    {
+        Some(cmd) if env_capable(&graph) => Some(environment_delta(
+            &graph,
+            &fingerprint(&cmd, &env_var_names(&graph))?,
+        )),
+        _ => None,
+    };
     let ctx = EvalContext {
         map_commits_behind: Some(0),
-        environment: None,
+        environment: env_delta.as_ref().map(|_| EnvironmentDelta::default()),
     };
     let evaluate = |base: &str, head: &str| -> Result<Evaluation> {
         let change = quod_change::compute(
@@ -1138,11 +1166,25 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
     if repo.merge_base(&map_base, &good)? != map_base {
         bail!("the map's commit {map_base} is not an ancestor of the last green commit {good}");
     }
-    let map_to_green = if map_base == good {
-        None
-    } else {
-        Some(evaluate(&map_base, &good)?)
-    };
+    let mut drift: Vec<Evaluation> = Vec::new();
+    if map_base != good {
+        drift.push(evaluate(&map_base, &good)?);
+    }
+    if let Some(delta) = env_delta {
+        let unchanged = ChangeSet {
+            base: good.clone(),
+            head: good.clone(),
+            tree: None,
+            files: Vec::new(),
+        };
+        drift.push(policy.evaluate(
+            &unchanged,
+            &EvalContext {
+                map_commits_behind: Some(0),
+                environment: Some(delta),
+            },
+        ));
+    }
 
     let shas = repo.first_parent_commits(&good, &bad)?;
     if shas.is_empty() {
@@ -1162,7 +1204,8 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
             evaluation: e,
         })
         .collect();
-    let findings = lens::culprit(&graph, map_to_green.as_ref(), &commit_evals, &opts.failed);
+    let drift_refs: Vec<&Evaluation> = drift.iter().collect();
+    let findings = lens::culprit(&graph, &drift_refs, &commit_evals, &opts.failed);
     let commits = shas
         .iter()
         .map(|c| Ok((c.clone(), repo.subject(c)?)))
