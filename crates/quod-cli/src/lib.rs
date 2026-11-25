@@ -177,8 +177,13 @@ impl Ingest<'_> {
     /// keeps mutable state at module or class level, every entity of the
     /// file and the file itself. A memoised result can be read without
     /// re-running the function that computed it, possibly in another test.
+    ///
+    /// The test's own file is exempt: state one test leaves for another in
+    /// a test module is order dependence (victims), not a dependency of the
+    /// test on code it didn't run.
     fn stateful_widening(
         &mut self,
+        own: Option<&str>,
         files: &[String],
         functions: &[(String, String)],
         positions: &[(String, Vec<(u32, u32)>)],
@@ -191,8 +196,12 @@ impl Ingest<'_> {
             .chain(positions.iter().map(|(p, _)| names::file(p)))
             .chain(lines.iter().map(|(p, _)| names::file(p)))
             .collect();
+        let own = own.map(names::file);
         let mut out = Vec::new();
         for f in touched {
+            if own.as_deref() == Some(f.as_str()) {
+                continue;
+            }
             self.load_map(&f);
             let entities: Vec<String> = match &self.line_maps[&f] {
                 Some(m) if m.module_state() => m.entities().to_vec(),
@@ -431,7 +440,8 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                         st.b.observe(t, n);
                     }
                 }
-                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
+                for n in st.stateful_widening(Some(&tpath), &files, &functions, &positions, &lines)
+                {
                     st.b.observe(t, n);
                 }
             }
@@ -469,7 +479,7 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                         st.b.observe_root(n);
                     }
                 }
-                for n in st.stateful_widening(&files, &functions, &positions, &lines) {
+                for n in st.stateful_widening(None, &files, &functions, &positions, &lines) {
                     st.b.observe_root(n);
                 }
             }

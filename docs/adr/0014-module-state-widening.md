@@ -74,3 +74,14 @@ everywhere. Assignments to dunder names (`__all__`, `__slots__`,
 not state that code mutates between calls, so they no longer mark a file
 stateful. Other module-level tables (for example `_perfect_tests = [...]`)
 still do.
+
+## Amendment (2026-11-25): a test's own file is exempt
+
+Test modules often hold module-level tables (parameters, fixtures data),
+which marked the whole test file stateful: every test in it then observed
+every other test class, and a commit adding a test anywhere in the file
+implicated them all (E7, more-itertools). State that one test leaves for
+another inside a test module is order dependence, already a separate
+category (victims), not a dependency of the test on code it didn't run.
+The widening now skips the test's own file; helper modules it imports are
+still widened.
