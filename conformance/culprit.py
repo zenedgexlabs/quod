@@ -67,6 +67,38 @@ def reapply(path: Path, site, expect: str) -> bool:
     return True
 
 
+def consistently_failing(ws: R.Workspace, names: list[str], runs: int = 3) -> list[str]:
+    """Tests that fail in every one of `runs` re-runs (flakiness filter).
+
+    pytest: the candidates run together, in chunks, one pytest process per
+    chunk and run (a mutant can break hundreds of tests; one process per
+    test per run is too slow). Other runners: one test at a time.
+    """
+    if ws.runner != "pytest":
+        return [n for n in names if R.fails_alone(ws, n, runs)]
+    still = list(names)
+    for _ in range(runs):
+        if not still:
+            break
+        failed: set[str] = set()
+        for i in range(0, len(still), 200):
+            chunk = still[i : i + 200]
+            report = ws.artifacts / "rerun.jsonl"
+            if report.exists():
+                report.unlink()
+            R.sh([ws.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--quod-results={report}",
+                  f"--quod-root={ws.repo}", *chunk], cwd=ws.repo, check=False, timeout=1800)
+            if report.exists():
+                for line in report.read_text(encoding="utf-8").splitlines():
+                    r = json.loads(line)
+                    if r["outcome"] == "failed":
+                        failed.add(r["name"])
+            else:
+                failed.update(chunk)  # couldn't tell: keep (only the flakiness filter is weaker)
+        still = [n for n in still if n in failed]
+    return still
+
+
 def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: int) -> dict | None:
     R.log(f"[{ws.name}] trial {t}: good {good[:8]}, {len(window)} commits")
     ws.checkout(good)
@@ -106,8 +138,9 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     clean_tests, _, _ = R.run_suite(ws, f"c{t}-clean")
     ws.checkout(bad)
     bad_tests, _, _ = R.run_suite(ws, f"c{t}-bad")
-    candidates = R.failing(bad_tests) - R.failing(clean_tests) - R.failing(good_tests)
-    broken = sorted(n for n in candidates if n in good_tests and R.fails_alone(ws, n))
+    candidates = sorted(n for n in R.failing(bad_tests) - R.failing(clean_tests) - R.failing(good_tests)
+                        if n in good_tests)
+    broken = consistently_failing(ws, candidates)
     R.log(f"  mutant {desc} at {p + 1}/{len(window)}: {len(broken)} test(s) broken")
     if not broken:
         return {"trial": t, "mutant": desc, "position": p, "broken": 0, "tests": []}
@@ -124,13 +157,20 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     tests = []
     for f in report["findings"]:
         suspects = [s["commit"] for s in f["suspects"]]
+        miss = f["outcome"] != "unknown" and mutant_commit not in suspects
+        # The batched re-run can't tell a victim (fails only after other
+        # failing tests left state behind) from a broken test: a miss must
+        # also fail alone, every time.
+        victim = miss and not R.fails_alone(ws, f["test"])
         tests.append({
             "test": f["test"],
             "outcome": f["outcome"],
             "suspects": len(suspects),
             "mutant_suspected": mutant_commit in suspects,
-            "miss": f["outcome"] != "unknown" and mutant_commit not in suspects,
+            "miss": miss and not victim,
+            "victim": victim,
         })
+    tests = [x for x in tests if not x["victim"]]
     misses = sum(x["miss"] for x in tests)
     named = sum(x["outcome"] == "culprit" and x["mutant_suspected"] for x in tests)
     R.log(f"  culprit: {named}/{len(tests)} named alone, {misses} miss(es)")
