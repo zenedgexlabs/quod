@@ -146,7 +146,10 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     except R.SuiteTimeout:
         R.log("  trial dropped: the suite hangs under this mutant")
         return None
-    candidates = sorted(n for n in R.failing(bad_tests) - R.failing(clean_tests) - R.failing(good_tests)
+    # A test that ran at G and on the clean end but is missing with the
+    # mutant (its file failed to load) is broken too.
+    vanished = {n for n in good_tests if n in clean_tests and n not in bad_tests}
+    candidates = sorted(n for n in (R.failing(bad_tests) | vanished) - R.failing(clean_tests) - R.failing(good_tests)
                         if n in good_tests)
     broken = consistently_failing(ws, candidates)
     R.log(f"  mutant {desc} at {p + 1}/{len(window)}: {len(broken)} test(s) broken")

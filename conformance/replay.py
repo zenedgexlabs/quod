@@ -461,8 +461,10 @@ def js_mutation_sites(source: str) -> list[tuple[int, int, int, str]]:
             j = i + 1
             while j < n and source[j] not in "/\n":
                 j += 2 if source[j] == "\\" else 1
+            # Never blank a newline: line numbers must stay aligned.
             for k in range(i, min(j + 1, n)):
-                code[k] = " "
+                if code[k] != "\n":
+                    code[k] = " "
             i = j + 1
             continue
         if not c.isspace():
