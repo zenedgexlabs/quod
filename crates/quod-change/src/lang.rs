@@ -509,6 +509,17 @@ pub fn diff(
 /// (row, column).
 type Span = ((usize, usize), (usize, usize), u32);
 
+/// `__name__`-style identifier.
+fn is_dunder(name: &str) -> bool {
+    let name = name.trim();
+    name.len() > 4
+        && name.starts_with("__")
+        && name.ends_with("__")
+        && name[2..name.len() - 2]
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
 fn kind_in(n: Option<Node<'_>>, kinds: &[&str]) -> bool {
     n.is_some_and(|n| kinds.contains(&n.kind()))
 }
@@ -573,7 +584,16 @@ fn has_module_state(lang: Language, root: Node<'_>, src: &[u8]) -> bool {
             },
             Language::Python => match n.kind() {
                 "global_statement" => true,
-                "assignment" if !in_fn && depth <= 6 => {
+                // Dunder targets (`__all__`, `__slots__`, `__match_args__`)
+                // are declarations the language and tools read, not state
+                // code mutates between calls.
+                "assignment"
+                    if !in_fn
+                        && depth <= 6
+                        && !n
+                            .child_by_field_name("left")
+                            .is_some_and(|l| is_dunder(text(l))) =>
+                {
                     let right = n.child_by_field_name("right");
                     kind_in(right, PY_MUTABLE)
                         || right.is_some_and(|r| {
@@ -1150,6 +1170,8 @@ class C:
                 "from collections import defaultdict\nseen = defaultdict(list)\n",
             ),
             (Python, "class C:\n    instances = []\n"),
+            // An export list doesn't hide a real table next to it.
+            (Python, "__all__ = ['f']\n_table = [1, 2, 3]\n"),
             (Python, "n = 0\ndef inc():\n    global n\n    n += 1\n"),
             (Go, "package p\n\nvar cache = map[string]int{}\n"),
             (Rust, "static COUNT: AtomicUsize = AtomicUsize::new(0);\n"),
@@ -1172,6 +1194,11 @@ class C:
             (
                 Python,
                 "RATE = 2\nNAME = 'x'\ndef f():\n    cache = {}\n    return cache\n",
+            ),
+            // Declarations, not state: export lists, slots, match args.
+            (
+                Python,
+                "__all__ = ['f', 'g']\nclass C:\n    __slots__ = ['a']\n    __match_args__ = ('a',)\ndef f():\n    pass\n",
             ),
             (
                 Go,

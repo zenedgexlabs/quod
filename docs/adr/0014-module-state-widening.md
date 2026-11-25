@@ -63,3 +63,14 @@ that file re-runs the test.
     example `const cache = createCache()` in JS).
 - A regression test reproduces the date-fns escape
   (`memoised_module_state_widens_to_the_whole_file`).
+
+## Amendment (2026-11-25): dunder declarations are not state
+
+E7 on more-itertools showed tests "executing" every function of `more.py`.
+The cause was `__all__ = [...]`: a list display at module level, which
+nearly every Python package module has, so the widening fired almost
+everywhere. Assignments to dunder names (`__all__`, `__slots__`,
+`__match_args__`, ...) are declarations that the language and tools read,
+not state that code mutates between calls, so they no longer mark a file
+stateful. Other module-level tables (for example `_perfect_tests = [...]`)
+still do.
