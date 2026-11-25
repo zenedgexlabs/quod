@@ -27,6 +27,7 @@ import os
 import random
 import re
 import sys
+import time
 import tomllib
 from pathlib import Path
 
@@ -102,7 +103,10 @@ def consistently_failing(ws: R.Workspace, names: list[str], runs: int = 3) -> li
 def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: int) -> dict | None:
     R.log(f"[{ws.name}] trial {t}: good {good[:8]}, {len(window)} commits")
     ws.checkout(good)
+    t0 = time.monotonic()
     good_tests, _, cap = R.run_suite(ws, f"c{t}-good")
+    # A mutant can make the suite loop forever: such a trial is dropped.
+    timeout = max(300.0, 10 * (time.monotonic() - t0))
     map_path = R.build_map(ws, cap, f"c{t}")
 
     # The mutant site is chosen on the tree where it goes in.
@@ -135,9 +139,13 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     bad = parent
 
     ws.checkout(window[-1])
-    clean_tests, _, _ = R.run_suite(ws, f"c{t}-clean")
+    clean_tests, _, _ = R.run_suite(ws, f"c{t}-clean", timeout=timeout)
     ws.checkout(bad)
-    bad_tests, _, _ = R.run_suite(ws, f"c{t}-bad")
+    try:
+        bad_tests, _, _ = R.run_suite(ws, f"c{t}-bad", timeout=timeout)
+    except R.SuiteTimeout:
+        R.log("  trial dropped: the suite hangs under this mutant")
+        return None
     candidates = sorted(n for n in R.failing(bad_tests) - R.failing(clean_tests) - R.failing(good_tests)
                         if n in good_tests)
     broken = consistently_failing(ws, candidates)
