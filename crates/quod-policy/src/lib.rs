@@ -498,6 +498,10 @@ pub struct EnvironmentDelta {
     /// Environment variables (`*` is the whole environment) whose value
     /// differs from the recorded one, sorted.
     pub env_vars: Vec<String>,
+    /// The fingerprint lists installed npm packages (`dist.npm:*`, recorded
+    /// by the JS probe), so npm lockfile edits, like Python ones, change
+    /// nothing by themselves. Python distributions are always observed.
+    pub npm_observed: bool,
 }
 
 /// pytest's own configuration sections. In environment mode these are the
@@ -822,8 +826,10 @@ impl Policy {
                 Some("npm") => Ecosystem::Npm,
                 _ => Ecosystem::Pypi,
             };
-            // (Environment mode observes Python distributions, not npm.)
-            if fd.lock.is_some() && env.is_some() && lock_eco == Ecosystem::Pypi {
+            // (npm packages only when the fingerprint lists them.)
+            if fd.lock.is_some()
+                && env.is_some_and(|e| lock_eco == Ecosystem::Pypi || e.npm_observed)
+            {
                 continue;
             }
             if let Some(lock) = &fd.lock {
@@ -1481,6 +1487,32 @@ mod tests {
         let ev = p.evaluate(&cs(vec![lock]), &same);
         assert!(ev.global.is_empty() && ev.changed.is_empty());
         assert!(ev.rules_checked.contains(&"R018") && !ev.rules_checked.contains(&"R001"));
+
+        // npm lockfiles: only when the fingerprint lists npm packages.
+        let npm_lock = || {
+            fd(
+                "pnpm-lock.yaml",
+                FileStatus::Modified,
+                None,
+                Some(LockDelta::Packages(vec![PackageChange {
+                    name: "vitest".into(),
+                    old: None,
+                    new: None,
+                }])),
+            )
+        };
+        let ev = p.evaluate(&cs(vec![npm_lock()]), &same);
+        assert_eq!(
+            ev.changed.len(),
+            1,
+            "a Python fingerprint doesn't observe npm"
+        );
+        let js = env_mode(EnvironmentDelta {
+            npm_observed: true,
+            ..EnvironmentDelta::default()
+        });
+        let ev = p.evaluate(&cs(vec![npm_lock()]), &js);
+        assert!(ev.global.is_empty() && ev.changed.is_empty(), "{ev:?}");
     }
 
     #[test]
@@ -1524,6 +1556,7 @@ mod tests {
                 differing: vec![],
                 dists: vec!["requests".into(), "__site__".into(), "npm:chai".into()],
                 env_vars: vec!["API_URL".into()],
+                npm_observed: true,
             }),
         );
         assert!(!ev.runs_everything());

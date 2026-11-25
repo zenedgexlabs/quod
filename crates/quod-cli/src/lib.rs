@@ -541,7 +541,10 @@ fn fingerprint(argv: &[String], env_names: &[String]) -> Result<Fingerprint> {
 /// Compares the recorded environment with the target one.
 fn environment_delta(graph: &FootprintGraph, current: &Fingerprint) -> EnvironmentDelta {
     let recorded = &graph.meta().environment;
-    let mut delta = EnvironmentDelta::default();
+    let mut delta = EnvironmentDelta {
+        npm_observed: npm_observed(graph),
+        ..EnvironmentDelta::default()
+    };
     let keys: BTreeSet<&String> = recorded.keys().chain(current.environment.keys()).collect();
     for k in keys {
         if recorded.get(k) == current.environment.get(k) {
@@ -1097,6 +1100,15 @@ fn fingerprint_command(python: Option<&Path>, cmd: Option<&Vec<String>>) -> Opti
     }
 }
 
+/// True if the map's fingerprint lists installed npm packages.
+fn npm_observed(graph: &FootprintGraph) -> bool {
+    graph
+        .meta()
+        .capabilities
+        .iter()
+        .any(|c| c == CAP_JS_ENVIRONMENT)
+}
+
 /// True if the map was recorded by a probe that fingerprints environments.
 fn env_capable(graph: &FootprintGraph) -> bool {
     graph
@@ -1155,7 +1167,10 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
     };
     let ctx = EvalContext {
         map_commits_behind: Some(0),
-        environment: env_delta.as_ref().map(|_| EnvironmentDelta::default()),
+        environment: env_delta.as_ref().map(|_| EnvironmentDelta {
+            npm_observed: npm_observed(&graph),
+            ..EnvironmentDelta::default()
+        }),
     };
     let evaluate = |base: &str, head: &str| -> Result<Evaluation> {
         let change = quod_change::compute(
