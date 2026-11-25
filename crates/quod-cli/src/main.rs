@@ -108,6 +108,33 @@ enum Cmd {
         #[arg(long)]
         agent: Option<String>,
     },
+    /// Which commit broke a test: intersects each commit's change with the
+    /// failing tests' footprints (architecture v5, F5).
+    ///
+    /// The map must be recorded at or before the last green commit.
+    Culprit {
+        /// Footprint map.
+        #[arg(long)]
+        map: PathBuf,
+        /// Last commit where the tests passed.
+        #[arg(long)]
+        good: String,
+        /// Commit where they fail (default: HEAD).
+        #[arg(long, default_value = "HEAD")]
+        bad: String,
+        /// A failing test (repeat for each).
+        #[arg(long = "failed")]
+        failed: Vec<String>,
+        /// Results files (`--quod-results`): their failed tests are added.
+        #[arg(long = "results")]
+        results: Vec<PathBuf>,
+        /// Policy file (default: quod.toml at the repository root, if present).
+        #[arg(long)]
+        policy: Option<PathBuf>,
+        /// Print the JSON report.
+        #[arg(long)]
+        json: bool,
+    },
     /// Serve the agent tools (tests_for, why, check) over MCP on stdio.
     ///
     /// Advisory only: run it inside the agent's sandbox with the map baked
@@ -366,6 +393,91 @@ fn run(cli: Cli) -> Result<ExitCode> {
             })
         }
         Cmd::Mcp { map, policy } => serve_mcp(&cli, map, policy.as_deref()),
+        Cmd::Culprit {
+            map,
+            good,
+            bad,
+            failed,
+            results,
+            policy,
+            json,
+        } => {
+            let repo = Repo::discover(&cli.repo_dir)?;
+            let mut failed = failed.clone();
+            failed.extend(
+                quod_cli::read_results(results)?
+                    .into_iter()
+                    .filter(|r| r.outcome == quod_verdict::Outcome::Failed)
+                    .map(|r| r.name),
+            );
+            failed.sort();
+            failed.dedup();
+            if failed.is_empty() {
+                bail!("no failing tests given (--failed or --results)");
+            }
+            let report = quod_cli::run_culprit(
+                &repo,
+                &quod_cli::CulpritOptions {
+                    map: map.clone(),
+                    good: good.clone(),
+                    bad: bad.clone(),
+                    policy: policy.clone(),
+                    failed,
+                },
+            )?;
+            if *json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print_culprit(&report);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+    }
+}
+
+fn print_culprit(r: &quod_cli::CulpritReport) {
+    use quod_verdict::CulpritOutcome;
+    let short = |c: &str| c[..c.len().min(10)].to_owned();
+    let subject = |c: &str| {
+        r.commits
+            .iter()
+            .find(|(s, _)| s == c)
+            .map(|(_, t)| t.clone())
+            .unwrap_or_default()
+    };
+    println!(
+        "{} commit(s) between {} (green) and {}:",
+        r.commits.len(),
+        short(&r.good),
+        short(&r.bad)
+    );
+    for f in &r.findings {
+        let head = match f.outcome {
+            CulpritOutcome::Culprit => "CULPRIT",
+            CulpritOutcome::Suspects => "SUSPECTS",
+            CulpritOutcome::NotCode => "NOT CODE",
+            CulpritOutcome::Unknown => "UNKNOWN",
+        };
+        println!(
+            "
+{}  {head}: {}",
+            f.test, f.detail
+        );
+        for s in &f.suspects {
+            let mut via: Vec<&str> = s.shared.iter().map(String::as_str).take(3).collect();
+            if s.shared.len() > 3 {
+                via.push("…");
+            }
+            println!(
+                "  {} {}  ({})",
+                short(&s.commit),
+                subject(&s.commit),
+                via.join(", ")
+            );
+        }
+        if f.cleared > 0 {
+            println!("  {} commit(s) ruled out", f.cleared);
+        }
     }
 }
 

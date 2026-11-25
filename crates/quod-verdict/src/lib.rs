@@ -11,7 +11,9 @@ pub mod card;
 pub mod lens;
 pub mod verdict;
 
-pub use lens::{Finding, Kind, LensInput, Severity};
+pub use lens::{
+    CommitEval, CulpritFinding, CulpritOutcome, Finding, Kind, LensInput, Severity, Suspect,
+};
 pub use verdict::{
     AuthorKind, CertRef, ChangeRef, CompileInput, Envelope, Inputs, Outcome, Statement, Status,
     TestResult, Verdict, compile, open, seal, statement, verify,

@@ -337,3 +337,174 @@ mod tests {
         assert_eq!(base_name("t/a.py::C::test_x[a::b]"), "t/a.py::C::test_x");
     }
 }
+
+// Culprit -------------------------------------------------------------------
+
+/// What the Culprit lens concluded for one failing test.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CulpritOutcome {
+    /// Exactly one commit changed what the test executes: reverting it
+    /// alone restores the last green behaviour of everything the test ran.
+    Culprit,
+    /// Several commits changed what the test executes; the failure needs at
+    /// least one of them.
+    Suspects,
+    /// No commit changed anything the test executes: no code change can
+    /// explain the failure (flaky or environment).
+    NotCode,
+    /// No claim (see `detail`).
+    Unknown,
+}
+
+/// A commit that changed something the failing test executes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Suspect {
+    /// Commit SHA.
+    pub commit: String,
+    /// What it changed that the test executes (node refs), or the global rule.
+    pub shared: Vec<String>,
+}
+
+/// The Culprit lens's answer for one failing test.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CulpritFinding {
+    /// Failing test.
+    pub test: String,
+    /// Conclusion.
+    pub outcome: CulpritOutcome,
+    /// Suspect commits, oldest first.
+    pub suspects: Vec<Suspect>,
+    /// Commits ruled out for this test (changed nothing it executes).
+    pub cleared: usize,
+    /// Explanation.
+    pub detail: String,
+}
+
+/// One commit in the range being searched, with its change evaluated
+/// against its first parent.
+pub struct CommitEval<'a> {
+    /// Commit SHA.
+    pub commit: &'a str,
+    /// The policy evaluation of the commit's change.
+    pub evaluation: &'a Evaluation,
+}
+
+/// **Culprit lens** (architecture v5, F5). For each test failing at the end
+/// of `commits` that passed at the start (the last green commit, G):
+///
+/// - the test's recorded footprint F is what it executed at G, provided
+///   the map was recorded at G, or `map_to_green` (the change from the
+///   map's commit to G) touched nothing in F;
+/// - a commit that changes nothing in F (or the root scope) can't, by
+///   itself, change what the test executes; without the commits that do,
+///   the test runs exactly G's code and passes. So any code-caused failure
+///   needs a commit that touched F, and when only one did, reverting it
+///   alone restores G's behaviour for everything the test executes.
+///
+/// No claim for tests not in the map, with incomplete footprints, or when
+/// `map_to_green` touched their footprint. A commit whose change fired a
+/// global rule can't be ruled out and is always a suspect.
+pub fn culprit(
+    graph: &FootprintGraph,
+    map_to_green: Option<&Evaluation>,
+    commits: &[CommitEval<'_>],
+    failed: &[String],
+) -> Vec<CulpritFinding> {
+    let index: HashMap<&str, TestIdx> = (0..graph.test_count() as u32)
+        .map(|i| (graph.test_name(TestIdx(i)), TestIdx(i)))
+        .collect();
+    let root: HashSet<NodeId> = graph.root_nodes().collect();
+    let resolved: Vec<(HashSet<NodeId>, Vec<String>)> = commits
+        .iter()
+        .map(|c| {
+            let (nodes, _) = resolve_changes(graph, &c.evaluation.changed);
+            let globals = c
+                .evaluation
+                .global
+                .iter()
+                .map(|t| format!("global {}: {}", t.rule, t.detail))
+                .collect();
+            (nodes.into_iter().collect(), globals)
+        })
+        .collect();
+    let drift: Option<(HashSet<NodeId>, bool)> = map_to_green.map(|e| {
+        let (nodes, _) = resolve_changes(graph, &e.changed);
+        (nodes.into_iter().collect(), e.runs_everything())
+    });
+
+    let mut out = Vec::new();
+    for name in failed {
+        let unknown = |detail: &str| CulpritFinding {
+            test: name.clone(),
+            outcome: CulpritOutcome::Unknown,
+            suspects: Vec::new(),
+            cleared: 0,
+            detail: detail.into(),
+        };
+        let Some(&t) = index.get(name.as_str()) else {
+            out.push(unknown("not in the map (new, renamed or never recorded)"));
+            continue;
+        };
+        if graph.test(t).flags.0 & INCOMPLETE.0 != 0 {
+            out.push(unknown(
+                "its footprint is incomplete (untraced, dynamic import, network or subprocess)",
+            ));
+            continue;
+        }
+        // What the test executed at G: its footprint plus the root scope.
+        let fp: HashSet<NodeId> = graph.footprint(t).chain(root.iter().copied()).collect();
+        if let Some((nodes, global)) = &drift {
+            if *global || nodes.iter().any(|n| fp.contains(n)) {
+                out.push(unknown(
+                    "the map predates changes to what this test executes; record a map at the last green commit",
+                ));
+                continue;
+            }
+        }
+        let mut suspects = Vec::new();
+        for (c, (nodes, globals)) in commits.iter().zip(&resolved) {
+            let mut shared: Vec<String> = if globals.is_empty() {
+                Vec::new()
+            } else {
+                globals.clone()
+            };
+            let mut hits: Vec<String> = nodes
+                .iter()
+                .filter(|n| fp.contains(n))
+                .map(|n| graph.node_ref(*n))
+                .collect();
+            hits.sort();
+            shared.extend(hits);
+            if !shared.is_empty() {
+                suspects.push(Suspect {
+                    commit: c.commit.to_owned(),
+                    shared,
+                });
+            }
+        }
+        let cleared = commits.len() - suspects.len();
+        let (outcome, detail) = match suspects.len() {
+            0 => (
+                CulpritOutcome::NotCode,
+                "no commit changed anything this test executes: the failure is not caused by code (flaky or environment)".to_owned(),
+            ),
+            1 => (
+                CulpritOutcome::Culprit,
+                "the only commit that changed code this test executes; reverting it alone restores the last green behaviour of everything the test ran".to_owned(),
+            ),
+            n => (
+                CulpritOutcome::Suspects,
+                format!("{n} commits changed code this test executes; the failure needs at least one of them"),
+            ),
+        };
+        out.push(CulpritFinding {
+            test: name.clone(),
+            outcome,
+            suspects,
+            cleared,
+            detail,
+        });
+    }
+    out
+}

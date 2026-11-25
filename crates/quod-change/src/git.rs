@@ -98,6 +98,29 @@ impl Repo {
             .map_err(|_| ChangeError::Git(format!("unexpected rev-list output {out:?}")))
     }
 
+    /// Commits reachable from `to` but not from `from`, following first
+    /// parents only, oldest first (`git rev-list --first-parent --reverse`).
+    /// A merge commit stands for everything it brought in.
+    pub fn first_parent_commits(&self, from: &str, to: &str) -> Result<Vec<String>, ChangeError> {
+        let range = format!("{from}..{to}");
+        let out = utf8(&run(
+            &self.root,
+            &["rev-list", "--first-parent", "--reverse", &range],
+        )?)?;
+        Ok(out
+            .lines()
+            .map(|l| l.trim().to_owned())
+            .filter(|l| !l.is_empty())
+            .collect())
+    }
+
+    /// One-line subject of a commit.
+    pub fn subject(&self, rev: &str) -> Result<String, ChangeError> {
+        Ok(utf8(&run(&self.root, &["log", "-1", "--format=%s", rev])?)?
+            .trim()
+            .to_owned())
+    }
+
     /// Merge base of two revisions.
     pub fn merge_base(&self, a: &str, b: &str) -> Result<String, ChangeError> {
         Ok(utf8(&run(&self.root, &["merge-base", a, b])?)?

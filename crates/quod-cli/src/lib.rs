@@ -1064,3 +1064,114 @@ pub fn run_verdict(
         card,
     })
 }
+
+/// Options for [`run_culprit`].
+#[derive(Clone, Debug)]
+pub struct CulpritOptions {
+    /// Footprint map, recorded at or before the last green commit.
+    pub map: PathBuf,
+    /// Last commit where the tests passed.
+    pub good: String,
+    /// First commit where they fail.
+    pub bad: String,
+    /// Policy file (default: `quod.toml` at the repository root).
+    pub policy: Option<PathBuf>,
+    /// Failing tests.
+    pub failed: Vec<String>,
+}
+
+/// The Culprit report.
+#[derive(Clone, Debug, Serialize)]
+pub struct CulpritReport {
+    /// Last green commit.
+    pub good: String,
+    /// Failing commit.
+    pub bad: String,
+    /// Commits searched, oldest first, with subjects.
+    pub commits: Vec<(String, String)>,
+    /// Map root.
+    pub map: String,
+    /// Per failing test.
+    pub findings: Vec<quod_verdict::CulpritFinding>,
+}
+
+/// Which commit between `good` and `bad` broke each failing test
+/// (architecture v5, F5): every first-parent commit's change is evaluated
+/// against its parent and intersected with the test's footprint.
+pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> {
+    use quod_verdict::{CommitEval, lens};
+
+    let bytes =
+        std::fs::read(&opts.map).with_context(|| format!("reading {}", opts.map.display()))?;
+    let (graph, map_root) = FootprintGraph::decode(&bytes).context("decoding map")?;
+    let policy = load_policy(repo, opts.policy.as_deref())?;
+    let good = repo.rev_parse(&opts.good)?;
+    let bad = repo.rev_parse(&opts.bad)?;
+    let diff = DiffOptions {
+        split_headers: graph
+            .meta()
+            .capabilities
+            .iter()
+            .any(|c| c == CAP_PY_INTROSPECTION),
+    };
+    // Staleness is handled here (the map-to-green check), not by R007.
+    let ctx = EvalContext {
+        map_commits_behind: Some(0),
+        environment: None,
+    };
+    let evaluate = |base: &str, head: &str| -> Result<Evaluation> {
+        let change = quod_change::compute(
+            repo,
+            &ChangeOptions {
+                base: base.to_owned(),
+                head: Some(head.to_owned()),
+                python: diff,
+            },
+        )?;
+        Ok(policy.evaluate(&change, &ctx))
+    };
+
+    let map_base = graph.meta().base_commit.clone();
+    if map_base.is_empty() {
+        bail!("map has no base commit");
+    }
+    if repo.merge_base(&map_base, &good)? != map_base {
+        bail!("the map's commit {map_base} is not an ancestor of the last green commit {good}");
+    }
+    let map_to_green = if map_base == good {
+        None
+    } else {
+        Some(evaluate(&map_base, &good)?)
+    };
+
+    let shas = repo.first_parent_commits(&good, &bad)?;
+    if shas.is_empty() {
+        bail!("no commits between {good} and {bad}");
+    }
+    let mut evals = Vec::with_capacity(shas.len());
+    let mut parent = good.clone();
+    for c in &shas {
+        evals.push(evaluate(&parent, c)?);
+        parent = c.clone();
+    }
+    let commit_evals: Vec<CommitEval<'_>> = shas
+        .iter()
+        .zip(&evals)
+        .map(|(c, e)| CommitEval {
+            commit: c,
+            evaluation: e,
+        })
+        .collect();
+    let findings = lens::culprit(&graph, map_to_green.as_ref(), &commit_evals, &opts.failed);
+    let commits = shas
+        .iter()
+        .map(|c| Ok((c.clone(), repo.subject(c)?)))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(CulpritReport {
+        good,
+        bad,
+        commits,
+        map: map_root.to_hex(),
+        findings,
+    })
+}

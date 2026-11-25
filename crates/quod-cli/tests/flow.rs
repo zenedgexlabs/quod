@@ -1059,3 +1059,130 @@ fn independent_verifier_checks_verdicts() {
     );
     assert!(!r.ok());
 }
+
+// Culprit (architecture v5, F5) ----------------------------------------------
+
+fn commit_all(root: &Path, msg: &str) -> String {
+    git(root, &["add", "-A"]);
+    git(root, &["commit", "-q", "-m", msg]);
+    Repo::discover(root).unwrap().rev_parse("HEAD").unwrap()
+}
+
+fn culprit(f: &Fixture, good: &str, bad: &str, failed: &[&str]) -> quod_cli::CulpritReport {
+    quod_cli::run_culprit(
+        &Repo::discover(&f.root).unwrap(),
+        &quod_cli::CulpritOptions {
+            map: f.map.clone(),
+            good: good.into(),
+            bad: bad.into(),
+            policy: None,
+            failed: failed.iter().map(|s| s.to_string()).collect(),
+        },
+    )
+    .unwrap()
+}
+
+/// Names the one commit that changed what the failing test executes, rules
+/// out the rest, and calls a failure no commit could explain "not code".
+#[test]
+fn culprit_names_the_commit_that_changed_what_the_test_runs() {
+    use quod_verdict::CulpritOutcome;
+    let f = setup();
+    let repo = Repo::discover(&f.root).unwrap();
+    let good = repo.rev_parse("HEAD").unwrap();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("-x", "0 - x"),
+    )
+    .unwrap();
+    let c1 = commit_all(&f.root, "refund tweak");
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("-x", "0 - x").replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let c2 = commit_all(&f.root, "charge more");
+    fs::write(f.root.join("NOTES.md"), "notes\n").unwrap();
+    let c3 = commit_all(&f.root, "notes");
+
+    let r = culprit(
+        &f,
+        &good,
+        &c3,
+        &[
+            "tests/test_pay.py::test_charge",
+            "tests/test_misc.py::test_ok",
+        ],
+    );
+    assert_eq!(r.commits.len(), 3);
+    let charge = &r.findings[0];
+    assert_eq!(charge.outcome, CulpritOutcome::Culprit, "{charge:?}");
+    assert_eq!(charge.suspects.len(), 1);
+    assert_eq!(charge.suspects[0].commit, c2);
+    assert!(
+        charge.suspects[0]
+            .shared
+            .iter()
+            .any(|s| s.contains("charge")),
+        "{charge:?}"
+    );
+    assert_eq!(charge.cleared, 2);
+    assert_eq!(
+        r.findings[1].outcome,
+        CulpritOutcome::NotCode,
+        "{:?}",
+        r.findings[1]
+    );
+
+    // A map older than the green commit still works while the drift doesn't
+    // touch the test's footprint (c1 changed only `refund`)...
+    let r = culprit(&f, &c1, &c3, &["tests/test_pay.py::test_charge"]);
+    assert_eq!(r.findings[0].outcome, CulpritOutcome::Culprit);
+    // ...and refuses to claim anything once it does (c2 changed `charge`).
+    let r = culprit(&f, &c2, &c3, &["tests/test_pay.py::test_charge"]);
+    assert_eq!(
+        r.findings[0].outcome,
+        CulpritOutcome::Unknown,
+        "{:?}",
+        r.findings[0]
+    );
+}
+
+/// A change in the root scope (conftest) can affect every test: it is a
+/// suspect for all of them.
+#[test]
+fn culprit_keeps_root_scope_changes_as_suspects() {
+    use quod_verdict::CulpritOutcome;
+    let f = setup();
+    let good = Repo::discover(&f.root).unwrap().rev_parse("HEAD").unwrap();
+    fs::write(f.root.join("conftest.py"), "import os\n").unwrap();
+    let c1 = commit_all(&f.root, "conftest");
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let c2 = commit_all(&f.root, "charge");
+    let r = culprit(
+        &f,
+        &good,
+        &c2,
+        &[
+            "tests/test_misc.py::test_ok",
+            "tests/test_pay.py::test_charge",
+        ],
+    );
+    let ok = &r.findings[0];
+    assert_eq!(ok.outcome, CulpritOutcome::Culprit, "{ok:?}");
+    assert_eq!(ok.suspects[0].commit, c1);
+    let charge = &r.findings[1];
+    assert_eq!(charge.outcome, CulpritOutcome::Suspects, "{charge:?}");
+    assert_eq!(
+        charge
+            .suspects
+            .iter()
+            .map(|s| s.commit.as_str())
+            .collect::<Vec<_>>(),
+        [c1.as_str(), c2.as_str()]
+    );
+}
