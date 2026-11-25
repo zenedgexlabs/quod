@@ -509,6 +509,181 @@ pub fn diff(
 /// (row, column).
 type Span = ((usize, usize), (usize, usize), u32);
 
+/// Leaf values a read-only table may hold: immutable literals, and tuples
+/// of them.
+fn py_immutable_literal(n: Node<'_>) -> bool {
+    match n.kind() {
+        "string" | "concatenated_string" | "integer" | "float" | "true" | "false" | "none" => true,
+        "unary_operator" => {
+            let mut c = n.walk();
+            n.named_children(&mut c)
+                .all(|ch| matches!(ch.kind(), "integer" | "float"))
+        }
+        "tuple" | "parenthesized_expression" => {
+            let mut c = n.walk();
+            n.named_children(&mut c)
+                .filter(|ch| ch.kind() != "comment")
+                .all(py_immutable_literal)
+        }
+        _ => false,
+    }
+}
+
+/// A module-level `NAME = <list/dict/set display of immutable literals>`
+/// that no code in the file can mutate: a constant table, not state.
+///
+/// Every use of NAME must be read-only: an index read (not an assignment
+/// or `del` target), the iterable of a loop or comprehension, a comparison
+/// (`in`) or condition, an argument to a pure builtin, a non-mutating
+/// method call, or a rebinding. Anything else (passing it elsewhere,
+/// returning or aliasing it, mutating methods, `global`) might mutate it.
+/// Mutation from other files stays the documented cross-file assumption.
+fn py_read_only_table(assign: Node<'_>, root: Node<'_>, src: &[u8]) -> bool {
+    const PURE_CALLS: &[&str] = &[
+        "len",
+        "sorted",
+        "list",
+        "tuple",
+        "set",
+        "frozenset",
+        "dict",
+        "sum",
+        "min",
+        "max",
+        "any",
+        "all",
+        "enumerate",
+        "zip",
+        "iter",
+        "reversed",
+        "repr",
+        "str",
+        "bool",
+        "isinstance",
+        "hash",
+        "print",
+        "map",
+        "filter",
+    ];
+    const READ_METHODS: &[&str] = &[
+        "get",
+        "keys",
+        "values",
+        "items",
+        "index",
+        "count",
+        "copy",
+        "issubset",
+        "issuperset",
+        "union",
+        "intersection",
+        "difference",
+        "symmetric_difference",
+        "isdisjoint",
+    ];
+    let text = |n: Node<'_>| std::str::from_utf8(&src[n.byte_range()]).unwrap_or("");
+    // Only module-level simple names (`NAME = ...` directly under the module).
+    let module_level = assign
+        .parent()
+        .is_some_and(|p| p.kind() == "expression_statement" && p.parent() == Some(root));
+    let (Some(left), Some(right)) = (
+        assign.child_by_field_name("left"),
+        assign.child_by_field_name("right"),
+    ) else {
+        return false;
+    };
+    if !module_level || left.kind() != "identifier" {
+        return false;
+    }
+    let elements_immutable = match right.kind() {
+        "list" | "set" => {
+            let mut c = right.walk();
+            right
+                .named_children(&mut c)
+                .filter(|ch| ch.kind() != "comment")
+                .all(py_immutable_literal)
+        }
+        "dictionary" => {
+            let mut c = right.walk();
+            right
+                .named_children(&mut c)
+                .filter(|ch| ch.kind() != "comment")
+                .all(|pair| {
+                    pair.kind() == "pair"
+                        && pair
+                            .child_by_field_name("key")
+                            .is_some_and(py_immutable_literal)
+                        && pair
+                            .child_by_field_name("value")
+                            .is_some_and(py_immutable_literal)
+                })
+        }
+        _ => false,
+    };
+    if !elements_immutable {
+        return false;
+    }
+    let name = text(left);
+    let read_only_use = |id: Node<'_>| -> bool {
+        let Some(p) = id.parent() else { return false };
+        let is = |field: &str| p.child_by_field_name(field) == Some(id);
+        match p.kind() {
+            // Rebinding the name (the definition, or a later assignment).
+            "assignment" if is("left") => true,
+            "subscript" if is("value") => match p.parent() {
+                Some(pp) => {
+                    let target = matches!(pp.kind(), "assignment" | "augmented_assignment")
+                        && pp.child_by_field_name("left") == Some(p);
+                    !(target || pp.kind() == "delete_statement")
+                }
+                None => true,
+            },
+            "for_statement" | "for_in_clause" => is("right"),
+            "comparison_operator"
+            | "not_operator"
+            | "if_statement"
+            | "while_statement"
+            | "elif_clause"
+            | "assert_statement"
+            | "expression_statement" => true,
+            "argument_list" => p
+                .parent()
+                .filter(|c| c.kind() == "call")
+                .and_then(|c| c.child_by_field_name("function"))
+                .is_some_and(|f| f.kind() == "identifier" && PURE_CALLS.contains(&text(f))),
+            "attribute" if is("object") => {
+                let method = p.child_by_field_name("attribute").map(text).unwrap_or("");
+                match p.parent() {
+                    Some(c) if c.kind() == "call" => READ_METHODS.contains(&method),
+                    // Attribute read without a call (`NAME.__class__`).
+                    _ => true,
+                }
+            }
+            // `obj.NAME` or `f(NAME=...)`: a different name.
+            // (`f(x=NAME)` passes the table on, which may mutate it.)
+            "attribute" => true,
+            "keyword_argument" => is("name"),
+            _ => false,
+        }
+    };
+    let mut stack = vec![root];
+    while let Some(n) = stack.pop() {
+        if n.kind() == "global_statement"
+            && text(n)
+                .split_whitespace()
+                .any(|w| w.trim_matches(',') == name)
+        {
+            return false;
+        }
+        if n.kind() == "identifier" && text(n) == name && !read_only_use(n) {
+            return false;
+        }
+        let mut c = n.walk();
+        stack.extend(n.children(&mut c));
+    }
+    true
+}
+
 /// `__name__`-style identifier.
 fn is_dunder(name: &str) -> bool {
     let name = name.trim();
@@ -595,14 +770,15 @@ fn has_module_state(lang: Language, root: Node<'_>, src: &[u8]) -> bool {
                             .is_some_and(|l| is_dunder(text(l))) =>
                 {
                     let right = n.child_by_field_name("right");
-                    kind_in(right, PY_MUTABLE)
+                    let mutable = kind_in(right, PY_MUTABLE)
                         || right.is_some_and(|r| {
                             r.kind() == "call"
                                 && r.child_by_field_name("function").is_some_and(|f| {
                                     let name = text(f).rsplit('.').next().unwrap_or("");
                                     PY_CALLS.contains(&name)
                                 })
-                        })
+                        });
+                    mutable && !py_read_only_table(n, root, src)
                 }
                 _ => false,
             },
@@ -1171,7 +1347,22 @@ class C:
             ),
             (Python, "class C:\n    instances = []\n"),
             // An export list doesn't hide a real table next to it.
-            (Python, "__all__ = ['f']\n_table = [1, 2, 3]\n"),
+            (
+                Python,
+                "__all__ = ['f']\n_table = [1, 2, 3]\ndef f():\n    _table.append(4)\n",
+            ),
+            // A literal table that is written, deleted from, passed or returned.
+            (Python, "_t = {'a': 1}\ndef f(k):\n    _t[k] = 2\n"),
+            (Python, "_t = [1]\ndef f():\n    del _t[0]\n"),
+            (Python, "_t = [1]\ndef f(g):\n    g(_t)\n"),
+            (Python, "_t = [1]\ndef f():\n    return _t\n"),
+            (Python, "_t = [1]\ndef f(g):\n    g(x=_t)\n"),
+            (Python, "_t = [1]\ndef f():\n    x = _t\n    x.append(2)\n"),
+            // Mutable elements: iteration could hand them out.
+            (
+                Python,
+                "_t = [[1], [2]]\ndef f():\n    for row in _t:\n        row.append(0)\n",
+            ),
             (Python, "n = 0\ndef inc():\n    global n\n    n += 1\n"),
             (Go, "package p\n\nvar cache = map[string]int{}\n"),
             (Rust, "static COUNT: AtomicUsize = AtomicUsize::new(0);\n"),
@@ -1194,6 +1385,11 @@ class C:
             (
                 Python,
                 "RATE = 2\nNAME = 'x'\ndef f():\n    cache = {}\n    return cache\n",
+            ),
+            // Constant tables: immutable literals, only read.
+            (
+                Python,
+                "_TESTS = [(2047, (2,)), (1373653, (2, 3))]\n_NAMES = {'a': 1, 'b': -2}\ndef f(n):\n    for lim, bases in _TESTS:\n        if n < lim:\n            return bases\n    return _NAMES.get('a'), len(_TESTS), 'a' in _NAMES, _NAMES['b']\n",
             ),
             // Declarations, not state: export lists, slots, match args.
             (

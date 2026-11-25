@@ -85,3 +85,22 @@ another inside a test module is order dependence, already a separate
 category (victims), not a dependency of the test on code it didn't run.
 The widening now skips the test's own file; helper modules it imports are
 still widened.
+
+## Amendment (2026-11-25): constant tables of immutable literals
+
+A Python module-level `NAME = [...]` / `{...}` whose elements are all
+immutable literals (strings, numbers, booleans, `None`, tuples of them)
+is not state if every use of NAME in the file is read-only:
+
+- an index read (not an assignment or `del` target);
+- the iterable of a loop or comprehension;
+- a comparison or condition;
+- an argument to a pure builtin (`len`, `sorted`, ...);
+- a non-mutating method call (`get`, `items`, ...);
+- a rebinding.
+
+Any other use keeps the file stateful: passing the table positionally or
+by keyword, returning or aliasing it, a mutating method, or `global`.
+Immutable elements mean that iterating over the table can't hand out
+anything mutable. Mutation from other files stays the documented
+cross-file assumption.
