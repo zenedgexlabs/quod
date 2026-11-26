@@ -237,6 +237,39 @@ pub fn verify_verdict(envelope_json: &str, check: &VerdictCheck<'_>) -> Report {
         );
     }
 
+    // 3b. Agent-authored changes: every finding under a rule the Verdict
+    // says blocks for agents must block (it can't be quietly lowered).
+    let agent_block: Vec<String> = p["agent_block"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default();
+    let agent = s(p, &["change", "author_kind"]) == Some("agent");
+    if agent && p.get("agent_block").is_none() {
+        cx.fail(
+            "agent",
+            "an agent-authored Verdict must state the rules that block for agents",
+        );
+    }
+    if !agent && p.get("agent_block").is_some() {
+        cx.fail("agent", "agent_block on a Verdict not authored by an agent");
+    }
+    for f in &findings {
+        if agent_block.contains(&rule(f)) && s(f, &["severity"]) != Some("block") {
+            cx.fail(
+                "agent",
+                format!(
+                    "{} finding on {:?} must block for an agent-authored change",
+                    rule(f),
+                    s(f, &["subject"])
+                ),
+            );
+        }
+    }
+
     // 4. Flake-proof claims.
     let fallback = p["obligations"]["fallback_rules"]
         .as_array()

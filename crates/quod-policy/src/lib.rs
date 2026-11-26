@@ -114,6 +114,13 @@ pub struct PolicyConfig {
     /// code nobody expects tests to execute (docs, scripts, examples,
     /// benchmarks). Reporting only; selection is unaffected.
     pub untested_ignore: Vec<String>,
+    /// Verdict rules whose findings block (instead of asking for review)
+    /// when an agent authored the change. The default blocks the ways a
+    /// change can pass by weakening its own tests: tests removed or skip
+    /// markers added (R011), a test edited together with the code it
+    /// guards (I001), an obligated test skipped by the runner (O002). Add
+    /// U001 to also block agent changes no test executes.
+    pub agent_block: Vec<String>,
 }
 
 impl Default for PolicyConfig {
@@ -136,6 +143,7 @@ impl Default for PolicyConfig {
                 "**/tests/**/*.rs".into(),
             ],
             native_code: NativeCode::TrustPackageHash,
+            agent_block: vec!["I001".into(), "O002".into(), "R011".into()],
             untested_ignore: vec![
                 "docs/**".into(),
                 "doc/**".into(),

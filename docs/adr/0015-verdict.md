@@ -62,3 +62,23 @@ is "can this change merge, and why should I believe it?"
 - Untested-change claims are relative to the base map. A test added by the
   same change may cover the entity, and the finding says so when test files
   changed.
+
+## Addendum: stricter for agents (`agent_block`, 2026-11-27)
+
+Coding agents are known to make failing tests pass by weakening them:
+deleting a test, adding a skip marker, or editing the test together with
+the code it guards. For a person's change these findings ask for review;
+for an agent's change they now block.
+
+- **Policy.** `agent_block` lists the Verdict rules whose findings block
+  when the author is an agent. The default is I001, O002 and R011. Adding
+  U001 also blocks agent changes no test executes; `[]` turns it off.
+- **Verdict.** An agent-authored Verdict carries `agent_block`, the rules
+  applied, and each escalated finding says so. Other Verdicts carry no
+  such field.
+- **Verifier.** An agent-authored Verdict without `agent_block`, a
+  non-agent Verdict with it, or a finding under one of its rules that
+  doesn't block, is rejected. A signed Verdict can't quietly lower one.
+- **Who is an agent.** The Action's `agent-authors` input (bot logins of
+  Copilot, Devin, Claude, Cursor and Codex by default) or `quod verdict
+  --author agent`.

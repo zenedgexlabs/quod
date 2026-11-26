@@ -744,6 +744,14 @@ export function other() {
 // Verdict (architecture v5) --------------------------------------------------
 
 fn verdict(f: &Fixture, results: &[(&str, &str)]) -> quod_cli::VerdictOutput {
+    verdict_by(f, results, quod_verdict::AuthorKind::Agent)
+}
+
+fn verdict_by(
+    f: &Fixture,
+    results: &[(&str, &str)],
+    author: quod_verdict::AuthorKind,
+) -> quod_cli::VerdictOutput {
     let file = f.root.parent().unwrap().join("results.jsonl");
     let lines: Vec<String> = results
         .iter()
@@ -767,8 +775,8 @@ fn verdict(f: &Fixture, results: &[(&str, &str)]) -> quod_cli::VerdictOutput {
         },
         &quod_cli::VerdictOptions {
             results: vec![file],
-            author: quod_verdict::AuthorKind::Agent,
-            agent: Some("test-agent".into()),
+            author,
+            agent: (author == quod_verdict::AuthorKind::Agent).then(|| "test-agent".into()),
         },
     )
     .unwrap()
@@ -894,20 +902,36 @@ fn verdict_flags_tests_edited_with_the_code_they_guard() {
         "def test_charge():\n    assert True\n",
     )
     .unwrap();
-    let out = verdict(
-        &f,
-        &[
-            ("tests/test_pay.py::test_charge", "passed"),
-            ("tests/test_misc.py::test_broken", "passed"),
-        ],
-    );
+    let results = [
+        ("tests/test_pay.py::test_charge", "passed"),
+        ("tests/test_misc.py::test_broken", "passed"),
+    ];
+    // A person's change: flagged for review, not blocked.
+    let out = verdict_by(&f, &results, quod_verdict::AuthorKind::Human);
     let r = rules(&out.verdict);
     assert!(
         r.contains(&("I001".into(), "tests/test_pay.py::test_charge".into())),
         "{r:?}"
     );
     assert_eq!(out.verdict.status, quod_verdict::Status::Pass);
+    assert!(out.verdict.agent_block.is_none());
     assert!(out.card.contains("Test integrity"), "{}", out.card);
+
+    // The same change by an agent: editing the test that guards the change
+    // blocks (policy agent_block), and the Verdict says which rules did.
+    let out = verdict(&f, &results);
+    assert_eq!(out.verdict.status, quod_verdict::Status::Blocked);
+    let i001 = out
+        .verdict
+        .findings
+        .iter()
+        .find(|x| x.rule == "I001")
+        .unwrap();
+    assert_eq!(i001.severity, quod_verdict::Severity::Block);
+    assert_eq!(
+        out.verdict.agent_block.as_deref(),
+        Some(&["I001".to_owned(), "O002".into(), "R011".into()][..])
+    );
 }
 
 /// The agent tools over MCP: advisory selection on the working tree.
@@ -1077,6 +1101,26 @@ fn independent_verifier_checks_verdicts() {
     // A failure nobody cleared, reported as a pass.
     let reasons = forge(&|v| v.obligations.failed += 1);
     assert!(reasons.iter().any(|r| r.contains("status")), "{reasons:?}");
+    // An agent's weakened test, quietly lowered to a review finding.
+    let reasons = forge(&|v| {
+        v.findings.push(quod_verdict::Finding {
+            kind: quod_verdict::Kind::Integrity,
+            severity: quod_verdict::Severity::Review,
+            rule: "I001".into(),
+            subject: "tests/test_pay.py::test_charge".into(),
+            detail: String::new(),
+        });
+    });
+    assert!(
+        reasons.iter().any(|r| r.contains("must block")),
+        "{reasons:?}"
+    );
+    // The agent rules dropped from an agent's Verdict.
+    let reasons = forge(&|v| v.agent_block = None);
+    assert!(
+        reasons.iter().any(|r| r.contains("must state")),
+        "{reasons:?}"
+    );
     // Unsigned or wrongly keyed envelopes.
     let other = VerifyConfig {
         trusted_keys: vec![Ed25519Signer::generate().unwrap().key_id()],

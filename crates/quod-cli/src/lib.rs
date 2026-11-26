@@ -1016,6 +1016,7 @@ pub fn run_verdict(
         .map(|f| f.change.path.clone())
         .collect();
     let input = CompileInput {
+        agent_block: res.policy.config().agent_block.clone(),
         change: ChangeRef {
             repo: opts.repo_id.clone(),
             base: res.report.base.clone(),
