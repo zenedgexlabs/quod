@@ -169,6 +169,12 @@ fn tests_for(ctx: &McpContext) -> Result<Value> {
     text.push('\n');
     std::fs::write(&skip_file, text)?;
     let run = agent::run_command(ctx.repo.root(), graph.meta(), &env, &skip_file);
+    if r.global.iter().any(|g| g.starts_with("R018")) {
+        env.note = Some(
+            "this environment differs from the one CI recorded the map in (see `fallback`),              so every test runs; run in an environment like CI's (same OS, interpreter and              packages, e.g. its container image) to skip tests"
+                .into(),
+        );
+    }
     Ok(json!({
         "advisory": true,
         "run": run,

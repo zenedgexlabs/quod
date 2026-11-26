@@ -453,3 +453,10 @@ def test_results_file_names_match_recorded_names(captured, project_dir):
     results = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
     assert {r["name"] for r in results} == set(tests)
     assert all(r["type"] == "result" and r["outcome"] in {"passed", "skipped"} for r in results)
+
+
+def test_quod_options_are_stripped_in_both_forms():
+    from quod_probe.fingerprint import strip_quod_args
+
+    args = ["-q", "--quod-results", "/tmp/r.jsonl", "--quod-skip=/s", "--quod-root", "/r", "tests"]
+    assert strip_quod_args(args) == ["-q", "tests"]

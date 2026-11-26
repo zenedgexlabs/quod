@@ -38,7 +38,7 @@ _PROCESS_ENV_NAMES = frozenset({"TZ", "LANG", "LANGUAGE"})
 # pytest reads these before any plugin is loaded.
 _PYTEST_ENV_NAMES = ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTEST_DISABLE_PLUGIN_AUTOLOAD", "PYTEST_DEBUG")
 
-_QUOD_OPTIONS = ("--quod-record", "--quod-skip", "--quod-root")
+_QUOD_OPTIONS = ("--quod-record", "--quod-skip", "--quod-root", "--quod-results")
 
 # Variables the test runner sets in its own process (pytest, pytest-xdist).
 # They aren't inputs: their values follow from the installed distributions,
