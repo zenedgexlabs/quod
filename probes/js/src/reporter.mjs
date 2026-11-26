@@ -50,6 +50,10 @@ export default class QuodReporter {
     } catch {
       // keep the bare name
     }
-    writeCapture({ root: this.root, dir: this.dir, out: this.out, rootFiles: this.rootFiles, runner, tests });
+    // Vite transpiles each file on its own without type checking, so
+    // type-checking-only tsconfig options can't change outcomes, unless
+    // Vitest's typecheck mode turns type errors into test failures.
+    const capabilities = this.vitest?.config?.typecheck?.enabled === false ? ['js.transpile-only'] : [];
+    writeCapture({ root: this.root, dir: this.dir, out: this.out, rootFiles: this.rootFiles, runner, tests, capabilities });
   }
 }

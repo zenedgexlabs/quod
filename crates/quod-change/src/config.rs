@@ -17,6 +17,9 @@ pub enum ConfigKind {
     Ini,
     /// `package.json` (any directory): sections are top-level fields.
     PackageJson,
+    /// `tsconfig*.json` (any directory, JSON with comments): sections are
+    /// `compilerOptions.<option>` and the other top-level fields.
+    TsConfig,
 }
 
 /// Which sections of a configuration file changed.
@@ -25,7 +28,8 @@ pub enum ConfigDelta {
     /// Changed section keys, sorted. For TOML these are dotted paths: two
     /// levels under `tool` and `project` (`tool.ruff`,
     /// `project.dependencies`) and one level elsewhere (`build-system`,
-    /// `dependency-groups`). For INI they are section names.
+    /// `dependency-groups`). For INI they are section names. For
+    /// `tsconfig*.json`, `compilerOptions.<option>` or a top-level field.
     Sections(Vec<String>),
     /// One side couldn't be parsed. This must fail closed.
     Unparseable(String),
@@ -37,6 +41,7 @@ pub fn config_kind(path: &str) -> Option<ConfigKind> {
         "pyproject.toml" => Some(ConfigKind::PyProject),
         "setup.cfg" | "tox.ini" | "pytest.ini" => Some(ConfigKind::Ini),
         "package.json" => Some(ConfigKind::PackageJson),
+        n if n.starts_with("tsconfig") && n.ends_with(".json") => Some(ConfigKind::TsConfig),
         _ => None,
     }
 }
@@ -54,6 +59,7 @@ pub fn delta(kind: ConfigKind, old: Option<&[u8]>, new: Option<&[u8]>) -> Config
             ConfigKind::PyProject => toml_sections(&text),
             ConfigKind::Ini => Ok(ini_sections(&text)),
             ConfigKind::PackageJson => json_fields(&text),
+            ConfigKind::TsConfig => tsconfig_fields(&text),
         }
     };
     let (a, b) = match (parse(old), parse(new)) {
@@ -102,6 +108,104 @@ fn json_fields(text: &str) -> Result<BTreeMap<String, String>, String> {
         .iter()
         .map(|(k, v)| (k.clone(), v.to_string()))
         .collect())
+}
+
+/// `tsconfig.json` fields: each compiler option on its own, other
+/// top-level fields whole. The file is JSON with comments and trailing
+/// commas, as `tsc` accepts.
+fn tsconfig_fields(text: &str) -> Result<BTreeMap<String, String>, String> {
+    let v: serde_json::Value = serde_json::from_str(&strip_jsonc(text))
+        .map_err(|e| format!("invalid tsconfig JSON: {e}"))?;
+    let obj = v
+        .as_object()
+        .ok_or_else(|| "tsconfig is not an object".to_string())?;
+    let mut out = BTreeMap::new();
+    for (k, v) in obj {
+        match (k.as_str(), v) {
+            ("compilerOptions", serde_json::Value::Object(opts)) => {
+                for (o, ov) in opts {
+                    out.insert(format!("compilerOptions.{o}"), ov.to_string());
+                }
+            }
+            _ => {
+                out.insert(k.clone(), v.to_string());
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// JSON with comments to JSON: drops `//` and `/* */` comments and commas
+/// before `}` or `]`, outside strings.
+fn strip_jsonc(text: &str) -> String {
+    let b = text.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    let mut in_str = false;
+    while i < b.len() {
+        let c = b[i];
+        if in_str {
+            out.push(c);
+            if c == b'\\' && i + 1 < b.len() {
+                out.push(b[i + 1]);
+                i += 2;
+                continue;
+            }
+            in_str = c != b'"';
+            i += 1;
+            continue;
+        }
+        match c {
+            b'"' => {
+                in_str = true;
+                out.push(c);
+                i += 1;
+            }
+            b'/' if b.get(i + 1) == Some(&b'/') => {
+                while i < b.len() && b[i] != b'\n' {
+                    i += 1;
+                }
+            }
+            b'/' if b.get(i + 1) == Some(&b'*') => {
+                i += 2;
+                while i + 1 < b.len() && !(b[i] == b'*' && b[i + 1] == b'/') {
+                    i += 1;
+                }
+                i += 2;
+            }
+            b',' => {
+                // A trailing comma: the next significant byte closes.
+                let mut j = i + 1;
+                loop {
+                    while j < b.len() && b[j].is_ascii_whitespace() {
+                        j += 1;
+                    }
+                    if b.get(j) == Some(&b'/') && b.get(j + 1) == Some(&b'/') {
+                        while j < b.len() && b[j] != b'\n' {
+                            j += 1;
+                        }
+                    } else if b.get(j) == Some(&b'/') && b.get(j + 1) == Some(&b'*') {
+                        j += 2;
+                        while j + 1 < b.len() && !(b[j] == b'*' && b[j + 1] == b'/') {
+                            j += 1;
+                        }
+                        j += 2;
+                    } else {
+                        break;
+                    }
+                }
+                if !matches!(b.get(j), Some(b'}' | b']')) {
+                    out.push(c);
+                }
+                i += 1;
+            }
+            _ => {
+                out.push(c);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8(out).unwrap_or_default()
 }
 
 /// Splits INI text into sections with whitespace- and comment-normalised
@@ -194,6 +298,38 @@ mod tests {
             )),
             vec!["flake8"]
         );
+    }
+
+    #[test]
+    fn tsconfig_options() {
+        assert_eq!(config_kind("tsconfig.json"), Some(ConfigKind::TsConfig));
+        assert_eq!(
+            config_kind("web/tsconfig.build.json"),
+            Some(ConfigKind::TsConfig)
+        );
+        let old = "{\n  // comment, with \"quotes\"\n  \"compilerOptions\": {\n    \"target\": \"ESNext\", /* x */\n    \"moduleResolution\": \"Node\",\n    \"paths\": { \"@/*\": [\"src/*\"] },\n  },\n  \"include\": [\"src\", \"http://x\"],\n}\n";
+        let new = old.replace("    \"moduleResolution\": \"Node\",\n", "");
+        assert_eq!(
+            keys(delta(
+                ConfigKind::TsConfig,
+                Some(old.as_bytes()),
+                Some(new.as_bytes())
+            )),
+            vec!["compilerOptions.moduleResolution"]
+        );
+        let inc = old.replace("\"src\",", "\"lib\",");
+        assert_eq!(
+            keys(delta(
+                ConfigKind::TsConfig,
+                Some(old.as_bytes()),
+                Some(inc.as_bytes())
+            )),
+            vec!["include"]
+        );
+        assert!(matches!(
+            delta(ConfigKind::TsConfig, Some(b"{"), Some(b"{}")),
+            ConfigDelta::Unparseable(_)
+        ));
     }
 
     #[test]

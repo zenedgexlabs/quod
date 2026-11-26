@@ -18,7 +18,9 @@ use quod_change::{ChangeOptions, ChangeSet, DiffOptions, Language, LineMap, Repo
 use quod_graph::{FootprintGraph, GraphBuilder, MapMeta, NodeId};
 use quod_hash::{Digest, hash_file};
 use quod_ladder::{RunReason, SelectInput, Selection, select};
-use quod_model::version::{CAP_JS_ENVIRONMENT, CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION};
+use quod_model::version::{
+    CAP_JS_ENVIRONMENT, CAP_JS_TRANSPILE_ONLY, CAP_PY_ENVIRONMENT, CAP_PY_INTROSPECTION,
+};
 use quod_model::{Certificate, NodeKind, StableTestId, TestFlags, names};
 use quod_policy::{EnvironmentDelta, EvalContext, Evaluation, Policy};
 use quod_verdict::{Finding, LensInput, lens};
@@ -773,6 +775,7 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         &EvalContext {
             map_commits_behind: behind,
             environment,
+            transpile_only: transpile_only(&graph),
         },
     );
     untracked_changes(repo, &graph, &base, &change, &mut evaluation)?;
@@ -1100,6 +1103,16 @@ fn fingerprint_command(python: Option<&Path>, cmd: Option<&Vec<String>>) -> Opti
     }
 }
 
+/// True if the map vouches that tests were transpiled without type
+/// checking (tsconfig type-checking options can't matter).
+fn transpile_only(graph: &FootprintGraph) -> bool {
+    graph
+        .meta()
+        .capabilities
+        .iter()
+        .any(|c| c == CAP_JS_TRANSPILE_ONLY)
+}
+
 /// True if the map's fingerprint lists installed npm packages.
 fn npm_observed(graph: &FootprintGraph) -> bool {
     graph
@@ -1171,6 +1184,7 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
             npm_observed: npm_observed(&graph),
             ..EnvironmentDelta::default()
         }),
+        transpile_only: transpile_only(&graph),
     };
     let evaluate = |base: &str, head: &str| -> Result<Evaluation> {
         let change = quod_change::compute(
@@ -1207,6 +1221,7 @@ pub fn run_culprit(repo: &Repo, opts: &CulpritOptions) -> Result<CulpritReport> 
             &EvalContext {
                 map_commits_behind: Some(0),
                 environment: Some(delta),
+                transpile_only: transpile_only(&graph),
             },
         ));
     }

@@ -114,3 +114,28 @@ R006 globally until an ecosystem parser exists.
   one line maps to that function. Module-level execution of such a file is
   still recorded through the module-level lines a module evaluation always
   executes, and dynamic-language probes also report the file in `files`.
+
+## Addendum: tsconfig options (`js.transpile-only`, 2026-11-26)
+
+A `tsconfig*.json` change used to trigger R002 (run everything) whatever
+changed. Removing a type-checking-only option such as `moduleResolution`
+then made every commit that touched it a Culprit suspect for every test
+(ufo E7).
+
+- **Diff.** `tsconfig*.json` is parsed as JSON with comments. Its sections
+  are `compilerOptions.<option>` and the other top-level fields (`include`,
+  `extends`, `references`, ...).
+- **Capability.** The Vitest reporter declares `js.transpile-only` when the
+  resolved config has typecheck mode off. Vite transpiles each file on its
+  own and never type-checks, so options that only affect type checking
+  can't change outcomes. The Jest adapter doesn't declare it: `ts-jest`
+  emits through `tsc` and reports type errors as failures.
+- **Rule.** With the capability, R002 fires only for changed sections
+  outside a fixed list of type-checking-only options (`TYPE_CHECK_ONLY_TS_OPTIONS`
+  in quod-policy). The list leaves out everything a transpiler or resolver
+  reads (`target`, `module`, `jsx*`, `useDefineForClassFields`,
+  decorators, `verbatimModuleSyntax`, `paths`, `baseUrl`, `allowJs`), and
+  `strict`, which implies `alwaysStrict`. Unknown options and non-option
+  fields always fire. An unparseable file fires.
+- **Turning typecheck on later.** It shows up as an invocation or Vitest
+  config change, which runs everything.

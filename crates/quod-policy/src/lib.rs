@@ -292,6 +292,91 @@ const PACKAGE_JSON_DEPENDENCY_FIELDS: &[&str] = &[
     "bundledDependencies",
 ];
 
+/// tsconfig compiler options that only affect type checking or `tsc`'s
+/// own output files: per-file transpilers (Vite's esbuild and oxc) ignore
+/// them. Options a transpiler or resolver reads (`target`, `module`,
+/// `jsx*`, `useDefineForClassFields`, decorators, `verbatimModuleSyntax`,
+/// `paths`, `baseUrl`, `allowJs`, ...) are absent, and so is `strict`
+/// (it implies `alwaysStrict`, which esbuild honours). Unknown options
+/// count as relevant.
+const TYPE_CHECK_ONLY_TS_OPTIONS: &[&str] = &[
+    "allowArbitraryExtensions",
+    "allowImportingTsExtensions",
+    "allowSyntheticDefaultImports",
+    "allowUnreachableCode",
+    "allowUnusedLabels",
+    "assumeChangesOnlyAffectDirectDependencies",
+    "checkJs",
+    "composite",
+    "declaration",
+    "declarationDir",
+    "declarationMap",
+    "diagnostics",
+    "disableReferencedProjectLoad",
+    "disableSizeLimit",
+    "disableSolutionSearching",
+    "disableSourceOfProjectReferenceRedirect",
+    "emitDeclarationOnly",
+    "erasableSyntaxOnly",
+    "exactOptionalPropertyTypes",
+    "explainFiles",
+    "extendedDiagnostics",
+    "forceConsistentCasingInFileNames",
+    "incremental",
+    "inlineSourceMap",
+    "inlineSources",
+    "isolatedDeclarations",
+    "isolatedModules",
+    "lib",
+    "listEmittedFiles",
+    "listFiles",
+    "mapRoot",
+    "maxNodeModuleJsDepth",
+    "moduleResolution",
+    "newLine",
+    "noCheck",
+    "noEmit",
+    "noEmitOnError",
+    "noErrorTruncation",
+    "noFallthroughCasesInSwitch",
+    "noImplicitAny",
+    "noImplicitOverride",
+    "noImplicitReturns",
+    "noImplicitThis",
+    "noLib",
+    "noPropertyAccessFromIndexSignature",
+    "noStrictGenericChecks",
+    "noUncheckedIndexedAccess",
+    "noUncheckedSideEffectImports",
+    "noUnusedLocals",
+    "noUnusedParameters",
+    "outDir",
+    "outFile",
+    "plugins",
+    "preserveWatchOutput",
+    "pretty",
+    "removeComments",
+    "resolveJsonModule",
+    "resolvePackageJsonExports",
+    "resolvePackageJsonImports",
+    "rootDir",
+    "skipDefaultLibCheck",
+    "skipLibCheck",
+    "sourceMap",
+    "sourceRoot",
+    "stripInternal",
+    "strictBindCallApply",
+    "strictBuiltinIteratorReturn",
+    "strictFunctionTypes",
+    "strictNullChecks",
+    "strictPropertyInitialization",
+    "traceResolution",
+    "tsBuildInfoFile",
+    "typeRoots",
+    "types",
+    "useUnknownInCatchVariables",
+];
+
 /// Runtime pins of ecosystems the environment fingerprint doesn't cover
 /// (it covers Python). R003 in both modes.
 const FOREIGN_RUNTIME_PATHS: &[&str] = &[
@@ -478,6 +563,10 @@ pub struct EvalContext {
     /// Environment mode (ADR 012): how the target environment differs from
     /// the one the map was recorded in. `None` means path mode.
     pub environment: Option<EnvironmentDelta>,
+    /// The map vouches that tests were transpiled without type checking
+    /// (`js.transpile-only`): tsconfig options that only affect type
+    /// checking don't trigger R002.
+    pub transpile_only: bool,
 }
 
 /// How the target environment differs from the recorded one (ADR 012).
@@ -657,6 +746,25 @@ impl Policy {
         }
     }
 
+    /// R002 for a `tsconfig*.json`, if it fires: always, unless the map
+    /// vouches for transpile-only tests and only type-checking options
+    /// changed.
+    fn tsconfig_rule(config: Option<&ConfigDelta>, transpile_only: bool) -> Option<String> {
+        if let (true, Some(ConfigDelta::Sections(keys))) = (transpile_only, config) {
+            let relevant: Vec<&str> = keys
+                .iter()
+                .map(String::as_str)
+                .filter(|k| {
+                    !k.strip_prefix("compilerOptions.")
+                        .is_some_and(|o| TYPE_CHECK_ONLY_TS_OPTIONS.contains(&o))
+                })
+                .collect();
+            return (!relevant.is_empty())
+                .then(|| format!("tsconfig changed: {}", relevant.join(", ")));
+        }
+        Some("test-runner configuration changed".into())
+    }
+
     /// R002 for a `package.json`, if it fires.
     fn package_json_rule(config: Option<&ConfigDelta>, js_lock_changed: bool) -> Option<String> {
         match config {
@@ -683,11 +791,16 @@ impl Policy {
         config: Option<&ConfigDelta>,
         env_mode: bool,
         js_lock_changed: bool,
+        transpile_only: bool,
     ) -> Option<(&'static str, String)> {
         if self.policy_files.is_match(path) {
             Some(("R004", "Quod policy changed".into()))
         } else if path == "package.json" || path.ends_with("/package.json") {
             Self::package_json_rule(config, js_lock_changed).map(|d| ("R002", d))
+        } else if quod_change::config::config_kind(path)
+            == Some(quod_change::config::ConfigKind::TsConfig)
+        {
+            Self::tsconfig_rule(config, transpile_only).map(|d| ("R002", d))
         } else if self.foreign_deps.is_match(path) {
             Some((
                 "R006",
@@ -809,9 +922,13 @@ impl Policy {
                 paths.push(old);
             }
             for p in &paths {
-                if let Some((rule, detail)) =
-                    self.global_rule(p, fd.config.as_ref(), env.is_some(), js_lock_changed)
-                {
+                if let Some((rule, detail)) = self.global_rule(
+                    p,
+                    fd.config.as_ref(),
+                    env.is_some(),
+                    js_lock_changed,
+                    ctx.transpile_only,
+                ) {
                     ev.global.push(Trigger {
                         rule,
                         path: Some((*p).to_owned()),
@@ -1028,6 +1145,7 @@ mod tests {
     const FRESH: EvalContext = EvalContext {
         map_commits_behind: Some(0),
         environment: None,
+        transpile_only: false,
     };
 
     #[test]
@@ -1256,6 +1374,7 @@ mod tests {
                 &EvalContext {
                     map_commits_behind: None,
                     environment: None,
+                    transpile_only: false,
                 }
             )
             .runs_everything()
@@ -1266,6 +1385,7 @@ mod tests {
                 &EvalContext {
                     map_commits_behind: Some(101),
                     environment: None,
+                    transpile_only: false,
                 }
             )
             .runs_everything()
@@ -1276,6 +1396,7 @@ mod tests {
                 &EvalContext {
                     map_commits_behind: Some(100),
                     environment: None,
+                    transpile_only: false,
                 }
             )
             .runs_everything()
@@ -1438,6 +1559,7 @@ mod tests {
         EvalContext {
             map_commits_behind: Some(0),
             environment: Some(delta),
+            transpile_only: false,
         }
     }
 
@@ -1574,6 +1696,48 @@ mod tests {
                 (NodeKind::EnvVar, "API_URL"),
             ]
         );
+    }
+
+    /// A transpile-only map ignores type-checking tsconfig options, never
+    /// anything a transpiler or resolver reads, and never without the
+    /// capability.
+    #[test]
+    fn tsconfig_options() {
+        let p = Policy::default_policy();
+        let ts = |keys: &[&str]| {
+            cs(vec![with_config(
+                "tsconfig.json",
+                ConfigDelta::Sections(keys.iter().map(|k| (*k).to_owned()).collect()),
+            )])
+        };
+        let vouched = EvalContext {
+            map_commits_behind: Some(0),
+            environment: None,
+            transpile_only: true,
+        };
+        let types_only = ts(&[
+            "compilerOptions.moduleResolution",
+            "compilerOptions.noUnusedLocals",
+        ]);
+        assert!(p.evaluate(&types_only, &vouched).global.is_empty());
+        assert_eq!(p.evaluate(&types_only, &FRESH).global[0].rule, "R002");
+        for keys in [
+            &["compilerOptions.target"][..],
+            &["compilerOptions.strict"],
+            &["compilerOptions.paths"],
+            &["compilerOptions.someFutureOption"],
+            &["include"],
+            &["extends"],
+            &["compilerOptions.lib", "compilerOptions.jsx"],
+        ] {
+            let ev = p.evaluate(&ts(keys), &vouched);
+            assert_eq!(ev.global.len(), 1, "{keys:?}");
+        }
+        let unparseable = cs(vec![with_config(
+            "web/tsconfig.json",
+            ConfigDelta::Unparseable("x".into()),
+        )]);
+        assert_eq!(p.evaluate(&unparseable, &vouched).global.len(), 1);
     }
 
     #[test]

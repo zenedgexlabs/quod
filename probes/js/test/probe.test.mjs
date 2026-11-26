@@ -101,7 +101,7 @@ describe('recorded Vitest run', () => {
   });
 
   test('environment fingerprint in the header', () => {
-    assert.deepEqual(header.capabilities, ['js.environment']);
+    assert.deepEqual(header.capabilities, ['js.environment', 'js.transpile-only']);
     assert.equal(header.environment['interpreter.version'], process.version);
     assert.ok(header.environment['dist.npm:vitest'], 'installed packages are fingerprinted');
     assert.equal(header.environment_digest, digest(header.environment));

@@ -146,3 +146,7 @@ The JavaScript probe implements the same contract:
 - **Generic select option.** `select --fingerprint-cmd ARG...` (one flag per
   argument) runs any probe's fingerprint command. `--python` is shorthand
   for the Python probe's.
+- **npm lockfiles** (2026-11-26). With a `js.environment` map, npm lockfile
+  edits change nothing by themselves, as Python ones don't: the installed
+  packages are compared directly (`EnvironmentDelta::npm_observed`). A map
+  with only a Python fingerprint still counts them.

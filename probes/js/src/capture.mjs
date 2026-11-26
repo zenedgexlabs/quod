@@ -100,7 +100,7 @@ function fingerprints() {
  * Writes the capture file (protocol v1) from the workers' records and the
  * runner's test list.
  */
-export function writeCapture({ root, dir, out, rootFiles, runner, tests }) {
+export function writeCapture({ root, dir, out, rootFiles, runner, tests, capabilities = [] }) {
   const { byModule, packages } = readRecords(dir);
   const fp = fingerprints();
   const lines = [];
@@ -109,7 +109,7 @@ export function writeCapture({ root, dir, out, rootFiles, runner, tests }) {
     type: 'header',
     v: CAPTURE_VERSION,
     probe: PROBE_ID,
-    capabilities: fp.environment ? ['js.environment'] : [],
+    capabilities: [...(fp.environment ? ['js.environment'] : []), ...capabilities],
     ...fp,
     language: 'javascript',
     ecosystem: 'npm',

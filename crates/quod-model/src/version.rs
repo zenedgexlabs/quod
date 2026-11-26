@@ -26,3 +26,8 @@ pub const CAP_PY_ENVIRONMENT: &str = "py.environment";
 /// runtime, platform, installed packages as `dist.npm:<name>`) and
 /// `process.env` reads (ADR 012 applied to Node).
 pub const CAP_JS_ENVIRONMENT: &str = "js.environment";
+
+/// Probe capability: every test file was transpiled file by file without
+/// type checking (Vitest outside typecheck mode), so tsconfig options that
+/// only affect type checking can't change outcomes.
+pub const CAP_JS_TRANSPILE_ONLY: &str = "js.transpile-only";

@@ -370,6 +370,7 @@ mod tests {
             &EvalContext {
                 map_commits_behind: Some(0),
                 environment: None,
+                transpile_only: false,
             },
         );
         let sel = select(&SelectInput {
@@ -456,6 +457,7 @@ mod tests {
             &EvalContext {
                 map_commits_behind: Some(0),
                 environment: None,
+                transpile_only: false,
             },
         );
         ev.global.clear();
@@ -489,6 +491,7 @@ mod tests {
             &EvalContext {
                 map_commits_behind: Some(0),
                 environment: None,
+                transpile_only: false,
             },
         );
         ev.global.push(Trigger {
