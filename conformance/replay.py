@@ -69,14 +69,15 @@ def _kill_tree(proc: subprocess.Popen) -> None:
 
 
 def sh(
-    cmd: list, cwd: Path | None = None, check: bool = True, env: dict | None = None, timeout: float | None = None
+    cmd: list, cwd: Path | None = None, check: bool = True, env: dict | None = None, timeout: float | None = None,
+    input: str | None = None,  # noqa: A002 - mirrors subprocess
 ) -> subprocess.CompletedProcess:
     proc = subprocess.Popen(
         [str(c) for c in cmd], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
-        encoding="utf-8", errors="replace",
+        encoding="utf-8", errors="replace", stdin=subprocess.PIPE if input is not None else None,
     )
     try:
-        out, err = proc.communicate(timeout=timeout)
+        out, err = proc.communicate(input=input, timeout=timeout)
     except subprocess.TimeoutExpired:
         _kill_tree(proc)
         proc.communicate()
