@@ -46,7 +46,7 @@ jobs:
         working-directory: probes/python
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.4.0
       - name: test
         run: uv run --locked --python ${{ matrix.python }} -q pytest -q
 
