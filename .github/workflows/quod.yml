@@ -1,0 +1,35 @@
+name: quod
+
+# Dogfood: Quod records its own Python probe's test suite on every push to
+# main and publishes each green map (`quod-map-<sha>`), which
+# `quod map pull` and `quod mcp --pull` fetch.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quod-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: build quod
+        run: cargo build --release --locked -p quod-cli
+      - uses: astral-sh/setup-uv@v10.4.0
+      - name: test environment
+        run: uv sync --directory probes/python --locked
+      - uses: ./integrations/github-action
+        with:
+          mode: record
+          quod-bin: ${{ github.workspace }}/target/release/quod
+          test-command: uv run --directory probes/python --locked pytest -q --quod-root=${{ github.workspace }}

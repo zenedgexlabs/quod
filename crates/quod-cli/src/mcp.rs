@@ -165,6 +165,16 @@ fn call(ctx: &McpContext, params: &Value) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or("");
     let args = params.get("arguments").cloned().unwrap_or(json!({}));
     let arg = |k: &str| args.get(k).and_then(Value::as_str).map(str::to_owned);
+    // No map yet: nothing can be skipped, which is always safe to say.
+    if !ctx.map.is_file() {
+        let hint = "no footprint map: run `quod map pull` (or start the server with --pull)                     to fetch the newest green map CI published";
+        let v = match name {
+            "tests_for" => json!({"advisory": true, "run_everything": true, "reason": hint}),
+            "why" => json!({"test": arg("test"), "decision": "run", "reason": hint}),
+            _ => return text_result(json!({"error": hint}), true),
+        };
+        return text_result(v, false);
+    }
     let r = match name {
         "tests_for" => tests_for(ctx),
         "why" => match arg("test") {

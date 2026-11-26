@@ -144,17 +144,51 @@ enum Cmd {
         #[arg(long)]
         json: bool,
     },
-    /// Serve the agent tools (tests_for, why, check) over MCP on stdio.
+    /// Serve the agent tools (tests_for, why, culprit, check) over MCP on
+    /// stdio.
     ///
-    /// Advisory only: run it inside the agent's sandbox with the map baked
-    /// in (`quod mcp --map .quod/map.qmap`).
+    /// Advisory only: nothing it says can license a CI skip. Without a map
+    /// every answer is "run everything".
     Mcp {
-        /// Footprint map.
+        /// Footprint map (default: the pulled map in the git directory).
         #[arg(long)]
-        map: PathBuf,
+        map: Option<PathBuf>,
+        /// Pull the newest green map from GitHub on start (see `quod map
+        /// pull`). Failure keeps the current map.
+        #[arg(long)]
+        pull: bool,
         /// Policy file (default: quod.toml at the repository root, if present).
         #[arg(long)]
         policy: Option<PathBuf>,
+    },
+    /// Footprint maps published by CI.
+    Map {
+        #[command(subcommand)]
+        cmd: MapCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum MapCmd {
+    /// Download the newest green map CI published for an ancestor of HEAD
+    /// (GitHub Actions artifacts, through the `gh` CLI and its login).
+    Pull {
+        /// Where to install it (default: `quod/map.qmap` in the git
+        /// directory, which working-tree diffs never see).
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// GitHub repository `OWNER/NAME` (default: `gh repo view`).
+        #[arg(long)]
+        github_repo: Option<String>,
+        /// The map must be for an ancestor of this revision.
+        #[arg(long, default_value = "HEAD")]
+        at: String,
+        /// Ancestors of --at to consider.
+        #[arg(long, default_value_t = 500)]
+        depth: usize,
+        /// Print the result as JSON.
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -401,7 +435,45 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 ExitCode::from(1)
             })
         }
-        Cmd::Mcp { map, policy } => serve_mcp(&cli, map, policy.as_deref()),
+        Cmd::Mcp { map, pull, policy } => serve_mcp(&cli, map.as_deref(), *pull, policy.as_deref()),
+        Cmd::Map {
+            cmd:
+                MapCmd::Pull {
+                    out,
+                    github_repo,
+                    at,
+                    depth,
+                    json,
+                },
+        } => {
+            let repo = Repo::discover(&cli.repo_dir)?;
+            let out = match out {
+                Some(o) => o.clone(),
+                None => quod_cli::pull::default_map_path(&repo)?,
+            };
+            let pulled = quod_cli::pull::pull_map(
+                &repo,
+                &quod_cli::pull::PullOptions {
+                    out,
+                    github_repo: github_repo.clone(),
+                    at: at.clone(),
+                    depth: *depth,
+                },
+            )?;
+            if *json {
+                println!("{}", serde_json::to_string_pretty(&pulled)?);
+            } else {
+                println!(
+                    "pulled the green map for {} ({} commit(s) behind {at}) from {} run {}\n  -> {}",
+                    &pulled.commit[..12],
+                    pulled.behind,
+                    pulled.github_repo,
+                    pulled.run_id,
+                    pulled.path.display()
+                );
+            }
+            Ok(ExitCode::SUCCESS)
+        }
         Cmd::Culprit {
             map,
             good,
@@ -494,12 +566,35 @@ fn print_culprit(r: &quod_cli::CulpritReport) {
     }
 }
 
-fn serve_mcp(cli: &Cli, map: &Path, policy: Option<&Path>) -> Result<ExitCode> {
+fn serve_mcp(cli: &Cli, map: Option<&Path>, pull: bool, policy: Option<&Path>) -> Result<ExitCode> {
     let repo = Repo::discover(&cli.repo_dir)?;
+    let map = match map {
+        Some(m) => m.to_path_buf(),
+        None => quod_cli::pull::default_map_path(&repo)?,
+    };
+    if pull {
+        // stdout is the protocol channel: report on stderr only.
+        match quod_cli::pull::pull_map(
+            &repo,
+            &quod_cli::pull::PullOptions {
+                out: map.clone(),
+                github_repo: None,
+                at: "HEAD".into(),
+                depth: 500,
+            },
+        ) {
+            Ok(p) => eprintln!(
+                "quod mcp: pulled the green map for {} ({} commit(s) behind HEAD)",
+                &p.commit[..12],
+                p.behind
+            ),
+            Err(e) => eprintln!("quod mcp: map pull failed, keeping the current map: {e:#}"),
+        }
+    }
     let ctx = quod_cli::mcp::McpContext {
         repo_id: repo_id(cli, &repo),
         repo,
-        map: map.to_path_buf(),
+        map,
         policy: policy.map(Path::to_path_buf),
     };
     let stdin = std::io::stdin();

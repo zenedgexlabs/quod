@@ -4,6 +4,7 @@
 //! testable without a Python interpreter.
 
 pub mod mcp;
+pub mod pull;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs::File;

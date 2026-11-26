@@ -1188,3 +1188,58 @@ fn culprit_keeps_root_scope_changes_as_suspects() {
         [c1.as_str(), c2.as_str()]
     );
 }
+
+/// Without a map (none pulled yet) the agent hears "run everything", never
+/// a skip, and tools that need a map say how to get one.
+#[test]
+fn mcp_without_a_map_runs_everything() {
+    use serde_json::{Value, json};
+    let f = setup();
+    let ctx = quod_cli::mcp::McpContext {
+        repo: Repo::discover(&f.root).unwrap(),
+        map: f.root.join("no-such-map.qmap"),
+        policy: None,
+        repo_id: "acme/app".into(),
+    };
+    let input = [
+        json!({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "tests_for", "arguments": {}}}),
+        json!({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "why", "arguments": {"test": "tests/test_misc.py::test_ok"}}}),
+        json!({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "check", "arguments": {"results": "r.jsonl"}}}),
+    ]
+    .iter()
+    .map(Value::to_string)
+    .collect::<Vec<_>>()
+    .join("\n");
+    let mut out = Vec::new();
+    quod_cli::mcp::serve(&ctx, input.as_bytes(), &mut out).unwrap();
+    let replies: Vec<Value> = String::from_utf8(out)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let body = |i: usize| -> Value {
+        serde_json::from_str(replies[i]["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
+    };
+    assert_eq!(body(0)["run_everything"], true);
+    assert_eq!(replies[0]["result"]["isError"], false);
+    assert_eq!(body(1)["decision"], "run");
+    assert_eq!(replies[2]["result"]["isError"], true);
+    assert!(body(2)["error"].as_str().unwrap().contains("quod map pull"));
+}
+
+/// Pulled maps live in the git directory, so installing one doesn't make
+/// the working tree look changed (a `.quod/` file would trigger R004).
+#[test]
+fn pulled_map_path_is_invisible_to_working_tree_diffs() {
+    let f = setup();
+    let repo = Repo::discover(&f.root).unwrap();
+    let p = quod_cli::pull::default_map_path(&repo).unwrap();
+    fs::create_dir_all(p.parent().unwrap()).unwrap();
+    fs::copy(&f.map, &p).unwrap();
+    let head = repo.rev_parse("HEAD").unwrap();
+    assert!(
+        repo.changed_files(&head, None).unwrap().is_empty(),
+        "{} shows up as a change",
+        p.display()
+    );
+}

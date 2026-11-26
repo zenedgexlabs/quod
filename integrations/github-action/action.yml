@@ -43,6 +43,14 @@ inputs:
   map-path:
     description: Where the footprint map is stored in the workspace.
     default: .quod/map.qmap
+  publish-map:
+    description: >-
+      record: upload each green map as the artifact `quod-map-<sha>`, so
+      developers and agents can fetch it (`quod map pull`, `quod mcp --pull`).
+    default: 'true'
+  map-retention-days:
+    description: Days a published map artifact is kept.
+    default: '30'
 
 outputs:
   status:
@@ -102,6 +110,16 @@ runs:
       with:
         path: ${{ runner.temp }}/quod/green
         key: quod-green-${{ github.sha }}
+
+    - name: Publish the green map
+      if: inputs.mode == 'record' && steps.record.outputs.green == 'true' && inputs.publish-map == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: quod-map-${{ github.sha }}
+        path: ${{ runner.temp }}/quod/green
+        retention-days: ${{ inputs.map-retention-days }}
+        if-no-files-found: error
+        overwrite: true
 
     # ---- record, red: which commit broke main? ---------------------------
     - name: Restore the last green map

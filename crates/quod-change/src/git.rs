@@ -114,6 +114,31 @@ impl Repo {
             .collect())
     }
 
+    /// The git directory shared by all worktrees (`git rev-parse
+    /// --git-common-dir`), absolute. Files kept there never show up in
+    /// working-tree diffs.
+    pub fn common_dir(&self) -> Result<PathBuf, ChangeError> {
+        let out = utf8(&run(&self.root, &["rev-parse", "--git-common-dir"])?)?;
+        let p = PathBuf::from(out.trim());
+        Ok(if p.is_absolute() {
+            p
+        } else {
+            self.root.join(p)
+        })
+    }
+
+    /// Up to `max` commits reachable from `rev`, newest first in
+    /// topological order (`git rev-list --topo-order -n max rev`).
+    pub fn ancestors(&self, rev: &str, max: usize) -> Result<Vec<String>, ChangeError> {
+        let n = format!("-n{max}");
+        let out = utf8(&run(&self.root, &["rev-list", "--topo-order", &n, rev])?)?;
+        Ok(out
+            .lines()
+            .map(|l| l.trim().to_owned())
+            .filter(|l| !l.is_empty())
+            .collect())
+    }
+
     /// One-line subject of a commit.
     pub fn subject(&self, rev: &str) -> Result<String, ChangeError> {
         Ok(utf8(&run(&self.root, &["log", "-1", "--format=%s", rev])?)?
