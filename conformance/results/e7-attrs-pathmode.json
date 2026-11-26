@@ -1,0 +1,286 @@
+{
+  "summary": {
+    "repo": "attrs",
+    "trials": 6,
+    "trials_with_broken_tests": 3,
+    "broken_tests": 32,
+    "misses": 0,
+    "unknown": 0,
+    "named_alone": 0,
+    "mean_suspects": 4.19
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mutant": "_next_gen.py:400: 'False' -> 'True'",
+      "position": 3,
+      "commits": 6,
+      "broken": 13,
+      "tests": [
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_catches_frozen_on_setattr",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_converts_and_validates_by_default",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_discard_context[attrs.frozen]",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_frozen",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_setting_exception_mutable_attributes[attrs.frozen]",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_subclass_frozen",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestNextGen::test_validates",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestProps::test_define_props_custom",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_next_gen.py::TestProps::test_define_props_defaults",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_pattern_matching.py::TestPatternMatching::test_simple_match_case[dec2]",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_setattr.py::TestSetAttr::test_setattr_converter_piped",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_slots.py::test_slots_cached_property_infers_type",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_slots.py::test_slots_cached_property_works_on_frozen_instances",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "mutant": "_make.py:422: '-' -> '+'",
+      "position": 4,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 3,
+      "mutant": "_funcs.py:102: 'True' -> 'False'",
+      "position": 3,
+      "commits": 6,
+      "broken": 5,
+      "tests": [
+        {
+          "test": "tests/test_funcs.py::TestAsDict::test_lists_tuples",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_funcs.py::TestAsDict::test_lists_tuples_retain_type",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_funcs.py::TestAsDict::test_named_tuple_retain_type",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_funcs.py::TestAsDict::test_sets_no_retain",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_funcs.py::TestAsDict::test_type_error_with_retain_type",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "mutant": "_cmp.py:101: '<' -> '>='",
+      "position": 4,
+      "commits": 6,
+      "broken": 14,
+      "tests": [
+        {
+          "test": "tests/test_cmp.py::TestDundersPartialOrdering::test_ge",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestDundersPartialOrdering::test_gt",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestDundersPartialOrdering::test_le",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_ge_different_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_ge_same_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_ge_same_type[PartialOrderCSameType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_le_different_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_le_same_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_le_same_type[PartialOrderCSameType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_not_gt_same_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_not_gt_same_type[PartialOrderCSameType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_not_lt_same_type[PartialOrderCAnyType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestEqOrder::test_not_lt_same_type[PartialOrderCSameType]",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_cmp.py::TestTotalOrderingException::test_eq_must_specified",
+          "outcome": "suspects",
+          "suspects": 5,
+          "mutant_suspected": true,
+          "miss": false
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "mutant": "_make.py:2687: 'True' -> 'False'",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 6,
+      "mutant": "_compat.py:63: '0' -> '1'",
+      "position": 0,
+      "broken": 0,
+      "tests": []
+    }
+  ]
+}

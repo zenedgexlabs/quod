@@ -1,0 +1,1981 @@
+{
+  "summary": {
+    "repo": "ufo",
+    "trials": 6,
+    "trials_with_broken_tests": 3,
+    "broken_tests": 179,
+    "misses": 0,
+    "unknown": 2,
+    "named_alone": 23,
+    "mean_suspects": 1.87
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mutant": "utils.ts:492: '>=' -> '<'",
+      "position": 3,
+      "commits": 6,
+      "broken": 23,
+      "tests": [
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../../b\") === \"../../../b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../b\") === \"../../b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../../b\") === \"../b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./\", \"a\") === \"./a\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./a\", \"./b\") === \"./a/b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\") === \"/foo\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo/\") === \"/foo/\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"/b\") === \"/b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"//google.com/\", \"./foo\", \"/bar\") === \"//google.com/foo/bar\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\") === \"/a\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../../d\") === \"../d\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../d\") === \"/d\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \".././../d\") === \"/d\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../b\") === \"/b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b\", \"../../../d\") === \"/d\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b/c\", \"../../d\") === \"/a/d\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b\") === \"a/b\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"/c\") === \"a/b/c\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"c\") === \"a/b/c\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"../foo\") === \"https://google.com/foo\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"./foo\", \"/bar\") === \"https://google.com/foo/bar\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(, \"./\") === \"./\"",
+          "outcome": "culprit",
+          "suspects": 1,
+          "other_suspects": [],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "mutant": "punycode.ts:83: '26' -> '27'",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 3,
+      "mutant": "utils.ts:481: '&&' -> '||'",
+      "position": 4,
+      "commits": 6,
+      "broken": 18,
+      "tests": [
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../../b\") === \"../../../b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../b\") === \"../../b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../../b\") === \"../b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a/\", \"../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./a\", \"./b\") === \"./a/b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\") === \"/foo\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo/\") === \"/foo/\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"/b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\") === \"/a\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../../d\") === \"../d\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \".././../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b\", \"../../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b/c\", \"../../d\") === \"/a/d\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "mutant": "url.ts:61: '===' -> '!=='",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 5,
+      "mutant": "punycode.ts:54: '65536' -> '65537'",
+      "position": 0,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 6,
+      "mutant": "encoding.ts:32: '+' -> '-'",
+      "position": 1,
+      "commits": 6,
+      "broken": 138,
+      "tests": [
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/My Path/File.html",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/file.html#section1&section2|section3",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/file.html#section1|section2",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/file.html?foo=bar&baz=qux|quux",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/file.html?foo=bar|baz",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html#section1",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html#section1&section2",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html?foo=bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html?foo=bar&baz=qux",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > ",
+          "outcome": "unknown",
+          "suspects": 0,
+          "other_suspects": [],
+          "mutant_suspected": false,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > !@#$%&*()-_=+[]{};:'\",.<>/?`~",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > +=&",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > abc{def}ghi^jkl",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > hello",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeHash > {}^",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > !@#$%^&*()_-+=[]{}\\|;:'\",.<>/?",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > 1+2=3",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > 123",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > a/b",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > hello world",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > true",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeParam > \u00e1\u00e9\u00ed\u00f3\u00fa",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > /path/to/resource",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > p@th",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path&param=value",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path+to+resource",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path/to/re source",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path/to/resource",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path/to/resource/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path/to/resource/file.txt",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodePath > path?query=value",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryKey > 123",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryKey > =value",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryKey > key",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryKey > key=value",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > !@#$%^&*()_+{}[]|\\:;<>,./?",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > 42",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > a=1&b=2",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > apple,banana,cherry",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > hello world",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > hello+world",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > key=value",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/encoding.test.ts::encodeQueryValue > true",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > ",
+          "outcome": "unknown",
+          "suspects": 0,
+          "other_suspects": [],
+          "mutant_suspected": false,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > \u0000http://google.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > .",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > .#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > ./",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > ./?foo=123#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > ./foo",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > .?foo=123",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /%",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /%c",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /http:/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /test%2Bfile.txt",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /test?query=123#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > /test?query=123,123#hash, test",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > ftp://foo.bar/baz",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://1337.net",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://142.42.1.1/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://142.42.1.1:8080/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://223.255.255.254",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://[2001:db8:85a3:8d3:1319:8a2e:370:7348]/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://a.b-c.de",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://code.google.com/events/#&product=browser",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://example.com/foo\\bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/(something)?after=parens",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_(wikipedia)#cite-1",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_(wikipedia)_blah#cite-1",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah_(wikipedia)",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah_(wikipedia)_(again)",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/test?query=123#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://foo.com/unicode_(\u272a)_in_parens",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://j.mp",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost/?email=some%2Bv1%40email.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost/?email=some+v1@email.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost/?redirect=http:%2F%2Fgoogle.com?q=test",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost/abc/deg%2F%2Ftest?email=some+v1@email.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost/abc/deg%2f%3f%26?email=some+v1@email.com&foo=bar",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://localhost:3000",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://my_email%40gmail.com:password@www.my_site.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://test.com/%C3%B6?foo=\u062a\u0633\u062a",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com:8080",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com:8080/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid@example.com",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid@example.com/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid@example.com:8080",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://userid@example.com:8080/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://www.example.com/wpstyle/?p=364",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u0645\u062b\u0627\u0644.\u0625\u062e\u062a\u0628\u0627\u0631",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u0909\u0926\u093e\u0939\u0930\u0923.\u092a\u0930\u0940\u0915\u094d\u0937\u093e",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u2318.ws",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u2318.ws/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u263a.damowmow.com/",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u272adf.ws/123",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u27a1.ws/\u4a39",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > http://\u4f8b\u5b50.\u6d4b\u8bd5",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > https://www.example.com/foo/?bar=baz&inga=42&quux",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > proto://path/to",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/normalize.test.ts::normalizeURL > test?query=123#hash",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::filterQuery > /foo?bar=1&baz=2 filter \"bar\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"a\":\"X\",\"b[]\":[],\"c\":\"Y\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"email\":\"some email.com\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"json\":\"{\\\"test\\\":[\\\"content\\\"]}\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"key with space\":\"spaced value\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"param\":[\"\",\"3\"]}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"param\":[\"3\",\"\"]}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":[{\"obj\":1},{\"obj\":2}]}}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":[{\"obj\":[1,2,3]}]}}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":{\"nested\":{\"object\":123}}}}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > / with {\"str\":\"&\",\"str2\":\"%26\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":2}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":null}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":true,\"bar\":false}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?test with {\"foo\":\"0\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?test with {\"foo\":0}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?test with {\"foo\":1}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > /?x=1,2,3 with {\"y\":\"1,2,3\"}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > ?test with {}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/query.test.ts::withQuery > http://a.com?v=1 with {\"x\":2}",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/resolve.test.ts::resolveURL > [ 'a?x=1', 'b?y=2&y=3&z=4' ] -> 'a/b?x=1&y=2&y=3&z=4'",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/url.test.ts::$URL > append",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/url.test.ts::$URL > getters",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/utilities.test.ts::withFragment > \"https://example.com\" + \"foo\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo bar\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/utilities.test.ts::withFragment > \"https://example.com?foo=bar\" + \"baz\"",
+          "outcome": "suspects",
+          "suspects": 2,
+          "other_suspects": [
+            "replay 78070102"
+          ],
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    }
+  ]
+}

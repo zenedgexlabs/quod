@@ -1,0 +1,858 @@
+{
+  "summary": {
+    "repo": "itsdangerous",
+    "trials": 5,
+    "trials_with_broken_tests": 2,
+    "broken_tests": 115,
+    "misses": 0,
+    "unknown": 0,
+    "named_alone": 39,
+    "mean_suspects": 1.66
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mutant": "url_safe.py:62: 'True' -> 'False'",
+      "position": 3,
+      "commits": 6,
+      "broken": 24,
+      "tests": [
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_alt_salt[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_bad_signature_exception[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_changed_value[zlib-<lambda>0]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_changed_value[zlib-<lambda>1]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_changed_value[zlib-<lambda>2]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_changed_value[zlib-<lambda>3]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_fallback_signers[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_file[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_loads_unsafe[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_signer_cls[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeSerializer::test_signer_kwargs[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_alt_salt[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_bad_signature_exception[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>0]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>1]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>2]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>3]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_fallback_signers[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_file[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_loads_unsafe[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_max_age[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_return_payload[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_cls[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_kwargs[zlib]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "mutant": "encoding.py:54: '0' -> '1'",
+      "position": 4,
+      "commits": 6,
+      "broken": 91,
+      "tests": [
+        {
+          "test": "tests/test_itsdangerous/test_encoding.py::test_int_bytes[0-]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_encoding.py::test_int_bytes[18446744073709551615-\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_encoding.py::test_int_bytes[192-\\xc0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_alt_salt",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_bad_payload_exception",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_changed_value[<lambda>0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_changed_value[<lambda>1]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_changed_value[<lambda>2]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_changed_value[<lambda>3]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_fallback_signers",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_file",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_loads_unsafe",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_max_age",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_return_payload",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[None]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[True]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[str]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[text]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[value4]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer[value5]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_serializer_kwargs",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_signer_cls",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimedSerializer::test_signer_kwargs",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_algorithm[None]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_algorithm[algorithm1]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_algorithm[algorithm2]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_algorithm[algorithm3]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_digest_method",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_future_age",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_key_derivation[concat]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_key_derivation[django-concat]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_key_derivation[hmac]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_key_derivation[none]",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_malformed_future_timestamp",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_max_age",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_return_timestamp",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_sig_error_date_signed",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_timed.py::TestTimestampSigner::test_signer",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_alt_salt",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_bad_payload_exception",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_changed_value[<lambda>0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_changed_value[<lambda>1]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_changed_value[<lambda>2]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_changed_value[<lambda>3]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_fallback_signers",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_file",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_loads_unsafe",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_max_age",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_return_payload",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[None]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[True]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[str]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[text]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[value4]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer[value5]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_serializer_kwargs",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_signer_cls",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestTimedSerializer::test_signer_kwargs",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_alt_salt[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_alt_salt[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_bad_payload_exception[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_bad_payload_exception[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[value0-<lambda>0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[value0-<lambda>1]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[value0-<lambda>2]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[value0-<lambda>3]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>1]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>2]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_changed_value[zlib-<lambda>3]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_fallback_signers[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_fallback_signers[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_file[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_file[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_loads_unsafe[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_loads_unsafe[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_max_age[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_max_age[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_return_payload[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_return_payload[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[None]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[True]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[str]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[text]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[value4]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer[value5]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_serializer_kwargs",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_cls[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_cls[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_kwargs[value0]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        },
+        {
+          "test": "tests/test_itsdangerous/test_url_safe.py::TestURLSafeTimedSerializer::test_signer_kwargs[zlib]",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "mutant": "encoding.py:33: '-' -> '+'",
+      "position": 4,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 4,
+      "mutant": "serializer.py:241: '1' -> '2'",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 6,
+      "mutant": "encoding.py:33: '-' -> '+'",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    }
+  ]
+}

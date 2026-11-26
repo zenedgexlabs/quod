@@ -1,0 +1,138 @@
+{
+  "summary": {
+    "repo": "more-itertools",
+    "trials": 4,
+    "trials_with_broken_tests": 4,
+    "broken_tests": 11,
+    "misses": 0,
+    "unknown": 0,
+    "named_alone": 1,
+    "mean_suspects": 2.55
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mutant": "recipes.py:1525: '>' -> '<='",
+      "position": 3,
+      "commits": 6,
+      "broken": 3,
+      "tests": [
+        {
+          "test": "tests/test_more.py::TestRunningMax::test_maxlen",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::TestRunningMax::test_stability",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::TestRunningStats::test_single_example",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "mutant": "more.py:4399: '<' -> '>='",
+      "position": 3,
+      "commits": 6,
+      "broken": 4,
+      "tests": [
+        {
+          "test": "tests/test_more.py::NthCombinationWithReplacementTests::test_basic",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_index",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_r",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::NthCombinationWithReplacementTests::test_long",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "mutant": "more.py:2750: '0' -> '1'",
+      "position": 4,
+      "commits": 6,
+      "broken": 1,
+      "tests": [
+        {
+          "test": "tests/test_more.py::IsliceExtendedTests::test_elements_lifecycle",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "mutant": "recipes.py:1589: '4' -> '5'",
+      "position": 1,
+      "commits": 6,
+      "broken": 3,
+      "tests": [
+        {
+          "test": "tests/test_more.py::TestRunningStats::test_datatypes",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_more.py::TestRunningStats::test_single_example",
+          "outcome": "suspects",
+          "suspects": 2,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "tests/test_recipes.py::RunningWindowSizeTests::test_index_protocol",
+          "outcome": "culprit",
+          "suspects": 1,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+{
+  "summary": {
+    "repo": "ufo",
+    "trials": 5,
+    "trials_with_broken_tests": 2,
+    "broken_tests": 41,
+    "misses": 0,
+    "unknown": 0,
+    "named_alone": 0,
+    "mean_suspects": 3.0
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mutant": "utils.ts:492: '>=' -> '<'",
+      "position": 3,
+      "commits": 6,
+      "broken": 23,
+      "tests": [
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../../b\") === \"../../../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../b\") === \"../../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../../b\") === \"../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./\", \"a\") === \"./a\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./a\", \"./b\") === \"./a/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\") === \"/foo\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo/\") === \"/foo/\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"/b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"//google.com/\", \"./foo\", \"/bar\") === \"//google.com/foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\") === \"/a\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../../d\") === \"../d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \".././../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b\", \"../../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b/c\", \"../../d\") === \"/a/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b\") === \"a/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"/c\") === \"a/b/c\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"c\") === \"a/b/c\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"../foo\") === \"https://google.com/foo\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"./foo\", \"/bar\") === \"https://google.com/foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(, \"./\") === \"./\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "mutant": "punycode.ts:83: '26' -> '27'",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 3,
+      "mutant": "utils.ts:481: '&&' -> '||'",
+      "position": 4,
+      "commits": 6,
+      "broken": 18,
+      "tests": [
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../../b\") === \"../../../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../b\") === \"../../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../../b\") === \"../b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a/\", \"../b\") === \"b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./a\", \"./b\") === \"./a/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\") === \"/foo\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo/\") === \"/foo/\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"/b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\") === \"/a\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../../d\") === \"../d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \".././../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../b\") === \"/b\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b\", \"../../../d\") === \"/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        },
+        {
+          "test": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b/c\", \"../../d\") === \"/a/d\"",
+          "outcome": "suspects",
+          "suspects": 3,
+          "mutant_suspected": true,
+          "miss": false,
+          "victim": false
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "mutant": "url.ts:61: '===' -> '!=='",
+      "position": 3,
+      "broken": 0,
+      "tests": []
+    },
+    {
+      "trial": 5,
+      "mutant": "punycode.ts:54: '65536' -> '65537'",
+      "position": 0,
+      "broken": 0,
+      "tests": []
+    }
+  ]
+}
