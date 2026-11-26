@@ -153,7 +153,10 @@ def score(ws: R.Workspace, commit: str, tag: str) -> dict:
     own_fail = sorted(R.failing(own))
     hidden_files = test_files(ws, commit)
     if hidden_files:
-        ws.git("checkout", commit, "--", *hidden_files)
+        # Partial clone: a lazy blob fetch can fail once; blobs are also
+        # warmed before the agent starts.
+        if ws.git("checkout", commit, "--", *hidden_files, check=False).returncode:
+            ws.git("checkout", commit, "--", *hidden_files)
     hidden, _, _ = R.run_suite(ws, f"{tag}-hidden")
     hidden_fail = sorted(R.failing(hidden))
     return {
@@ -187,6 +190,8 @@ def main() -> int:
         commit = ws.git("rev-parse", short).stdout.strip()
         parent = f"{commit}^"
         task = task_text(ws, commit)
+        for f in test_files(ws, commit):
+            ws.git("cat-file", "-p", f"{commit}:{f}", check=False)  # fetch hidden test blobs now
         R.log(f"[{ws.name}] task {short}: {task.splitlines()[0]}")
         # A fresh map at the parent, where the agent starts: what `quod map
         # pull` gives an agent on an up-to-date branch.

@@ -26,7 +26,7 @@ use crate::{
 /// Protocol version this server implements by default.
 pub const PROTOCOL_VERSION: &str = "2025-06-18";
 /// Maximum test names listed in one response.
-const MAX_LISTED: usize = 200;
+const MAX_LISTED: usize = 50;
 
 /// What the server selects against.
 pub struct McpContext {
@@ -163,6 +163,11 @@ fn tests_for(ctx: &McpContext) -> Result<Value> {
     let (graph, mut env) = ctx.setup()?;
     let res = ctx.select(&mut env)?;
     let r = &res.report;
+    let run_everything = r.skipped == 0 && !r.run.is_empty();
+    let mut reasons: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    for e in &r.run {
+        *reasons.entry(e.reason.as_str()).or_default() += 1;
+    }
     let skip_file = ctx.skip_file()?;
     let mut text = res
         .skip_header
@@ -197,8 +202,14 @@ fn tests_for(ctx: &McpContext) -> Result<Value> {
         "environment_mode": env.environment_mode(),
         "note": env.note,
         "obligated_count": r.run.len(),
-        "obligated": r.run.iter().take(MAX_LISTED).map(|e| json!({"test": e.name, "reason": e.reason})).collect::<Vec<_>>(),
-        "truncated": r.run.len() > MAX_LISTED,
+        // When everything runs, the reasons say why in a line; a list of
+        // every test would only fill the agent's context.
+        "run_everything": run_everything,
+        "reasons": reasons,
+        "obligated": if run_everything { Vec::new() } else {
+            r.run.iter().take(MAX_LISTED).map(|e| json!({"test": e.name, "reason": e.reason})).collect::<Vec<_>>()
+        },
+        "truncated": !run_everything && r.run.len() > MAX_LISTED,
         "skippable_count": r.skipped,
         "fallback": r.global,
         "findings": r.findings,
