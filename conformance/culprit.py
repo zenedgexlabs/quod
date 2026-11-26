@@ -173,6 +173,7 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
     out = R.sh([R.QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "culprit", "--map", map_path,
                 "--good", good, "--bad", bad, "--results", failed_file, *env_args, "--json"])
     report = json.loads(out.stdout)
+    subject = {c: s for c, s in report["commits"]}
     tests = []
     for f in report["findings"]:
         suspects = [s["commit"] for s in f["suspects"]]
@@ -185,6 +186,7 @@ def trial(ws: R.Workspace, good: str, window: list[str], rng: random.Random, t: 
             "test": f["test"],
             "outcome": f["outcome"],
             "suspects": len(suspects),
+            "other_suspects": sorted({subject.get(s, s) for s in suspects if s != mutant_commit}),
             "mutant_suspected": mutant_commit in suspects,
             "miss": miss and not victim,
             "victim": victim,

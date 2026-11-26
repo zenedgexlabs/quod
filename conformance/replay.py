@@ -211,7 +211,11 @@ def passes_alone(ws: Workspace, name: str) -> bool:
             out.unlink()
         # Both runners match -t against the suite path and test name joined
         # by spaces, and write the same JSON result shape.
-        pattern = "^" + re.escape(full.replace(" > ", " ")) + "$"
+        # Control characters (ufo has NUL in titles) can't go on a command
+        # line: they go in as JS regex escapes.
+        pattern = "^" + "".join(
+            f"\\x{ord(c):02x}" if ord(c) < 0x20 else re.escape(c) for c in full.replace(" > ", " ")
+        ) + "$"
         rel_file = os.path.relpath(ws.repo / file, ws.test_dir)
         if ws.runner == "jest":
             cmd = ["node", runner_bin(ws, "jest"), rel_file.replace(os.sep, "/"), "-t", pattern, "--json",
