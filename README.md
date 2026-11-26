@@ -52,9 +52,13 @@ quod-verify --verdict verdict.json --map .quod/map.qmap --certs certs.jsonl \
 ```
 
 Agents and local runs use `--advisory` (no key). Advisory certificates and
-Verdicts are never accepted as proof. Inside an agent's sandbox,
-`quod mcp --map .quod/map.qmap` serves `tests_for`, `why` and `check` over
-MCP.
+Verdicts are never accepted as proof.
+
+**Coding agents** get the same answers over MCP. `quod mcp install --client
+claude-code|cursor|vscode` registers the server; it pulls the newest green
+map CI published and serves `tests_for` (with a command that runs exactly
+the obligated tests), `why`, `culprit`, `status` and `check`. See
+[docs/agents.md](docs/agents.md).
 
 ## JS/TS (Vitest, Jest)
 

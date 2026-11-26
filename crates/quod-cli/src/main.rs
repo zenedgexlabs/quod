@@ -149,7 +149,10 @@ enum Cmd {
     ///
     /// Advisory only: nothing it says can license a CI skip. Without a map
     /// every answer is "run everything".
+    #[command(args_conflicts_with_subcommands = true)]
     Mcp {
+        #[command(subcommand)]
+        cmd: Option<McpCmd>,
         /// Footprint map (default: the pulled map in the git directory).
         #[arg(long)]
         map: Option<PathBuf>,
@@ -165,6 +168,25 @@ enum Cmd {
     Map {
         #[command(subcommand)]
         cmd: MapCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum McpCmd {
+    /// Register the server with a coding agent: writes the client's
+    /// project config (.mcp.json, .cursor/mcp.json or .vscode/mcp.json),
+    /// keeping its other servers.
+    Install {
+        /// The agent (repeat for several).
+        #[arg(long, value_enum, required = true)]
+        client: Vec<quod_cli::install::Client>,
+        /// Command the client runs (default `quod`, found on PATH).
+        /// Configs are usually committed, so prefer a name over a path.
+        #[arg(long, default_value = "quod")]
+        command: String,
+        /// Don't refresh the map from CI when the server starts.
+        #[arg(long)]
+        no_pull: bool,
     },
 }
 
@@ -435,7 +457,32 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 ExitCode::from(1)
             })
         }
-        Cmd::Mcp { map, pull, policy } => serve_mcp(&cli, map.as_deref(), *pull, policy.as_deref()),
+        Cmd::Mcp {
+            cmd:
+                Some(McpCmd::Install {
+                    client,
+                    command,
+                    no_pull,
+                }),
+            ..
+        } => {
+            let repo = Repo::discover(&cli.repo_dir)?;
+            for c in client {
+                let r = quod_cli::install::install(repo.root(), *c, command, !*no_pull)?;
+                println!("{} {}", r.action, r.path.display());
+            }
+            println!("The agent now has tests_for, why, culprit, status and check (advisory).");
+            if !command.contains(['/', '\\']) {
+                println!("It runs `{command} mcp`: `{command}` must be on the agent's PATH.");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Cmd::Mcp {
+            cmd: None,
+            map,
+            pull,
+            policy,
+        } => serve_mcp(&cli, map.as_deref(), *pull, policy.as_deref()),
         Cmd::Map {
             cmd:
                 MapCmd::Pull {

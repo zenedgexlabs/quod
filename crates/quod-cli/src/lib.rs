@@ -4,6 +4,7 @@
 //! testable without a Python interpreter.
 
 pub mod agent;
+pub mod install;
 pub mod mcp;
 pub mod pull;
 

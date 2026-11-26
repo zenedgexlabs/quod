@@ -337,8 +337,13 @@ pub fn handle(ctx: &McpContext, msg: &Value) -> Option<Value> {
             "protocolVersion": params.get("protocolVersion").and_then(Value::as_str).unwrap_or(PROTOCOL_VERSION),
             "capabilities": {"tools": {}},
             "serverInfo": {"name": "quod", "version": env!("CARGO_PKG_VERSION")},
-            "instructions": "Call tests_for after each edit to learn which tests your change obligates, \
-                then run exactly those. Results here are advisory; CI issues the signed Verdict."
+            "instructions": "Quod knows which tests each change can affect. After editing, call \
+                tests_for: it lists the obligated tests with reasons, flags changed code no test \
+                runs, and returns `run` (cwd and argv) that runs exactly those tests plus any new \
+                ones; run it instead of the whole suite. To report results, pass the run's results \
+                file to check. When a test fails that your change shouldn't affect, culprit says \
+                which commit broke it. If answers look too conservative, call status. Everything \
+                here is advisory; CI issues the signed Verdict."
         }),
         "ping" => json!({}),
         "tools/list" => json!({"tools": tools()}),
