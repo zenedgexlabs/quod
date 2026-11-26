@@ -10,6 +10,11 @@
 //! Other servers in the file are kept; an existing `quod` entry is
 //! replaced. A file that isn't plain JSON (VS Code allows comments) is
 //! never rewritten: the entry is printed for the user to paste instead.
+//!
+//! It also writes a short section into the project's agent instructions
+//! (`CLAUDE.md`, or `AGENTS.md` for Cursor and VS Code), between markers so
+//! reinstalling replaces it. An attached server alone isn't enough: in E8b
+//! an agent with the server connected never called it.
 
 use std::path::{Path, PathBuf};
 
@@ -47,6 +52,66 @@ impl Client {
     }
 }
 
+/// Start and end markers of Quod's section in an instructions file.
+pub const BEGIN: &str = "<!-- quod:begin -->";
+/// See [`BEGIN`].
+pub const END: &str = "<!-- quod:end -->";
+
+/// The section itself.
+pub const INSTRUCTIONS: &str = "## Running tests (Quod)
+
+This repository has the Quod MCP server (`quod`). It knows which tests each change can affect.
+
+- After changing code, call `tests_for` instead of choosing tests yourself. Run the `run` command it \
+returns (`argv` in `cwd`): it runs exactly the tests your change can affect, plus any new ones. Don't \
+run the whole suite unless `tests_for` says everything must run.
+- Before finishing, call `check`: it reads that run's results and says whether the change is covered.
+- If a test fails that your change shouldn't affect, call `culprit`.";
+
+impl Client {
+    /// Instructions file the client reads, relative to the repository root.
+    pub fn instructions_path(self) -> &'static str {
+        match self {
+            Client::ClaudeCode => "CLAUDE.md",
+            _ => "AGENTS.md",
+        }
+    }
+}
+
+/// Adds or replaces Quod's section in `client`'s instructions file.
+pub fn install_instructions(root: &Path, client: Client) -> Result<Installed> {
+    let path = root.join(client.instructions_path());
+    let section = format!("{BEGIN}\n{INSTRUCTIONS}\n{END}\n");
+    let (text, action) = match std::fs::read_to_string(&path) {
+        Ok(old) => match (old.find(BEGIN), old.find(END)) {
+            (Some(b), Some(e)) if b < e => {
+                let mut end = e + END.len();
+                if old[end..].starts_with('\n') {
+                    end += 1;
+                }
+                (format!("{}{section}{}", &old[..b], &old[end..]), "updated")
+            }
+            _ => {
+                let sep = if old.is_empty() || old.ends_with("\n\n") {
+                    ""
+                } else if old.ends_with('\n') {
+                    "\n"
+                } else {
+                    "\n\n"
+                };
+                (format!("{old}{sep}{section}"), "added")
+            }
+        },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => (section, "created"),
+        Err(e) => return Err(e).with_context(|| format!("reading {}", path.display())),
+    };
+    std::fs::write(&path, text).with_context(|| format!("writing {}", path.display()))?;
+    Ok(Installed {
+        path,
+        action,
+        entry: Value::Null,
+    })
+}
 /// What `install` did.
 #[derive(Clone, Debug, Serialize)]
 pub struct Installed {
@@ -176,6 +241,35 @@ mod tests {
         assert_eq!(
             read(&dir.path().join(".vscode/mcp.json"))["servers"]["quod"]["type"],
             "stdio"
+        );
+    }
+
+    #[test]
+    fn instructions_are_one_replaceable_section() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("CLAUDE.md");
+        std::fs::write(&p, "# Project\n\nUse tabs.\n").unwrap();
+        assert_eq!(
+            install_instructions(dir.path(), Client::ClaudeCode)
+                .unwrap()
+                .action,
+            "added"
+        );
+        assert_eq!(
+            install_instructions(dir.path(), Client::ClaudeCode)
+                .unwrap()
+                .action,
+            "updated"
+        );
+        let text = std::fs::read_to_string(&p).unwrap();
+        assert!(text.starts_with("# Project\n\nUse tabs.\n\n<!-- quod:begin -->"));
+        assert_eq!(text.matches(BEGIN).count(), 1, "{text}");
+        assert!(text.contains("tests_for"));
+        assert_eq!(
+            install_instructions(dir.path(), Client::Cursor)
+                .unwrap()
+                .path,
+            dir.path().join("AGENTS.md")
         );
     }
 

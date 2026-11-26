@@ -187,6 +187,9 @@ enum McpCmd {
         /// Don't refresh the map from CI when the server starts.
         #[arg(long)]
         no_pull: bool,
+        /// Don't add Quod's section to CLAUDE.md / AGENTS.md.
+        #[arg(long)]
+        no_instructions: bool,
     },
 }
 
@@ -463,13 +466,19 @@ fn run(cli: Cli) -> Result<ExitCode> {
                     client,
                     command,
                     no_pull,
+                    no_instructions,
                 }),
             ..
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
+            let mut seen = std::collections::BTreeSet::new();
             for c in client {
                 let r = quod_cli::install::install(repo.root(), *c, command, !*no_pull)?;
                 println!("{} {}", r.action, r.path.display());
+                if !*no_instructions && seen.insert(c.instructions_path()) {
+                    let r = quod_cli::install::install_instructions(repo.root(), *c)?;
+                    println!("{} {} (Quod section)", r.action, r.path.display());
+                }
             }
             println!("The agent now has tests_for, why, culprit, status and check (advisory).");
             if !command.contains(['/', '\\']) {

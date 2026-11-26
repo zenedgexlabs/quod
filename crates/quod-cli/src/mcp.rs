@@ -78,6 +78,12 @@ impl McpContext {
         run_select(&self.repo, &self.options(env))
     }
 
+    /// Where the command `tests_for` returns writes its results, and where
+    /// `check` reads them by default.
+    fn results_file(&self) -> Result<PathBuf> {
+        Ok(self.skip_file()?.with_file_name("results.jsonl"))
+    }
+
     /// Where `tests_for` writes the skip file (git directory: never a
     /// working-tree change).
     fn skip_file(&self) -> Result<PathBuf> {
@@ -134,13 +140,12 @@ fn tools() -> Value {
         },
         {
             "name": "check",
-            "description": "An advisory Verdict for the current change from a results file the \
-                probe wrote (pytest --quod-results / quod-vitest --results): obligations met, \
-                failures this change did not cause, untested changes, test integrity.",
+            "description": "An advisory Verdict for the current change, after running the \
+                command tests_for returned: obligations met, failures this change did not cause, \
+                untested changes, test integrity. Call it before finishing.",
             "inputSchema": {
                 "type": "object",
-                "properties": {"results": {"type": "string", "description": "Path to the results JSON Lines file"}},
-                "required": ["results"],
+                "properties": {"results": {"type": "string", "description": "Results file (default: the one the tests_for command wrote)"}},
                 "additionalProperties": false
             }
         }
@@ -168,7 +173,16 @@ fn tests_for(ctx: &McpContext) -> Result<Value> {
         .join("\n");
     text.push('\n');
     std::fs::write(&skip_file, text)?;
-    let run = agent::run_command(ctx.repo.root(), graph.meta(), &env, &skip_file);
+    // Results of an earlier run must not be checked against this change.
+    let results_file = ctx.results_file()?;
+    let _ = std::fs::remove_file(&results_file);
+    let run = agent::run_command(
+        ctx.repo.root(),
+        graph.meta(),
+        &env,
+        &skip_file,
+        Some(&results_file),
+    );
     if r.global.iter().any(|g| g.starts_with("R018")) {
         env.note = Some(
             "this environment differs from the one CI recorded the map in (see `fallback`), so every \
@@ -314,9 +328,14 @@ fn call(ctx: &McpContext, params: &Value) -> Value {
                 _ => Err(anyhow::anyhow!("missing argument: good and failed")),
             }
         }
-        "check" => match arg("results") {
-            Some(p) => check(ctx, &p),
-            None => Err(anyhow::anyhow!("missing argument: results")),
+        "check" => match arg("results")
+            .map(PathBuf::from)
+            .or_else(|| ctx.results_file().ok())
+        {
+            Some(p) if p.is_file() => check(ctx, &p.to_string_lossy()),
+            _ => Err(anyhow::anyhow!(
+                "no results yet: run the command tests_for returned, then call check"
+            )),
         },
         other => Err(anyhow::anyhow!("unknown tool {other}")),
     };

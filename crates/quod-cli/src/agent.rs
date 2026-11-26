@@ -172,9 +172,11 @@ pub fn run_command(
     meta: &MapMeta,
     env: &EnvSetup,
     skip_file: &Path,
+    results_file: Option<&Path>,
 ) -> Option<RunCommand> {
     let cwd = invocation_dir(meta);
     let skip = skip_file.to_string_lossy().into_owned();
+    let results = results_file.map(|r| r.to_string_lossy().into_owned());
     let args = recorded_args(meta);
     let argv: Vec<String> = match runner(meta)? {
         Runner::Pytest => {
@@ -185,6 +187,7 @@ pub fn run_command(
             [python, "-m".into(), "pytest".into()]
                 .into_iter()
                 .chain(args)
+                .chain(results.iter().map(|r| format!("--quod-results={r}")))
                 .chain([format!("--quod-skip={skip}")])
                 .collect()
         }
@@ -194,23 +197,24 @@ pub fn run_command(
                 |p| p.to_string_lossy().into_owned(),
             );
             let runner = if r == Runner::Jest { "jest" } else { "vitest" };
-            [
-                "node".into(),
-                cli,
-                "run".into(),
-                "--skip".into(),
-                skip,
-                "--runner".into(),
-                runner.into(),
-                "--root".into(),
-                root.to_string_lossy().into_owned(),
-                "--dir".into(),
-                root.join(&cwd).to_string_lossy().into_owned(),
-                "--".into(),
-            ]
-            .into_iter()
-            .chain(args)
-            .collect()
+            ["node".into(), cli, "run".into(), "--skip".into(), skip]
+                .into_iter()
+                .chain(
+                    results
+                        .into_iter()
+                        .flat_map(|r| ["--results".to_owned(), r]),
+                )
+                .chain([
+                    "--runner".into(),
+                    runner.into(),
+                    "--root".into(),
+                    root.to_string_lossy().into_owned(),
+                    "--dir".into(),
+                    root.join(&cwd).to_string_lossy().into_owned(),
+                    "--".into(),
+                ])
+                .chain(args)
+                .collect()
         }
     };
     let shell = argv
@@ -265,6 +269,7 @@ mod tests {
             &m,
             &env,
             Path::new("/r/.git/quod/skip.txt"),
+            Some(Path::new("/r/.git/quod/results.jsonl")),
         )
         .unwrap();
         assert_eq!(c.cwd, "probes/python");
@@ -276,6 +281,7 @@ mod tests {
                 "pytest",
                 "-q",
                 "tests",
+                "--quod-results=/r/.git/quod/results.jsonl",
                 "--quod-skip=/r/.git/quod/skip.txt"
             ]
         );
@@ -291,11 +297,19 @@ mod tests {
                 ("invocation.dir", "."),
             ],
         );
-        let c = run_command(Path::new("/r"), &m, &EnvSetup::default(), Path::new("/s")).unwrap();
+        let c = run_command(
+            Path::new("/r"),
+            &m,
+            &EnvSetup::default(),
+            Path::new("/s"),
+            Some(Path::new("/res")),
+        )
+        .unwrap();
         assert_eq!(c.argv[0], "node");
         let at = |flag: &str| c.argv[c.argv.iter().position(|a| a == flag).unwrap() + 1].clone();
         assert_eq!(at("--runner"), "jest");
         assert_eq!(at("--skip"), "/s");
+        assert_eq!(at("--results"), "/res");
         assert_eq!(c.argv.last().unwrap(), "--silent");
     }
 
