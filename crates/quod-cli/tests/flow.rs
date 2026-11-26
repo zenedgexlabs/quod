@@ -933,6 +933,7 @@ fn mcp_server_answers_agent_tools() {
         json!({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "tests_for", "arguments": {}}}),
         json!({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "why", "arguments": {"test": "tests/test_misc.py::test_ok"}}}),
         json!({"jsonrpc": "2.0", "id": 5, "method": "nope"}),
+        json!({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "status", "arguments": {}}}),
     ]
     .iter()
     .map(Value::to_string)
@@ -945,7 +946,7 @@ fn mcp_server_answers_agent_tools() {
         .lines()
         .map(|l| serde_json::from_str(l).unwrap())
         .collect();
-    assert_eq!(replies.len(), 5, "notifications get no reply");
+    assert_eq!(replies.len(), 6, "notifications get no reply");
     assert_eq!(replies[0]["result"]["serverInfo"]["name"], "quod");
     let names: Vec<&str> = replies[1]["result"]["tools"]
         .as_array()
@@ -953,7 +954,7 @@ fn mcp_server_answers_agent_tools() {
         .iter()
         .map(|t| t["name"].as_str().unwrap())
         .collect();
-    assert_eq!(names, ["tests_for", "why", "culprit", "check"]);
+    assert_eq!(names, ["tests_for", "why", "culprit", "status", "check"]);
     let text = |i: usize| -> Value {
         serde_json::from_str(replies[i]["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
     };
@@ -975,6 +976,38 @@ fn mcp_server_answers_agent_tools() {
     );
     assert_eq!(text(3)["decision"], "skip");
     assert_eq!(replies[4]["error"]["code"], -32601);
+
+    // The run command repeats the recorded invocation with the skip file,
+    // which names the skippable test and lives in the git directory.
+    let argv: Vec<&str> = plan["run"]["argv"]
+        .as_array()
+        .unwrap_or_else(|| panic!("no run command: {plan}"))
+        .iter()
+        .map(|a| a.as_str().unwrap())
+        .collect();
+    let skip = argv
+        .last()
+        .and_then(|a| a.strip_prefix("--quod-skip="))
+        .unwrap_or_else(|| panic!("{argv:?}"));
+    assert!(
+        fs::read_to_string(skip)
+            .unwrap()
+            .contains("tests/test_misc.py::test_ok")
+    );
+    let repo = Repo::discover(&f.root).unwrap();
+    let head = repo.rev_parse("HEAD").unwrap();
+    assert!(
+        repo.changed_files(&head, None)
+            .unwrap()
+            .iter()
+            .all(|c| c.path == "app/billing.py"),
+        "the skip file is not a working-tree change"
+    );
+
+    let status = text(5);
+    assert_eq!(status["commits_behind_head"], 0);
+    assert_eq!(status["map_is_ancestor_of_head"], true);
+    assert_eq!(status["runner"], "pytest");
 }
 
 /// The independent verifier accepts an honest Verdict (with its map and

@@ -106,6 +106,8 @@ describe('recorded Vitest run', () => {
     assert.ok(header.environment['dist.npm:vitest'], 'installed packages are fingerprinted');
     assert.equal(header.environment_digest, digest(header.environment));
     assert.equal(header.invocation['invocation.args'], '[]');
+    assert.equal(header.invocation['invocation.runner'], 'vitest');
+    assert.equal(header.invocation['invocation.dir'], '.');
   });
 
   test('process.env reads are recorded per test', () => {

@@ -207,7 +207,7 @@ function vitestBin(root) {
  * lines), in the environment the tests are about to run in. Returns the
  * first mismatch, or null.
  */
-export function checkSkipFile(file, { root, dir, args }) {
+export function checkSkipFile(file, { root, dir, args, runner }) {
   let envFp = null;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
     if (!line.startsWith('# quod-')) continue;
@@ -216,7 +216,7 @@ export function checkSkipFile(file, { root, dir, args }) {
       envFp ??= environment(root, dir);
       if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
     } else if (kind === 'invocation' && rest.length === 1) {
-      if (digest(invocation(args)) !== rest[0]) return 'the test runner invocation differs from the recorded one';
+      if (digest(invocation(args, { runner, root, dir })) !== rest[0]) return 'the test runner invocation differs from the recorded one';
     } else if (kind === 'env' && rest.length === 2) {
       const [name, expected] = rest;
       const actual = name === '*' ? environHash() : envValueHash(process.env[name]);
@@ -285,7 +285,7 @@ export function main(argv) {
         fp,
         JSON.stringify({
           environment: environment(opts.root, opts.dir),
-          invocation: invocation(opts.passthrough),
+          invocation: invocation(opts.passthrough, { runner, root: opts.root, dir: opts.dir }),
           env: outerEnv(),
         }),
       );
@@ -296,7 +296,7 @@ export function main(argv) {
   } else {
     let problem;
     try {
-      problem = checkSkipFile(opts.skip, { root: opts.root, dir: opts.dir, args: opts.passthrough });
+      problem = checkSkipFile(opts.skip, { root: opts.root, dir: opts.dir, args: opts.passthrough, runner });
     } catch (e) {
       problem = `could not check the skip file (${e?.message ?? e})`;
     }

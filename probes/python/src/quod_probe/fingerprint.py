@@ -193,9 +193,20 @@ def strip_quod_args(args) -> list[str]:
     return out
 
 
-def invocation(config) -> dict[str, str]:
-    """The invocation fingerprint of a pytest ``Config`` (early or full)."""
+def invocation(config, root: str | None = None) -> dict[str, str]:
+    """The invocation fingerprint of a pytest ``Config`` (early or full).
+
+    With the repository ``root``, it includes the directory pytest was
+    started from, relative to it: rootdir and conftest discovery depend on
+    it, and it is what an agent needs to run the same invocation again.
+    """
     out = {"invocation.args": json.dumps(strip_quod_args(config.invocation_params.args))}
+    if root is not None:
+        try:
+            rel = os.path.relpath(str(config.invocation_params.dir), root).replace(os.sep, "/")
+        except ValueError:  # another drive
+            rel = str(config.invocation_params.dir)
+        out["invocation.dir"] = rel
     inipath = getattr(config, "inipath", None)
     rootpath = getattr(config, "rootpath", None)
     if inipath is not None and rootpath is not None:

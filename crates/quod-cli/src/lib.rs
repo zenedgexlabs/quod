@@ -3,6 +3,7 @@
 //! Kept separate from `main.rs` so the whole record → select → verify flow is
 //! testable without a Python interpreter.
 
+pub mod agent;
 pub mod mcp;
 pub mod pull;
 

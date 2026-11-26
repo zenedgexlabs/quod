@@ -186,7 +186,7 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
     capabilities = list(CAPABILITIES)
     try:
         env_fp = fingerprint.environment(recorder.packages)
-        inv_fp = fingerprint.invocation(early_config)
+        inv_fp = fingerprint.invocation(early_config, root)
         fingerprints = {
             "environment": env_fp,
             "invocation": inv_fp,
@@ -380,7 +380,8 @@ def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> st
             if fingerprint.digest(env_fp) != args[0]:
                 return "the environment differs from the one the map was recorded in"
         elif kind == "invocation" and len(args) == 1:
-            if fingerprint.digest(fingerprint.invocation(config)) != args[0]:
+            root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
+            if fingerprint.digest(fingerprint.invocation(config, root)) != args[0]:
                 return "the pytest invocation or ini configuration differs from the recorded one"
         elif kind == "env" and len(args) == 2:
             name, expected = args

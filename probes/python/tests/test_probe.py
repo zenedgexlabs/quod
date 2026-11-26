@@ -373,6 +373,7 @@ def test_environment_and_invocation_fingerprints(captured):
     args = json.loads(h["invocation"]["invocation.args"])
     assert not any(a.startswith("--quod") for a in args)
     assert "-p" in args  # the rest of the command line is kept
+    assert h["invocation"]["invocation.dir"] == "."  # started at the repository root
 
 
 def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir):

@@ -187,11 +187,17 @@ export function environment(root, dir = root) {
   return { ...runtime(), ...system(), ...processEnv(), ...installedPackages(dirs) };
 }
 
-/** The invocation fingerprint: runner arguments (Quod's own excluded). */
-export function invocation(args) {
-  return {
-    'invocation.runner': 'vitest',
+/**
+ * The invocation fingerprint: the runner, its arguments (Quod's own
+ * excluded) and the test directory relative to the repository root, which
+ * is what an agent needs to run the same invocation again.
+ */
+export function invocation(args, { runner = 'vitest', root, dir } = {}) {
+  const fp = {
+    'invocation.runner': runner,
     'invocation.args': JSON.stringify(args),
     'invocation.env.NODE_OPTIONS': envValueHash(process.env.NODE_OPTIONS),
   };
+  if (root && dir) fp['invocation.dir'] = path.relative(root, dir).split(path.sep).join('/') || '.';
+  return fp;
 }
