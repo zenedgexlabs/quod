@@ -460,3 +460,22 @@ def test_quod_options_are_stripped_in_both_forms():
 
     args = ["-q", "--quod-results", "/tmp/r.jsonl", "--quod-skip=/s", "--quod-root", "/r", "tests"]
     assert strip_quod_args(args) == ["-q", "tests"]
+
+
+def test_real_paths_match_realpath(tmp_path):
+    """The per-directory resolution gives exactly ``normcase(realpath())``,
+    including for a file that is itself a symlink."""
+    from quod_probe.packages import _RealPaths
+
+    (tmp_path / "pkg").mkdir()
+    target = tmp_path / "pkg" / "mod.py"
+    target.write_text("x = 1\n")
+    paths = [target, tmp_path / "pkg" / ".." / "pkg" / "mod.py", tmp_path / "pkg" / "missing.py"]
+    try:
+        (tmp_path / "pkg" / "link.py").symlink_to(target)
+        paths.append(tmp_path / "pkg" / "link.py")
+    except OSError:
+        pass  # no symlink privilege (Windows without developer mode)
+    real = _RealPaths()
+    for p in paths:
+        assert real(str(p)) == os.path.normcase(os.path.realpath(p)), p

@@ -26,6 +26,38 @@ class PackageInfo:
     dist_hash: str  # sha256 hex of the distribution's RECORD (or file list)
 
 
+class _RealPaths:
+    """``normcase(realpath(path))``, resolving each directory once.
+
+    ``realpath`` costs two system calls per file on Windows, and an
+    environment has thousands of installed files: fingerprinting it on every
+    skip-file check took most of a second. A file that is not itself a
+    symlink resolves to its directory's real path plus its name; one
+    ``scandir`` per directory finds the files that are symlinks, and only
+    those are resolved whole.
+    """
+
+    def __init__(self) -> None:
+        self._dirs: dict[str, tuple[str, frozenset[str] | None]] = {}
+
+    def __call__(self, path: str) -> str:
+        d, name = os.path.split(os.path.abspath(path))
+        entry = self._dirs.get(d)
+        if entry is None:
+            try:
+                with os.scandir(d) as it:
+                    links: frozenset[str] | None = frozenset(
+                        os.path.normcase(e.name) for e in it if e.is_symlink()
+                    )
+            except OSError:
+                links = None  # can't list it: resolve every file whole
+            entry = self._dirs[d] = (os.path.realpath(d), links)
+        real_dir, links = entry
+        if links is None or os.path.normcase(name) in links:
+            return os.path.normcase(os.path.realpath(path))
+        return os.path.normcase(os.path.join(real_dir, name))
+
+
 SITE_PSEUDO_PACKAGE = "__site__"
 """Package name for installed files no distribution claims (for example
 ``_virtualenv.py``). Any lockfile change also changes this node, so tests
@@ -42,6 +74,7 @@ class PackageIndex:
         self._by_path: dict[str, PackageInfo] | None = None
         self._infos: list[PackageInfo] = []
         self._unattributed = PackageInfo(SITE_PSEUDO_PACKAGE, "", False, "")
+        self._real = _RealPaths()
 
     def _build(self) -> dict[str, PackageInfo]:
         index: dict[str, PackageInfo] = {}
@@ -65,7 +98,7 @@ class PackageIndex:
             infos.setdefault(info.name, info)
             for f in files:
                 try:
-                    p = os.path.normcase(os.path.realpath(dist.locate_file(f)))
+                    p = self._real(str(dist.locate_file(f)))
                 except Exception:  # noqa: BLE001
                     continue
                 index.setdefault(p, info)
@@ -94,7 +127,7 @@ class PackageIndex:
                     if name.endswith((".pyc", ".pyo")):
                         continue
                     full = os.path.join(dirpath, name)
-                    if os.path.normcase(os.path.realpath(full)) in claimed:
+                    if self._real(full) in claimed:
                         continue
                     rel = os.path.relpath(full, d).replace(os.sep, "/")
                     if ".dist-info/" in rel or ".egg-info/" in rel:
