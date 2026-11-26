@@ -1,0 +1,118 @@
+name: release
+
+# A version tag (v1.2.3, or v1.2.3-alpha.1 for a pre-release) builds the
+# quod and quod-verify binaries for each platform, the Python probe wheel
+# and the JS probe package, and publishes them with SHA-256 checksums as a
+# GitHub Release. The Quod GitHub Action downloads its binary from here.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  binaries:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, ext: tar.gz }
+          - { os: macos-latest, target: aarch64-apple-darwin, ext: tar.gz }
+          - { os: macos-latest, target: x86_64-apple-darwin, ext: tar.gz }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, ext: zip }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: build
+        run: cargo build --release --locked --target ${{ matrix.target }} -p quod-cli -p quod-verify
+      - name: package
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
+          EXT: ${{ matrix.ext }}
+        run: |
+          set -euo pipefail
+          name="quod-$TAG-$TARGET"
+          exe=""; [ "$EXT" = zip ] && exe=".exe"
+          mkdir -p "dist/$name"
+          cp "target/$TARGET/release/quod$exe" "target/$TARGET/release/quod-verify$exe" README.md "dist/$name/"
+          cd dist
+          if [ "$EXT" = zip ]; then 7z a -bd "$name.zip" "$name" > /dev/null; else tar czf "$name.tar.gz" "$name"; fi
+          if command -v sha256sum > /dev/null; then sha256sum "$name.$EXT" > "$name.$EXT.sha256"; else shasum -a 256 "$name.$EXT" > "$name.$EXT.sha256"; fi
+          "./$name/quod$exe" --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bin-${{ matrix.target }}
+          path: dist/quod-*.${{ matrix.ext }}*
+          if-no-files-found: error
+
+  probes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.4.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: python probe
+        run: uv build --directory probes/python --out-dir "$GITHUB_WORKSPACE/dist"
+      - name: js probe
+        run: npm pack --pack-destination "$GITHUB_WORKSPACE/dist"
+        working-directory: probes/js
+      - name: checksums
+        run: cd dist && for f in *; do sha256sum "$f" > "$f.sha256"; done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: probes
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: [binaries, probes]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+      - name: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          pre=""; case "$TAG" in *-*) pre="--prerelease";; esac
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" $pre --generate-notes --title "Quod $TAG" dist/*
+
+  # What the Quod Action does on a runner without quod: download this
+  # release's binary, check its SHA-256, run it.
+  install-check:
+    needs: publish
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - id: install
+        shell: bash
+        env:
+          QUOD_BIN: quod-not-installed
+          QUOD_VERSION: ${{ github.ref_name }}
+          QUOD_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash integrations/github-action/install.sh
+      - shell: bash
+        run: |
+          "${{ steps.install.outputs.bin }}" --version
+          "${{ steps.install.outputs.bin }}" map pull --help > /dev/null

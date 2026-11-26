@@ -26,8 +26,13 @@ inputs:
       forks), certificates and the Verdict are advisory.
     default: ''
   quod-bin:
-    description: Path to the quod binary.
+    description: >-
+      The quod binary (a name on PATH or a path). When it isn't found, the
+      action downloads quod-version from this action's releases.
     default: quod
+  quod-version:
+    description: Release tag to download when quod-bin isn't found, or `latest`.
+    default: latest
   probe-js:
     description: Path to the quod-js CLI (probes/js/src/cli.mjs), for vitest.
     default: ''
@@ -63,13 +68,23 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Install quod
+      id: install
+      shell: bash
+      env:
+        QUOD_BIN: ${{ inputs.quod-bin }}
+        QUOD_VERSION: ${{ inputs.quod-version }}
+        QUOD_REPO: ${{ github.action_repository || github.repository }}
+        GH_TOKEN: ${{ github.token }}
+      run: bash "$GITHUB_ACTION_PATH/install.sh"
+
     # ---- record (default branch) ------------------------------------------
     - name: Record footprints
       id: record
       if: inputs.mode == 'record'
       shell: bash
       env:
-        QUOD: ${{ inputs.quod-bin }}
+        QUOD: ${{ steps.install.outputs.bin }}
         RUNNER: ${{ inputs.runner }}
         CMD: ${{ inputs.test-command }}
         PROBE_JS: ${{ inputs.probe-js }}
@@ -135,7 +150,7 @@ runs:
       if: inputs.mode == 'record' && steps.record.outputs.green == 'false'
       shell: bash
       env:
-        QUOD: ${{ inputs.quod-bin }}
+        QUOD: ${{ steps.install.outputs.bin }}
         PY: ${{ inputs.python }}
         HIT: ${{ steps.green.outputs.cache-matched-key }}
       run: |
@@ -193,7 +208,7 @@ runs:
       if: inputs.mode != 'record'
       shell: bash
       env:
-        QUOD: ${{ inputs.quod-bin }}
+        QUOD: ${{ steps.install.outputs.bin }}
         MAP: ${{ inputs.map-path }}
         KEY: ${{ inputs.signing-key }}
         PY: ${{ inputs.python }}
@@ -251,7 +266,7 @@ runs:
       if: inputs.mode != 'record' && steps.plan.outputs.ready == 'true'
       shell: bash
       env:
-        QUOD: ${{ inputs.quod-bin }}
+        QUOD: ${{ steps.install.outputs.bin }}
         MODE: ${{ inputs.mode }}
         ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
         AGENTS: ${{ inputs.agent-authors }}
