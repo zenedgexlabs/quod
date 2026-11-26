@@ -91,14 +91,14 @@ runs:
 
     - name: Save map
       if: inputs.mode == 'record'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6
       with:
         path: ${{ inputs.map-path }}
         key: quod-map-${{ github.sha }}
 
     - name: Mark green
       if: inputs.mode == 'record' && steps.record.outputs.green == 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6
       with:
         path: ${{ runner.temp }}/quod/green
         key: quod-green-${{ github.sha }}
@@ -107,7 +107,7 @@ runs:
     - name: Restore the last green map
       id: green
       if: inputs.mode == 'record' && steps.record.outputs.green == 'false'
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: ${{ runner.temp }}/quod/green
         key: quod-green-none-${{ github.sha }}
@@ -164,7 +164,7 @@ runs:
     - name: Restore map
       id: map
       if: inputs.mode != 'record'
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: ${{ inputs.map-path }}
         key: quod-map-${{ steps.base.outputs.sha }}
@@ -269,7 +269,7 @@ runs:
 
     - name: Upload the Verdict
       if: steps.verdict.outputs.envelope != ''
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: quod-verdict
         path: ${{ runner.temp }}/quod/verdict.json
