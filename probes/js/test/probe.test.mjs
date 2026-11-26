@@ -79,6 +79,7 @@ describe('recorded Vitest run', () => {
     assert.equal(header.probe, 'js-probe/0.1.0');
     assert.equal(header.ecosystem, 'npm');
     assert.deepEqual(Object.keys(tests).sort(), [
+      'test/calc.test.ts::calc > ',
       'test/calc.test.ts::calc > add',
       'test/calc.test.ts::calc > box 1',
       'test/calc.test.ts::calc > box 2',
@@ -91,6 +92,12 @@ describe('recorded Vitest run', () => {
       'test/env.test.ts::reads runner env',
       'test/env.test.ts::stubs env',
     ]);
+  });
+
+  test('every test is traced, including an empty title', () => {
+    const untraced = Object.values(tests).filter((t) => t.flags.includes('untraced')).map((t) => t.name);
+    assert.deepEqual(untraced, []);
+    assert.ok(positions(tests['test/calc.test.ts::calc > '], 'src/calc.ts').length > 0);
   });
 
   test('environment fingerprint in the header', () => {

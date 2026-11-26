@@ -16,6 +16,10 @@ describe('calc', () => {
   test.each([1, 2])('box %i', (n) => {
     expect(new Box().push(n).total).toBe(n);
   });
+  // An empty title: Vitest reports it as `calc > `.
+  test('', () => {
+    expect(add(2, 2)).toBe(4);
+  });
 });
 
 test('top level', () => {

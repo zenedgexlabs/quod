@@ -20,7 +20,8 @@ const rel = (abs) => slash(path.relative(ROOT, abs));
 export function fullName(task) {
   const parts = [];
   for (let t = task; t && t !== task.file && t.type !== 'module'; t = t.suite) {
-    if (t.name && !(t.filepath && t === t.file)) parts.unshift(t.name);
+    // Empty names count: Vitest reports `it('')` as `suite > `.
+    if (!(t.filepath && t === t.file)) parts.unshift(t.name);
   }
   return parts.join(' > ');
 }
