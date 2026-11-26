@@ -27,6 +27,15 @@ An independent open verifier re-checks every claim. See
 > - The GitHub Action is in
 >   [integrations/github-action](integrations/github-action/README.md).
 
+## Install
+
+Each [release](https://github.com/zenedgexlabs/quod/releases) has `quod` and
+`quod-verify` for Linux x86_64, macOS (arm64, x86_64) and Windows x86_64,
+the Python probe wheel (`quod_probe`) and the JS probe package (`quod-js`),
+each with a SHA-256 file. The GitHub Action downloads the binary by itself
+(`quod-version`, default `latest`). To build from source: `cargo install
+--path crates/quod-cli`.
+
 ## Quickstart (Python / pytest)
 
 ```sh
