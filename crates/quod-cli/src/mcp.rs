@@ -171,7 +171,9 @@ fn tests_for(ctx: &McpContext) -> Result<Value> {
     let run = agent::run_command(ctx.repo.root(), graph.meta(), &env, &skip_file);
     if r.global.iter().any(|g| g.starts_with("R018")) {
         env.note = Some(
-            "this environment differs from the one CI recorded the map in (see `fallback`),              so every test runs; run in an environment like CI's (same OS, interpreter and              packages, e.g. its container image) to skip tests"
+            "this environment differs from the one CI recorded the map in (see `fallback`), so every \
+             test runs; run in an environment like CI's (same OS, interpreter and packages, \
+             e.g. its container image) to skip tests"
                 .into(),
         );
     }
@@ -266,7 +268,7 @@ fn call(ctx: &McpContext, params: &Value) -> Value {
     let arg = |k: &str| args.get(k).and_then(Value::as_str).map(str::to_owned);
     // No map yet: nothing can be skipped, which is always safe to say.
     if !ctx.map.is_file() {
-        let hint = "no footprint map: run `quod map pull` (or start the server with --pull)                     to fetch the newest green map CI published";
+        let hint = "no footprint map: run `quod map pull` (or start the server with --pull) to fetch the newest green map CI published";
         let v = match name {
             "tests_for" => json!({"advisory": true, "run_everything": true, "reason": hint}),
             "why" => json!({"test": arg("test"), "decision": "run", "reason": hint}),
