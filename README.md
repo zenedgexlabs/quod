@@ -26,6 +26,8 @@ An independent open verifier re-checks every claim. See
 > - Agents get advisory answers over MCP (`quod mcp`).
 > - The GitHub Action is in
 >   [integrations/github-action](integrations/github-action/README.md).
+> - Supported versions, and when Quod runs every test:
+>   [docs/limits.md](docs/limits.md).
 
 ## Skip tests in CI (GitHub Actions)
 
@@ -169,6 +171,11 @@ The toolchain is pinned in `rust-toolchain.toml` (stable, with rustfmt and clipp
 - **I4:** a nondeterministic test is never skipped through dedup.
 - **I5:** changed test code always runs.
 - **I6:** only trusted CI mints certificates.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report a skipped test that fails,
+or any signing issue, privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
