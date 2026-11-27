@@ -1,0 +1,2243 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "98634b7424b274bd982cede9609a62567d86e664",
+  "head": "74c6beefb235b904597edd203cbaf938efe8c735",
+  "advisory": true,
+  "tests_in_map": 483,
+  "run": [
+    {
+      "name": "test/parse.test.ts::parseFilename > .,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html#section1",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > hello+world",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../b\") === \"/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../../b\") === \"../b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?x=1,2,3 with {\"y\":\"1,2,3\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"https://test.com\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > foo/?123#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x..β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./\", \"a\") === \"./a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > ftp://example.com/test?foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"https://test.com\"-\"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo\" + \"/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > foo/?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > hello world",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > falsy value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutFragment > /foo#bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > https:\\/foo.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > hello world",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo\" + \"\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/is-same.test.ts::isSamePath > /%D1%82%D0%B5%D1%81%D1%82 == /тест",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost/?email=some+v1@email.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > skype:1234567890",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > blob:https://video_url",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttp > foo.bar.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttps > http://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::filterQuery > /foo?bar=1&baz=2 filter \"bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutHost > https://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > tel:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/?query=true#hash,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\", \"./foo\") === \"/foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > foo/?k=v",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path/to/resource/file.txt",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base\"-\"/base/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > http://test.com?foo=bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":null}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > \u0000https://invalid.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > falsy value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/\" + \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > .?foo=123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > /a/#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/api?test\"-\"/api\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../b\") === \"../../b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/a' ] -> '/a'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"../foo\") === \"https://google.com/foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > /test?query=123,123#hash, test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/(something)?after=parens",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > ab--c.xn--nxa",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > proto://path/to",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > bar/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../../../../b\") === \"../../../b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > tel://+1234567890",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/file.html#section1|section2",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"./a\", \"./b\") === \"./a/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin/admin-dashboard\"-\"/admin/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > key",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isRelative > .//",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"/b\") === \"/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > !@#$%^&*()_-+=[]{}\\|;:'\",.<>/?",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > callto://+1234567890",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > \u0000http://google.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutFragment > https://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"./\", \"a\") === \"./a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > data:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > http://a.com?v=1 with {\"x\":2}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/is-same.test.ts::isSamePath > /foo == /foo/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > constructor errors > null throw",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > falsy value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > /\t//test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/dir/,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > .,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > foo?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/#hash,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > blob:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext?query=true,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost/?email=some%2Bv1%40email.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > ab--c.β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"key with space\":\"spaced value\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > #",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > #abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://a.b-c.de",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://例子.测试",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/foo/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > //",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > foo?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/double-slash.test.ts::cleanDoubleSlashes > //foo//bar//",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > ./?foo=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /%c",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > foo?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /%",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/filename.ext,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > ./",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://223.255.255.254",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/?test\"-\"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > apple,banana,cherry",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > foo/?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > foo%2Bbar%2Bbaz",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://✪df.ws/123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext#hash,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > {}^",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost/abc/deg%2F%2Ftest?email=some+v1@email.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > key%2bwith%2bplus",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > hello%20world",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\", \"/b\") === \"/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b/', '/c' ] -> 'a/b/c'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > data:image/png;base64,aaa//bbbbbb/ccc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttp > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost:3000",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/unicode_(✪)_in_parens",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > ftp://example.com/test?foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > https://domain.test:3000#owo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseHost > localhost:3000",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\") === \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > áéíóú",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":[{\"obj\":1},{\"obj\":2}]}}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b\") === \"a/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://[2001:db8:85a3:8d3:1319:8a2e:370:7348]/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin/dashboard\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/filename.ext/,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://☺.damowmow.com/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext?query=true#hash,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html#section1&section2",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/.hidden-file,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > https://host.name\\@foo.bar/meme3.php?url=http://0.0.0.0/2.svg",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > foo/?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://142.42.1.1:8080/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > ///",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutFragment > /foo?bar#baz",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > /#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > %7B%7D%5E",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > http://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid@example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutHost > https://example.com/test?foo=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > key=value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"email\":\"some email.com\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?param=&param=3",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://my_email%40gmail.com:password@www.my_site.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?param=&param=2&param=3",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?test with {}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin/dashboard\"-\"/admin/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttp > https://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo\") === \"/foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"c\") === \"a/b/c\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html?foo=bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":true,\"bar\":false}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b/', 'c' ] -> 'a/b/c'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol >  javascript:alert(true)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\", \"./foo/\") === \"/foo/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > -x.β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > ftp://example.com/path/to/filename.ext,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext?query=true,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext#hash,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a?x=1', 'b?y=2&y=3&z=4' ] -> 'a/b?x=1&y=2&y=3&z=4'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"../b\") === \"b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x01234567890123456789012345678901234567890123456789012345678901x: Label longer than 63 code points",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > invalid URL (null)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/test/\"-\"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://➡.ws/䨹",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > /test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > C:/test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > throws error if appending with another url with protocol",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > /test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > /#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://example.com/foo\\bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\") === \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\") === \"/a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/a?foo=bar#123', 'b/', 'c/' ] -> '/a/b/c/?foo=bar#123'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?test with {\"foo\":\"0\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?test with {\"foo\":1}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > bar/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"a\", \"b/\", \"c\") === \"a/b/c\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid@example.com:8080",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > http://my_email%40gmail.com:password@www.my_site.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > //test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"/base\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path?query=value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutHost > ?",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/?query=true#hash,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > key%3Dvalue",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > ftp://foo.bar/baz",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > http://localhost:3000",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > bar#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > foo == foo/ {\"trailingSlash\":true}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/dir/,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":[{\"obj\":[1,2,3]}]}}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /test%2Bfile.txt",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > \u0000javascript:alert('hello')",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > bar/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/dir/../filename.ext/,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/filename.ext,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://142.42.1.1/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > !@#$%^&*()_+{}[]|\\:;<>,./?",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base\" + \"/base/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutHost > ?foo=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > invalid URL (array)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > javascript:alert('hello')",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x-.xn--nxa: Label with trailing hyphen",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com:8080/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/#hash,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > ab--c",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > foo?123#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"param\":[\"3\",\"\"]}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/is-same.test.ts::isSamePath > / == ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > constructor errors > [object Object] throw",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/double-slash.test.ts::cleanDoubleSlashes > no input",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo?k=/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid:password@example.com:8080",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > 1+2=3",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../d\") === \"/d\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"0\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::filterQuery > /foo?bar=1 filter \"bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /http:/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > http://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutFragment > /foo/#bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > a=1&b=2",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > \u0000vbscript:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com\" + \"foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > %3Dvalue",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > tel:1234567890",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"str\":\"&\",\"str2\":\"%26\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > a†--",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://1337.net",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path/to/re source",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > aa--: Label with hyphens in 3rd and 4th position",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah_(wikipedia)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > http%3A%2F%2Fexample.com%2Fpage%3Fid%3D123%23details",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > 01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.0123456789012345678901234567890123456789012345678.β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: false > bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > foo == /foo ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryKey > =value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > https://test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > //example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b' ] -> 'a/b'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext?query=true#hash,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/file.html?foo=bar|baz",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"https://google.com/\", \"./foo\", \"/bar\") === \"https://google.com/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./foo/\") === \"/foo/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > /foo%20bar/ == /foo bar {\"encoding\":true}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://مثال.إختبار",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > bar#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > +=&",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutHost > http://localhost:8000/media/search/movie?query=drive",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a\", \"./../b\") === \"b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > /\\localhost//",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://⌘.ws/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path/to/resource",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > -x.xn--nxa",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > \u0000javascrIpt:alert('hello')",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo/?123#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"param\":{\"a\":{\"nested\":{\"object\":123}}}}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttp > ftp://example.com/test?foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryKey > key=value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/My Path/File.html",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > xn--nxa.xn--nxa: Valid Punycode",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > ./foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com\" + \"\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > /path/to/resource",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path+to+resource",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/double-slash.test.ts::cleanDoubleSlashes > http://foo.com//",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"./a\", \"./b\") === \"./a/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"a\":\"X\",\"b[]\":[],\"c\":\"Y\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > %2B%3D%26",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?test with {\"foo\":0}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseHost > google.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > mailto:support@example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/file.html?foo=bar&baz=qux|quux",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo/\" + \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > a/b",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://code.google.com/events/#&product=browser",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > ./?foo=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isRelative > ../test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttp > https://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > p@th",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://⌘.ws",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > 01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.0123456789012345678901234567890123456789012345678.x: Domain excluding TLD longer than 253 code points",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo/?k=/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid@example.com/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/dir/../filename.ext,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > append",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > /test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > works",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/double-slash.test.ts::cleanDoubleSlashes > http://example.com/analyze//http://localhost:3000//",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > vbscript:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > xn--nxa.β: Mixed",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x-.β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"../a/\", \"../b\") === \"b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > custom:/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryKey > 123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com#bar\" + \"foo bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > ,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"//google.com/\", \"./foo\", \"/bar\") === \"//google.com/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttps > foo.bar.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > https://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > 01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.01234567890123456789012345678901234567890123456789.0123456789012345678901234567890123456789012345678.xn--nxa",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > constructor errors > 123 throw",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > /\\/test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isRelative > https://",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > !@#$%&*()-_=+[]{};:'\",.<>/?`~",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > //test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"/base/a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > foo/?123#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin-dashboard\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > https://",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"//google.com/\", \"./foo\", \"/bar\") === \"//google.com/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"https://google.com/\", \"./foo\", \"/bar\") === \"https://google.com/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttps > http://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > .#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x01234567890123456789012345678901234567890123456789012345678901x.xn--nxa",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext/?query=true#hash,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b\", \"../../../d\") === \"/d\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > bar/#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > Https://domain.test:3000#owo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > https://www.example.com/foo/?bar=baz&inga=42&quux",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > \u0000https://",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?toString=foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?param=%7B%22a%22:%5B%7B%22obj%22:%5B1,2,3%5D%7D%5D%7D",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutFragment > https://example.com#foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > foo == /foo/ ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/url.test.ts::$URL > getters",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL() === \"\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > ශ්‍රී: processing_option is Nontransitional_Processing",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > abc{def}ghi^jkl",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"param\":[\"\",\"3\"]}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > ://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/double-slash.test.ts::cleanDoubleSlashes > http://foo.com/bar//foo/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > .?foo=123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withFragment > \"https://example.com?foo=bar\" + \"baz\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/foo?test=123&unicode=%E5%A5%BD",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > 123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?foo=1 with {}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/is-same.test.ts::isSamePath > /foo != /bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > foo/?k=/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin/admin-dashboard\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?param=",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\", \"./foo\", \"bar\") === \"/foo/bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > javaScript:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_(wikipedia)_blah#cite-1",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > falsy value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > foo == /foo {\"leadingSlash\":true}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > tel:123456",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > / with {\"json\":\"{\\\"test\\\":[\\\"content\\\"]}\"}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [] -> ''",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/\"-\"/base\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > https://test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > bar#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(, \"./\") === \"./\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > 123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttps > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > \u0000javascript:alert(true)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/is-same.test.ts::isSamePath > /foo == /foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > mailto:support@example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah_(wikipedia)_(again)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::filterQuery > /foo filter \"bar\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: false > /",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/\", \"./\") === \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > !%40%23%24%25%26%2A%28%29-_%3D%2B%5B%5D%7B%7D%3B%3A%27%22%2C.%3C%3E%2F%3F%60%7C%5C%22",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isRelative > /",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \"../../../d\") === \"../d\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > http://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery >  with {}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryKey > key",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://j.mp",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decodeQueryKey > key+with+space",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(, \"./\") === \"./\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/a\") === \"/a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > /foo%20bar/ == /foo bar ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > ,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"a\", \"b/\", \"/c\") === \"a/b/c\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /path/to/.hidden-file,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://test.com/%C3%B6?foo=تست",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > /%c",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > /test?query=123,123#hash, test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > /%",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withoutProtocol > https://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withTrailingSlash, queryParams: true > ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withHttps > ftp://example.com/test?foo",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > file:///C:/home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/' ] -> '/'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > bar/#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > file:///home/user",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"a\", \"b\") === \"a/b\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_(wikipedia)#cite-1",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > /",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > tel:1234567890",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > ///test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"https://test.com\"-\"/base/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isScriptProtocol > javascript:",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost/?redirect=http:%2F%2Fgoogle.com?q=test",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/dir/,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base\" + \"/base/a\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x01234567890123456789012345678901234567890123456789012345678901†",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > نامه‌ای",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeQueryValue > 42",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL(\"/\", \"./\") === \"/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com/path/to/filename.ext/?query=true#hash,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > file:///path/to/filename.ext,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x..xn--nxa: Empty labels",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base/a/\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://foo.com/blah_blah",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://उदाहरण.परीक्षा",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > no arguments",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > x01234567890123456789012345678901234567890123456789012345678901x.β",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://localhost/abc/deg%2f%3f%26?email=some+v1@email.com&foo=bar",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > file:///path/to/filename.ext,false",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/file.html#section1&section2|section3",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::isEqual > /foo == /foo/ ",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > /,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > .",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/bar\"-\"/foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a\", \".././../d\") === \"/d\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeParam > true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo/?k=123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo/?123",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinURL > joinURL() === \"\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > /?foo=1 with {\"foo\":2}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin\" + \"/admin-dashboard\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path&param=value",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > ftp://example.com/path/to/filename.ext,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::withProtocol > http://example.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseURL > https://test.com/t:est",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > -x: Label with leading hyphen",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::decode > %3Fkey%3Dvalue%26anotherKey%3DanotherValue",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodeHash > hello",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::hasProtocol > javascript:alert(true)",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/trailing-slash.test.ts::withoutTrailingSlash, queryParams: true > foo/?k=/&x=y#abc",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > [object Object]",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > //test.com",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'http://foo.com', 'a' ] -> 'http://foo.com/a'",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/foo\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/punycode.test.ts::punycode (toASCII) > -†",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/parse.test.ts::parseFilename > http://example.com,true",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/\" + \"https://test.com\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"/a/b/c\", \"../../d\") === \"/a/d\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > .#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/join.test.ts::joinRelativeURL > joinRelativeURL(\"a\", \"b/\", \"/c\") === \"a/b/c\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::withQuery > ?test with {}",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/utilities.test.ts::stringifyParsedURL > http://foo.com/test?query=123#hash",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://userid@example.com:8080/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/normalize.test.ts::normalizeURL > http://www.example.com/wpstyle/?p=364",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encodePath > path/to/resource/",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base\"",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/query.test.ts::getQuery > http://foo.com/?param=3&param=",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    },
+    {
+      "name": "test/encoding.test.ts::encode > https://www.example.com/path/to/file.html?foo=bar&baz=qux",
+      "reason": "affected by pkg:npm:@vitest/expect, pkg:npm:@vitest/mocker, pkg:npm:@vitest/runner, pkg:npm:@vitest/snapshot, pkg:npm:@vitest/utils, pkg:npm:vite, pkg:npm:vitest"
+    }
+  ],
+  "skipped": 0,
+  "skipped_ms": 0,
+  "global": [],
+  "changed": [
+    "file:package.json",
+    "file:tsconfig.json",
+    "pkg:npm:@babel/code-frame",
+    "pkg:npm:@babel/parser",
+    "pkg:npm:@babel/runtime",
+    "pkg:npm:@babel/types",
+    "pkg:npm:@colordx/core",
+    "pkg:npm:@emnapi/core",
+    "pkg:npm:@emnapi/runtime",
+    "pkg:npm:@emnapi/wasi-threads",
+    "pkg:npm:@esbuild/aix-ppc64",
+    "pkg:npm:@esbuild/android-arm",
+    "pkg:npm:@esbuild/android-arm64",
+    "pkg:npm:@esbuild/android-x64",
+    "pkg:npm:@esbuild/darwin-arm64",
+    "pkg:npm:@esbuild/darwin-x64",
+    "pkg:npm:@esbuild/freebsd-arm64",
+    "pkg:npm:@esbuild/freebsd-x64",
+    "pkg:npm:@esbuild/linux-arm",
+    "pkg:npm:@esbuild/linux-arm64",
+    "pkg:npm:@esbuild/linux-ia32",
+    "pkg:npm:@esbuild/linux-loong64",
+    "pkg:npm:@esbuild/linux-mips64el",
+    "pkg:npm:@esbuild/linux-ppc64",
+    "pkg:npm:@esbuild/linux-riscv64",
+    "pkg:npm:@esbuild/linux-s390x",
+    "pkg:npm:@esbuild/linux-x64",
+    "pkg:npm:@esbuild/netbsd-arm64",
+    "pkg:npm:@esbuild/netbsd-x64",
+    "pkg:npm:@esbuild/openbsd-arm64",
+    "pkg:npm:@esbuild/openbsd-x64",
+    "pkg:npm:@esbuild/openharmony-arm64",
+    "pkg:npm:@esbuild/sunos-x64",
+    "pkg:npm:@esbuild/win32-arm64",
+    "pkg:npm:@esbuild/win32-ia32",
+    "pkg:npm:@esbuild/win32-x64",
+    "pkg:npm:@eslint-community/eslint-utils",
+    "pkg:npm:@eslint/config-array",
+    "pkg:npm:@eslint/config-helpers",
+    "pkg:npm:@eslint/core",
+    "pkg:npm:@eslint/eslintrc",
+    "pkg:npm:@eslint/js",
+    "pkg:npm:@eslint/markdown",
+    "pkg:npm:@eslint/object-schema",
+    "pkg:npm:@eslint/plugin-kit",
+    "pkg:npm:@humanfs/core",
+    "pkg:npm:@humanfs/node",
+    "pkg:npm:@humanfs/types",
+    "pkg:npm:@jridgewell/gen-mapping",
+    "pkg:npm:@jridgewell/remapping",
+    "pkg:npm:@napi-rs/wasm-runtime",
+    "pkg:npm:@oxc-project/types",
+    "pkg:npm:@parcel/watcher",
+    "pkg:npm:@parcel/watcher-android-arm64",
+    "pkg:npm:@parcel/watcher-darwin-arm64",
+    "pkg:npm:@parcel/watcher-darwin-x64",
+    "pkg:npm:@parcel/watcher-freebsd-x64",
+    "pkg:npm:@parcel/watcher-linux-arm-glibc",
+    "pkg:npm:@parcel/watcher-linux-arm-musl",
+    "pkg:npm:@parcel/watcher-linux-arm64-glibc",
+    "pkg:npm:@parcel/watcher-linux-arm64-musl",
+    "pkg:npm:@parcel/watcher-linux-x64-glibc",
+    "pkg:npm:@parcel/watcher-linux-x64-musl",
+    "pkg:npm:@parcel/watcher-win32-arm64",
+    "pkg:npm:@parcel/watcher-win32-ia32",
+    "pkg:npm:@parcel/watcher-win32-x64",
+    "pkg:npm:@rolldown/binding-android-arm64",
+    "pkg:npm:@rolldown/binding-darwin-arm64",
+    "pkg:npm:@rolldown/binding-darwin-x64",
+    "pkg:npm:@rolldown/binding-freebsd-x64",
+    "pkg:npm:@rolldown/binding-linux-arm-gnueabihf",
+    "pkg:npm:@rolldown/binding-linux-arm64-gnu",
+    "pkg:npm:@rolldown/binding-linux-arm64-musl",
+    "pkg:npm:@rolldown/binding-linux-ppc64-gnu",
+    "pkg:npm:@rolldown/binding-linux-s390x-gnu",
+    "pkg:npm:@rolldown/binding-linux-x64-gnu",
+    "pkg:npm:@rolldown/binding-linux-x64-musl",
+    "pkg:npm:@rolldown/binding-openharmony-arm64",
+    "pkg:npm:@rolldown/binding-wasm32-wasi",
+    "pkg:npm:@rolldown/binding-win32-arm64-msvc",
+    "pkg:npm:@rolldown/binding-win32-x64-msvc",
+    "pkg:npm:@rolldown/pluginutils",
+    "pkg:npm:@rollup/plugin-alias",
+    "pkg:npm:@rollup/plugin-commonjs",
+    "pkg:npm:@rollup/plugin-json",
+    "pkg:npm:@rollup/plugin-node-resolve",
+    "pkg:npm:@rollup/plugin-replace",
+    "pkg:npm:@rollup/pluginutils",
+    "pkg:npm:@rollup/rollup-android-arm-eabi",
+    "pkg:npm:@rollup/rollup-android-arm64",
+    "pkg:npm:@rollup/rollup-darwin-arm64",
+    "pkg:npm:@rollup/rollup-darwin-x64",
+    "pkg:npm:@rollup/rollup-freebsd-arm64",
+    "pkg:npm:@rollup/rollup-freebsd-x64",
+    "pkg:npm:@rollup/rollup-linux-arm-gnueabihf",
+    "pkg:npm:@rollup/rollup-linux-arm-musleabihf",
+    "pkg:npm:@rollup/rollup-linux-arm64-gnu",
+    "pkg:npm:@rollup/rollup-linux-arm64-musl",
+    "pkg:npm:@rollup/rollup-linux-loong64-gnu",
+    "pkg:npm:@rollup/rollup-linux-loong64-musl",
+    "pkg:npm:@rollup/rollup-linux-ppc64-gnu",
+    "pkg:npm:@rollup/rollup-linux-ppc64-musl",
+    "pkg:npm:@rollup/rollup-linux-riscv64-gnu",
+    "pkg:npm:@rollup/rollup-linux-riscv64-musl",
+    "pkg:npm:@rollup/rollup-linux-s390x-gnu",
+    "pkg:npm:@rollup/rollup-linux-x64-gnu",
+    "pkg:npm:@rollup/rollup-linux-x64-musl",
+    "pkg:npm:@rollup/rollup-openbsd-x64",
+    "pkg:npm:@rollup/rollup-openharmony-arm64",
+    "pkg:npm:@rollup/rollup-win32-arm64-msvc",
+    "pkg:npm:@rollup/rollup-win32-ia32-msvc",
+    "pkg:npm:@rollup/rollup-win32-x64-gnu",
+    "pkg:npm:@rollup/rollup-win32-x64-msvc",
+    "pkg:npm:@tybys/wasm-util",
+    "pkg:npm:@types/debug",
+    "pkg:npm:@types/esrecurse",
+    "pkg:npm:@types/node",
+    "pkg:npm:@typescript-eslint/eslint-plugin",
+    "pkg:npm:@typescript-eslint/parser",
+    "pkg:npm:@typescript-eslint/project-service",
+    "pkg:npm:@typescript-eslint/scope-manager",
+    "pkg:npm:@typescript-eslint/tsconfig-utils",
+    "pkg:npm:@typescript-eslint/type-utils",
+    "pkg:npm:@typescript-eslint/types",
+    "pkg:npm:@typescript-eslint/typescript-estree",
+    "pkg:npm:@typescript-eslint/utils",
+    "pkg:npm:@typescript-eslint/visitor-keys",
+    "pkg:npm:@vitest/coverage-v8",
+    "pkg:npm:@vitest/expect",
+    "pkg:npm:@vitest/mocker",
+    "pkg:npm:@vitest/pretty-format",
+    "pkg:npm:@vitest/runner",
+    "pkg:npm:@vitest/snapshot",
+    "pkg:npm:@vitest/spy",
+    "pkg:npm:@vitest/utils",
+    "pkg:npm:acorn",
+    "pkg:npm:acorn-jsx",
+    "pkg:npm:ajv",
+    "pkg:npm:ansi-styles",
+    "pkg:npm:argparse",
+    "pkg:npm:ast-v8-to-istanbul",
+    "pkg:npm:automd",
+    "pkg:npm:autoprefixer",
+    "pkg:npm:balanced-match",
+    "pkg:npm:baseline-browser-mapping",
+    "pkg:npm:brace-expansion",
+    "pkg:npm:browserslist",
+    "pkg:npm:builtin-modules",
+    "pkg:npm:c12",
+    "pkg:npm:callsites",
+    "pkg:npm:caniuse-api",
+    "pkg:npm:caniuse-lite",
+    "pkg:npm:chalk",
+    "pkg:npm:changelogen",
+    "pkg:npm:ci-info",
+    "pkg:npm:citty",
+    "pkg:npm:color-convert",
+    "pkg:npm:color-name",
+    "pkg:npm:colord",
+    "pkg:npm:concat-map",
+    "pkg:npm:confbox",
+    "pkg:npm:convert-source-map",
+    "pkg:npm:core-js-compat",
+    "pkg:npm:css-declaration-sorter",
+    "pkg:npm:css-tree",
+    "pkg:npm:cssnano",
+    "pkg:npm:cssnano-preset-default",
+    "pkg:npm:cssnano-utils",
+    "pkg:npm:decode-named-character-reference",
+    "pkg:npm:default-browser",
+    "pkg:npm:defu",
+    "pkg:npm:didyoumean2",
+    "pkg:npm:dotenv",
+    "pkg:npm:electron-to-chromium",
+    "pkg:npm:es-errors",
+    "pkg:npm:es-module-lexer",
+    "pkg:npm:esbuild",
+    "pkg:npm:eslint",
+    "pkg:npm:eslint-config-unjs",
+    "pkg:npm:eslint-plugin-unicorn",
+    "pkg:npm:eslint-scope",
+    "pkg:npm:eslint-visitor-keys",
+    "pkg:npm:espree",
+    "pkg:npm:fdir",
+    "pkg:npm:fix-dts-default-cjs-exports",
+    "pkg:npm:flat-cache",
+    "pkg:npm:flatted",
+    "pkg:npm:giget",
+    "pkg:npm:globals",
+    "pkg:npm:hasown",
+    "pkg:npm:import-fresh",
+    "pkg:npm:is-builtin-module",
+    "pkg:npm:is-core-module",
+    "pkg:npm:is-wsl",
+    "pkg:npm:js-tokens",
+    "pkg:npm:js-yaml",
+    "pkg:npm:lightningcss",
+    "pkg:npm:lightningcss-android-arm64",
+    "pkg:npm:lightningcss-darwin-arm64",
+    "pkg:npm:lightningcss-darwin-x64",
+    "pkg:npm:lightningcss-freebsd-x64",
+    "pkg:npm:lightningcss-linux-arm-gnueabihf",
+    "pkg:npm:lightningcss-linux-arm64-gnu",
+    "pkg:npm:lightningcss-linux-arm64-musl",
+    "pkg:npm:lightningcss-linux-x64-gnu",
+    "pkg:npm:lightningcss-linux-x64-musl",
+    "pkg:npm:lightningcss-win32-arm64-msvc",
+    "pkg:npm:lightningcss-win32-x64-msvc",
+    "pkg:npm:lodash.merge",
+    "pkg:npm:magicast",
+    "pkg:npm:make-dir",
+    "pkg:npm:mdast-util-from-markdown",
+    "pkg:npm:mdast-util-frontmatter",
+    "pkg:npm:mdast-util-gfm",
+    "pkg:npm:mdast-util-gfm-footnote",
+    "pkg:npm:mdast-util-gfm-strikethrough",
+    "pkg:npm:mdast-util-gfm-table",
+    "pkg:npm:mdast-util-gfm-task-list-item",
+    "pkg:npm:mdast-util-to-markdown",
+    "pkg:npm:mdn-data",
+    "pkg:npm:micromark",
+    "pkg:npm:micromark-core-commonmark",
+    "pkg:npm:micromark-util-decode-string",
+    "pkg:npm:minimatch",
+    "pkg:npm:mkdist",
+    "pkg:npm:mlly",
+    "pkg:npm:node-releases",
+    "pkg:npm:nypm",
+    "pkg:npm:ofetch",
+    "pkg:npm:open",
+    "pkg:npm:parent-module",
+    "pkg:npm:perfect-debounce",
+    "pkg:npm:picomatch",
+    "pkg:npm:pkg-types",
+    "pkg:npm:postcss",
+    "pkg:npm:postcss-calc",
+    "pkg:npm:postcss-colormin",
+    "pkg:npm:postcss-convert-values",
+    "pkg:npm:postcss-discard-comments",
+    "pkg:npm:postcss-discard-duplicates",
+    "pkg:npm:postcss-discard-empty",
+    "pkg:npm:postcss-discard-overridden",
+    "pkg:npm:postcss-merge-longhand",
+    "pkg:npm:postcss-merge-rules",
+    "pkg:npm:postcss-minify-font-values",
+    "pkg:npm:postcss-minify-gradients",
+    "pkg:npm:postcss-minify-params",
+    "pkg:npm:postcss-minify-selectors",
+    "pkg:npm:postcss-nested",
+    "pkg:npm:postcss-normalize-charset",
+    "pkg:npm:postcss-normalize-display-values",
+    "pkg:npm:postcss-normalize-positions",
+    "pkg:npm:postcss-normalize-repeat-style",
+    "pkg:npm:postcss-normalize-string",
+    "pkg:npm:postcss-normalize-timing-functions",
+    "pkg:npm:postcss-normalize-unicode",
+    "pkg:npm:postcss-normalize-url",
+    "pkg:npm:postcss-normalize-whitespace",
+    "pkg:npm:postcss-ordered-values",
+    "pkg:npm:postcss-reduce-initial",
+    "pkg:npm:postcss-reduce-transforms",
+    "pkg:npm:postcss-svgo",
+    "pkg:npm:postcss-unique-selectors",
+    "pkg:npm:prettier",
+    "pkg:npm:rc9",
+    "pkg:npm:regjsparser",
+    "pkg:npm:resolve",
+    "pkg:npm:resolve-from",
+    "pkg:npm:rolldown",
+    "pkg:npm:rollup",
+    "pkg:npm:rollup-plugin-dts",
+    "pkg:npm:sax",
+    "pkg:npm:semver",
+    "pkg:npm:std-env",
+    "pkg:npm:strip-json-comments",
+    "pkg:npm:stylehacks",
+    "pkg:npm:svgo",
+    "pkg:npm:tinyexec",
+    "pkg:npm:tinyglobby",
+    "pkg:npm:tinyrainbow",
+    "pkg:npm:ts-api-utils",
+    "pkg:npm:tslib",
+    "pkg:npm:typescript",
+    "pkg:npm:typescript-eslint",
+    "pkg:npm:ufo",
+    "pkg:npm:unbuild",
+    "pkg:npm:undici-types",
+    "pkg:npm:unist-util-visit",
+    "pkg:npm:untyped",
+    "pkg:npm:update-browserslist-db",
+    "pkg:npm:vite",
+    "pkg:npm:vitest",
+    "pkg:npm:wsl-utils"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "db184a6bbc1e63cca675e8e569b331ddeaf6e5b38279be5258f8b62b58f55fd2"
+}

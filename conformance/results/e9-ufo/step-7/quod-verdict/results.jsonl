@@ -1,0 +1,12 @@
+{"duration_ms":0.181,"name":"test/resolve.test.ts::resolveURL > no arguments","outcome":"passed","type":"result"}
+{"duration_ms":0.202,"name":"test/resolve.test.ts::resolveURL > [ 'a', 'b/', '/c' ] -> 'a/b/c'","outcome":"passed","type":"result"}
+{"duration_ms":0.213,"name":"test/resolve.test.ts::resolveURL > [ '/a' ] -> '/a'","outcome":"passed","type":"result"}
+{"duration_ms":0.283,"name":"test/resolve.test.ts::resolveURL > [ 'http://foo.com', 'a' ] -> 'http://foo.com/a'","outcome":"passed","type":"result"}
+{"duration_ms":0.32,"name":"test/resolve.test.ts::resolveURL > [ '/a?foo=bar#123', 'b/', 'c/' ] -> '/a/b/c/?foo=bar#123'","outcome":"passed","type":"result"}
+{"duration_ms":0.349,"name":"test/resolve.test.ts::resolveURL > [ 'a', 'b/', 'c' ] -> 'a/b/c'","outcome":"passed","type":"result"}
+{"duration_ms":0.383,"name":"test/resolve.test.ts::resolveURL > invalid URL (array)","outcome":"passed","type":"result"}
+{"duration_ms":0.39,"name":"test/resolve.test.ts::resolveURL > [ '/' ] -> '/'","outcome":"passed","type":"result"}
+{"duration_ms":0.943,"name":"test/resolve.test.ts::resolveURL > [ 'a', 'b' ] -> 'a/b'","outcome":"passed","type":"result"}
+{"duration_ms":0.963,"name":"test/resolve.test.ts::resolveURL > invalid URL (null)","outcome":"passed","type":"result"}
+{"duration_ms":1.08,"name":"test/resolve.test.ts::resolveURL > [ 'a?x=1', 'b?y=2&y=3&z=4' ] -> 'a/b?x=1&y=2&y=3&z=4'","outcome":"passed","type":"result"}
+{"duration_ms":2.127,"name":"test/resolve.test.ts::resolveURL > [] -> ''","outcome":"passed","type":"result"}

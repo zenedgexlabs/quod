@@ -1,0 +1,67 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "8422b485da4dd9aa41611439e40e65a6c245223d",
+  "head": "41e9bd1cacbfc21fb192a1039a77609a0de21308",
+  "advisory": true,
+  "tests_in_map": 483,
+  "run": [
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/a' ] -> '/a'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b/', '/c' ] -> 'a/b/c'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b/', 'c' ] -> 'a/b/c'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a?x=1', 'b?y=2&y=3&z=4' ] -> 'a/b?x=1&y=2&y=3&z=4'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > invalid URL (null)",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/a?foo=bar#123', 'b/', 'c/' ] -> '/a/b/c/?foo=bar#123'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > invalid URL (array)",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'a', 'b' ] -> 'a/b'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [] -> ''",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ '/' ] -> '/'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > no arguments",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    },
+    {
+      "name": "test/resolve.test.ts::resolveURL > [ 'http://foo.com', 'a' ] -> 'http://foo.com/a'",
+      "reason": "affected by fn:src/utils.ts::resolveURL"
+    }
+  ],
+  "skipped": 471,
+  "skipped_ms": 4458,
+  "global": [],
+  "changed": [
+    "fn:src/utils.ts::resolveURL"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "b316bb7ddbc6106819653708af02616960aec81a7e8160ef553d331d2a98d6cb"
+}

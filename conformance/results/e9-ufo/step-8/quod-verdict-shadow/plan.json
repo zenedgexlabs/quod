@@ -1,0 +1,16 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "f2f1ee10a4e9452b7f905597b76a0f34a60420c6",
+  "head": "72ee110915907b6d5bb5076e81faad4b6bc6158a",
+  "advisory": true,
+  "tests_in_map": 483,
+  "run": [],
+  "skipped": 483,
+  "skipped_ms": 4079,
+  "global": [],
+  "changed": [],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "599b459ebc1d7efb27e50ce5848038d90dcbf39466cd9562cd584da847bb7a97"
+}

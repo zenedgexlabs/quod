@@ -1,0 +1,18 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "0349bb806087006aa39dffe693cec926000d9799",
+  "head": "3973e6d8e9c36f2933629009dc4ba65c162d0f7b",
+  "advisory": true,
+  "tests_in_map": 772,
+  "run": [],
+  "skipped": 772,
+  "skipped_ms": 9905,
+  "global": [],
+  "changed": [
+    "file:docs/testing.rst"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "851276f3fdff6d03e260412876f406554878d85f12533f3eeb921d568725fdf1"
+}

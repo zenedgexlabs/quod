@@ -1,0 +1,81 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "d231ffd5b59b4574c51bb5409b3e250a5afa8df2",
+  "head": "b30930a3dc87e33cb61e5573416e6ed193f85603",
+  "advisory": true,
+  "tests_in_map": 771,
+  "run": [
+    {
+      "name": "tests/test_recipes.py::NthCombinationTests::test_invalid_r",
+      "reason": "affected by fn:more_itertools/recipes.py::nth_combination"
+    },
+    {
+      "name": "tests/test_recipes.py::NthCombinationTests::test_long",
+      "reason": "affected by fn:more_itertools/recipes.py::nth_combination"
+    },
+    {
+      "name": "tests/test_recipes.py::NthCombinationTests::test_invalid_index",
+      "reason": "affected by fn:more_itertools/recipes.py::nth_combination"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_long",
+      "reason": "affected by fn:more_itertools/more.py::nth_combination_with_replacement"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_basic",
+      "reason": "affected by fn:more_itertools/more.py::nth_combination_with_replacement"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_invalid_index",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_invalid_r",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_r_less_than_n",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_long",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_index",
+      "reason": "affected by fn:more_itertools/more.py::nth_combination_with_replacement"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_r",
+      "reason": "affected by fn:more_itertools/more.py::nth_combination_with_replacement"
+    },
+    {
+      "name": "tests/test_recipes.py::NthCombinationTests::test_basic",
+      "reason": "affected by fn:more_itertools/recipes.py::nth_combination"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_negative_index",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_r_equal_to_n",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    },
+    {
+      "name": "tests/test_recipes.py::NthPermutationTests::test_null",
+      "reason": "affected by fn:more_itertools/more.py::nth_permutation"
+    }
+  ],
+  "skipped": 756,
+  "skipped_ms": 8347,
+  "global": [],
+  "changed": [
+    "fn:more_itertools/more.py::nth_combination_with_replacement",
+    "fn:more_itertools/more.py::nth_permutation",
+    "fn:more_itertools/recipes.py::nth_combination"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "ce0642b9c05b94c3376401c2b888f2e702378533e5a055a1950f83202ca2bf08"
+}

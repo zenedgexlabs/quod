@@ -23,6 +23,10 @@ An independent open verifier re-checks every claim. See
 >   (pytest) and JS/TS (Vitest, Jest).
 > - E1 measured 0 dependency escapes on open-source repositories in both
 >   languages ([E1](docs/benchmarks/e1.md)).
+> - On GitHub-hosted CI, replaying real history with injected bugs, the
+>   Action caught 65 of 65 failing tests with 0 escapes while running 32% to
+>   41% of the tests ([E9](docs/benchmarks/e9.md)). The agent loop over MCP
+>   had 0 escapes in 58 steps ([E8](docs/benchmarks/e8.md)).
 > - Agents get advisory answers over MCP (`quod mcp`).
 > - The GitHub Action is in
 >   [integrations/github-action](integrations/github-action/README.md).

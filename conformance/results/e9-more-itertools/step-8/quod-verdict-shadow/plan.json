@@ -1,0 +1,2529 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "b2db4ad20273cd31aa886982a143ebb21215bdca",
+  "head": "100299c2ac30c396f5553723667643e0c6371e49",
+  "advisory": true,
+  "tests_in_map": 771,
+  "run": [
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterMapTests::test_map",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_after_emulation_starts_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_odd",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitBeforeTest::test_max_split",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_1",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapReduceTests::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_construction",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_bool",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_length",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartitionsTest::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterateTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_empty_reversed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_n_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DiscreteFourierTransformTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsTests::test_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SideEffectTests::test_individual",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveTests::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_abort",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_one_element_is_second_item",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConsecutiveGroupsTest::test_exotic_ordering",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_indexing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_basics",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_reversed_datetime_limits",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_counts_all",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_includes_empty_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_getitem",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueInWindowTests::test_invalid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueInWindowTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SequenceViewTests::test_init",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipBroadcastTests::test_zip",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_not_proportional",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_elements",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_length_one",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAfterTest::test_ends_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_pickle",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_invariance_under_permutations_weighted",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSerialize::test_serialize_generator_methods_locking",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConsecutiveGroupsTest::test_numbers",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_exhaustion_reset",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_window_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GrayProductTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_min_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthOrLastTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterMapTests::test_filter_map",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_too_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveRandomlyTests::test_bad_type",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_iterator_input",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_degenerate_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_too_small_extra",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_uneven_length_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_6",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_maxlen_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_none_value_bug",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_many",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_custom_pred",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_sortable_input_produces_sorted_output",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_eq",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UnzipTests::test_length_one_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_relative_seek",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterMapTests::test_filter",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningStats::test_datatypes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_r_less_than_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_hash_above_maxsize",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthProductTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedCompleteTests::test_wrong_length",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_duplicates",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_window_size_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_invalid_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_adding",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SpyTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_unsorted_equivalent",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_invalid_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_zero_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctCombinationsTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FirstTests::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MakeDecoratorTests::test_wrap_class",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_multi_prepend_peek",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_three_iters",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_window_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_multiplicity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMin::test_maxlen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RunLengthTest::test_encode",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterMapTests::test_no_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSerialize::test_serialize_methods_attribute_error",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_duplicates_everseen_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AlwaysReversibleTests::test_nonseq_reversed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_no_matches",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FirstTests::test_one",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_reversed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistributeTest::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_nested",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_get_item_by_index",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_counts",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_invalid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_invalid_slice",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_steps_positive",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_strings",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_zero_distance",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PaddedTest::test_valid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_fillvalue_not_fakeable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_indexing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_specific_sample",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_custom",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FirstTests::test_many",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_invalid_none_values",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartitionsTest::test_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_slicing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_not_identical_but_equal",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_len_matches_iteration",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatLastTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_invalid_match",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GrayProductTests::test_vs_product",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SequenceViewTests::test_abc_methods",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_too_small",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_not_equal_lengths",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_empty_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_generator_iterable_integrity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AllUniqueTests::test_partially_hashable",
+      "reason": "affected by fn:more_itertools/more.py::all_unique, fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_no_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterExceptTests::test_no_exceptions_pass",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TakewhileInclusiveTests::test_collatz_sequence",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SpyTests::test_too_many",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_typical",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_both_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_repr",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterSuppressTests::test_early_suppression",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MakeDecoratorTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctCombinationsTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapExceptTests::test_raise",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_elements_lifecycle",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipOffsetTest::test_mismatch",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_negative_chunk_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_invalid_in_sizes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_invalid_match",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_zero_chunk_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_no_result",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_too_short_new",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_defaults",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSubfactorial::test_vs_derangements",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_negative_distance",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LastTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAfterTest::test_starts_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_no_matches",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_no_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UnzipTests::test_improperly_zipped",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueInWindowTests::test_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterSuppressTests::test_raises_error",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AllUniqueTests::test_basic",
+      "reason": "affected by fn:more_itertools/more.py::all_unique, fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GroupByTransformTests::test_default_funcs",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_no_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_base_type",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSubfactorial::test_error_cases",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_key_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_in",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_maxlen_zero_peek_does_not_drop_items",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GrayProductTests::test_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LastTests::test_reversed_is_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_max_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PaddedTest::test_no_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipOffsetTest::test_shortest",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_7",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveRandomlyTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_strict_false",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_slicing_error",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAtTests::test_maxsplit",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_key_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TimeLimitedTests::test_complete",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_fillvalue",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SideEffectTests::test_before_fails",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_all",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapIfTests::test_without_func_else",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_invalid_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_negative_one_bug",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StrictlyNTests::test_too_short_custom",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_lazy_consumption",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_partial_consumption",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMin::test_stability",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapReduceTests::test_reducefunc",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SpyTests::test_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipBroadcastTests::test_scalar_types",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_prefix_contains_elements_of_the_first_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_infinite",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsIndexesTests::test_strings",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_repeat_with_iterators",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_unhashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_call_once",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_multiplicity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_bad_max",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StripFunctionTests::test_math",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_falsy_custom_exception",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_scale_invariance_of_weights",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSubfactorial::test_oeis_baseline",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedCompleteTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DerangementsTests::test_unique_values",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipBroadcastTests::test_single_use_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_empty_lists",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse_flatten",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_max_split",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_using_none_mid_sizes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_slicing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_window_size_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_manual_lengths",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_mismatch_function_different",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_forward",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StrictlyNTests::test_too_short_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsTests::test_strings",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_peek_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctCombinationsTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_truthiness",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_index",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_no_length_raises",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_one_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_monotonic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_too_long_does_not_evaluate_repr",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExactlyNTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_generator_sizes_integrity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_multiplicity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_key_list",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_key_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_invalid_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_duplicates_everseen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_r_equal_to_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CountableTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_past_end",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GroupByTransformTests::test_reducefunc",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAtTests::test_combination",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_infinite_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_maxlen_zero_bool_does_not_drop_items",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_empty_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSerialize::test_concurrent_calls",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_maxlen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_invalid_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsIndexesTests::test_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_none_values",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_evenness",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_key_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_after_emulation_no_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LastTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_before_emulation_no_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_truthiness",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_r_equal_to_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapIfTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UnzipTests::test_increasingly_zipped",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DivideTest::test_invalid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_iter_twice",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthOrLastTests::test_default_value",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_custom_value",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueToEachTests::test_all_unique",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_error_cases",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_multiplicity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IlenTests::test_ilen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_stirling_numbers",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_index",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthCombinationWithReplacementTests::test_invalid_r",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_degenerate_one",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_uneven_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExactlyNTests::test_true",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_eq_above_maxsize",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMax::test_stability",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAfterTest::test_max_split",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PaddedTest::test_invalid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_initial",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_default_pred",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StrictlyNTests::test_too_long_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsIndexesTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatLastTests::test_default_value",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_window_size_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_not_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_empty_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_passthrough",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_key_non_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_truthiness",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_roundtrip",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TimeLimitedTests::test_zero_limit",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMax::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningStats::test_early_error_detection",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_mismatch_function_smaller",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_generator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningStats::test_single_example",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_many_iters",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ArgMinArgMaxTests::test_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterExceptTests::test_raise",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterExceptTests::test_multiple",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_partial_reset",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_validator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_strict",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapReduceTests::test_valuefunc",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_none_is_not_a_sentinel",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveLongestTests::test_short",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_contains_items_with_inexact_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_unique_justseen_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRandomOrderedRange::test_lcg_mitigation",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_empty_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_simple",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveRandomlyTests::test_all_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PaddedTest::test_next_multiple",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_bad_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_normal",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_contains",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_efficient_reversal",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StrictlyNTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRandomOrderedRange::test_vs_ordered_baseline",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_unsortable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FirstTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_using_none_without_leftover",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_numpy_like_array",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_large_distance",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_key_function",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistributeTest::test_invalid_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_reverse",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DifferenceTest::test_one",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_sizes_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatLastTests::test_empty_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapExceptTests::test_multiple",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_no_mapping",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterateTests::test_func_controls_iteration_stop",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GroupByTransformTests::test_valuefunc",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_custom_exception",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartitionsTest::test_types",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveTests::test_mixed_types",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_laziness",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningStats::test_stat_properties",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapIfTests::test_with_func_else",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StaggerTest::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_nonpositive_max_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_null",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_default_pred",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SequenceViewTests::test_slicing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_equal_lengths",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_one_element_is_first_item",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse_to_list",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_before_emulation_starts_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_0",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_duplicates_justseen_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_too_long_does_not_evaluate_repr",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_slicing_extensive",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_r_less_than_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_strict_being_true",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MarkEndsTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MakeDecoratorTests::test_result_index",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthProductTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_too_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_keys_are_only_those_seen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StripFunctionTests::test_not_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_contains_infinite_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_more",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_5",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DerangementsTests::test_r",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_key_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsSortedTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_using_none_with_leftover",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SpyTests::test_immutable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_repeated",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_mismatch_function_larger",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse_to_level",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthProductTests::test_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_invalid_match",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitBeforeTest::test_ends_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WithIterTests::test_with_iter",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveLongestTests::test_mixed_types",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PowersetOfSetsTests::test_simple",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_one_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_r_less_than_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_steps_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConsumerTests::test_consumer",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_fillvalue_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_memory_in_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_invalid_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AllUniqueTests::test_key",
+      "reason": "affected by fn:more_itertools/more.py::all_unique, fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SpyTests::test_unpacking",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAtTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_max_count_one",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_after_emulation_ends_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse_to_bytes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DerangementsTests::test_repeated_values",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_distance",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_list",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_window_size_end",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CountCycleTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterSuppressTests::test_suppression",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StaggerTest::test_longest",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OuterProductTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DivideTest::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_window_size_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_null",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_early_free",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_slicing_reset",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_getitem_maxlen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_empty_seq",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_each_correct",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DivideTest::test_large_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_empty_using_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TimeLimitedTests::test_invalid_limit",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_reversed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AlwaysReversibleTests::test_regular_reversed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_exception",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend_after_stop",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_key_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_arg_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_duplicates_justseen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_get_item_by_slice",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_in_does_not_add_key_with_validator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapExceptTests::test_no_exceptions_raise",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterExceptTests::test_no_exceptions_raise",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_r",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::FilterExceptTests::test_false",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PowersetOfSetsTests::test_hash_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_invalid_match",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_consecutive_true",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_invalid_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitBeforeTest::test_no_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_odd",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestConcurrentTee::test_concurrent_consumers",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_invariance_under_permutations_unweighted",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_to_many_groups",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_bool_in_sizes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_empty_iterables_only",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_too_long_default_message",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OnlyTests::test_default_exception_message",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExactlyNTests::test_false",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthProductTests::test_invalid_index",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_window_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_max_size",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapReduceTests::test_ret",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_unique_justseen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsIndexesTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_infinite_input",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LocateTests::test_window_size_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_sampling_entire_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IterSuppressTests::test_no_error",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_two_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TakewhileInclusiveTests::test_empty_iterator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedCompleteTests::test_zero_length",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_unsortable_r",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IntersperseTest::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GroupByTransformTests::test_no_valuefunc",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_len",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DerangementsTests::test_unsortable_unhashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::JoinMappingTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveRandomlyTests::test_no_args",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_key_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_callback_kwd",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_zero_nonempty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_simple_peeking",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedTests::test_strict_being_true_with_size_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_before_emulation_ends_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartialProductTests::test_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsIndexesTests::test_reverse",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_window_size_count",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SideEffectTests::test_chunked",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_not_sliceable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAtTests::test_keep_separator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_no_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConsecutiveGroupsTest::test_custom_ordering",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_proportional",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PermutationIndexTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_peek_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_unique_everseen_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistinctPermutationsTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_simple_circular_shifts",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UnzipTests::test_empty_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ArgMinArgMaxTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AllUniqueTests::test_infinite",
+      "reason": "affected by fn:more_itertools/more.py::all_unique, fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TimeLimitedTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_window_size_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DoubleStarMapTests::test_identity",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_found_all",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMin::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSerialize::test_serialize_generator_methods",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_simple_peeking",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IsliceExtendedTests::test_slicing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesJustSeenTests::test_nested",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MapExceptTests::test_no_exceptions_pass",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ZipOffsetTest::test_longest",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_parent_classes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_min_max",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TakewhileInclusiveTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SideEffectTests::test_before_after",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SizedIteratorTests::test_sized_iterator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PartitionsTest::test_duplicates",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StripFunctionTests::test_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::OneTests::test_falsy_custom_exception",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_passthrough",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAfterTest::test_no_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CountableTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_prepend",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_reversed_preserves_float_values",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_unit_case",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_type_error_from_iter",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ProductIndexTests::test_invalid_small",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedTests::test_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveLongestTests::test_even",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_key_matches_builtins",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StrictlyNTests::test_too_long_custom",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::MinMaxTests::test_unpacked",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_type_error_while_iterating",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_iterable_just_right",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SetPartitionsTests::test_no_group",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RlocateTests::test_custom_pred",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_steps_zero",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::JoinMappingTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DistributeTest::test_large_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_invalid_key_list",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GrayProductTests::test_repeat_with_iterators",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_odd_and_strict",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AdjacentTests::test_grouping",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_no_iterables",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SeekableTest::test_repeated_zero_cache_peek_has_bounded_memory",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ReplaceTests::test_iterable_substitutes",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LongestCommonPrefixTests::test_iterators",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthProductTests::test_long",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_basic",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ChunkedEvenTests::test_4",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CountCycleTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitIntoTests::test_invalid_in_sizes_after_none",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::GrayProductTests::test_errors",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SubstringsTests::test_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestSynchronized::test_concurrent_calls",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SequenceViewTests::test_update",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ConstrainedBatchesTests::test_get_len",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_class_getitem",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitWhenTests::test_one_element",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::LastTests::test_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_multi_prepend",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DuplicatesEverSeenTests::test_key_partially_hashable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::WindowedCompleteTests::test_every_partition",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ExtractTests::test_all_orderings",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ClassifyUniqueTests::test_vs_unique_everseen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitBeforeTest::test_empty_collection",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_zero_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_order_matters",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PowersetOfSetsTests::test_baseset",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_slicing_negative_step_omitted_stop",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::DiscreteFourierTransformTests::test_roundtrip",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitAfterTest::test_empty_collection",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_getitem_miss_does_not_add_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueToEachTests::test_mixed",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_list_validator",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::StaggerTest::test_offsets",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_r_equal_to_n",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::ValueChainTests::test_complex",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SlicedTests::test_odd",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SequenceViewTests::test_indexing",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveEvenlyTests::test_argument_mismatch_raises",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::PeekableTests::test_slicing_negative_step_omitted_stop_read_bound",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_odd",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IequalsTests::test_more_than_two_iterable",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::BucketTests::test_in_does_not_add_key",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RunLengthTest::test_decode",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UniqueToEachTests::test_duplicates",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NthOrLastTests::test_empty_iterable_no_default",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationIndexTests::test_null",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveRandomlyTests::test_some_empty",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CallbackIterTests::test_no_result_while_running",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SplitBeforeTest::test_starts_with_sep",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::NumericRangeTests::test_contains_non_items_with_inexact_step",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestRunningMax::test_maxlen",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SortTogetherTest::test_strict",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CombinationWithReplacementIndexTests::test_invalid_large",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::AllUniqueTests::test_non_hashable",
+      "reason": "affected by fn:more_itertools/more.py::all_unique, fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::SampleTests::test_strict",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::UnzipTests::test_normal_case",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::InterleaveTests::test_short",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CircularShiftsTests::test_duplicates",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::IchunkedTests::test_out_of_order",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestCollapse::test_collapse_to_string",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::TestAlwaysIterable::test_single",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::CountCycleTests::test_negative",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    },
+    {
+      "name": "tests/test_more.py::RepeatEachTests::test_negative_repeat",
+      "reason": "affected by fn:tests/test_more.py::AllUniqueTests"
+    }
+  ],
+  "skipped": 145,
+  "skipped_ms": 10352,
+  "global": [],
+  "changed": [
+    "file:docs/versions.rst",
+    "fn:more_itertools/more.py::all_unique",
+    "fn:tests/test_more.py::AllUniqueTests",
+    "fn:tests/test_more.py::AllUniqueTests.test_falsey_key_is_honoured",
+    "fn:tests/test_more.py::AllUniqueTests.test_falsey_key_is_honoured.<locals>.CaseFold",
+    "fn:tests/test_more.py::AllUniqueTests.test_falsey_key_is_honoured.<locals>.CaseFold.__bool__",
+    "fn:tests/test_more.py::AllUniqueTests.test_falsey_key_is_honoured.<locals>.CaseFold.__call__"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "ef8a6af45fc6ba0b62ebbf7e44f187eb55ce3c8587e65ec1514dcbff97e446ff"
+}

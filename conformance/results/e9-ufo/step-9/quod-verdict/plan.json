@@ -1,0 +1,157 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "cd48278d02461e18e13979fc86ec5621a89c5b56",
+  "head": "cf542261a37f2cc2153b63e2f744caf76418c487",
+  "advisory": true,
+  "tests_in_map": 483,
+  "run": [
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"https://test.com\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"https://test.com\"-\"/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo\" + \"/bar\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo\" + \"\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base\"-\"/base/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/\" + \"/\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/api?test\"-\"/api\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin/admin-dashboard\"-\"/admin/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/foo/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/?test\"-\"/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin/dashboard\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin/dashboard\"-\"/admin/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/test/\"-\"/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"/base\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base\" + \"/base/\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/foo/\" + \"/\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/url.test.ts::$URL > append",
+      "reason": "affected by fn:src/url.ts::$URL.href"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base/\" + \"/base/a\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin-dashboard\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/url.test.ts::$URL > getters",
+      "reason": "affected by fn:src/url.ts::$URL.href"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin/\" + \"/admin/admin-dashboard\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/\"-\"/base\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"https://test.com\"-\"/base/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/base\" + \"/base/a\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base/a/\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/bar\"-\"/foo\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/admin\" + \"/admin-dashboard\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/\"-\"/foo\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    },
+    {
+      "name": "test/base.test.ts::withBase > \"/\" + \"https://test.com\"",
+      "reason": "affected by file:test/base.test.ts"
+    },
+    {
+      "name": "test/base.test.ts::withoutBase > \"/base/a\"-\"/base\"",
+      "reason": "affected by file:test/base.test.ts, fn:src/utils.ts::withoutBase"
+    }
+  ],
+  "skipped": 449,
+  "skipped_ms": 3574,
+  "global": [],
+  "changed": [
+    "file:test/base.test.ts",
+    "fn:src/url.ts::$URL.href",
+    "fn:src/utils.ts::withoutBase"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "7ce82dd8131f304f09a994d8107946c178ed97a0e34d940797740468ba1286d6"
+}

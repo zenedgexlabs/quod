@@ -1,0 +1,48 @@
+{
+  "engine": "quod/0.1.0",
+  "base": "00ed75bcdecc9cb06c3cda9af39ace57d6bc7f16",
+  "head": "1bf9ed10c915b24a48be6ae81f35f2f6005f3ffd",
+  "advisory": true,
+  "tests_in_map": 771,
+  "run": [
+    {
+      "name": "tests/test_recipes.py::PrimeFunctionTests::test_is_prime_pseudoprimes",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    },
+    {
+      "name": "tests/test_recipes.py::FactorTests::test_basic",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    },
+    {
+      "name": "tests/test_more.py::OuterProductTests::test_basic",
+      "reason": "affected by fn:more_itertools/more.py::outer_product"
+    },
+    {
+      "name": "tests/test_recipes.py::PrimeFunctionTests::test_primes",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    },
+    {
+      "name": "tests/test_recipes.py::PrimeFunctionTests::test_nth_prime_approximate",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    },
+    {
+      "name": "tests/test_recipes.py::TotientTests::test_basic",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    },
+    {
+      "name": "tests/test_recipes.py::PrimeFunctionTests::test_special_primes",
+      "reason": "affected by fn:more_itertools/recipes.py::is_prime"
+    }
+  ],
+  "skipped": 764,
+  "skipped_ms": 4570,
+  "global": [],
+  "changed": [
+    "fn:more_itertools/more.py::outer_product",
+    "fn:more_itertools/recipes.py::is_prime"
+  ],
+  "integrity": [],
+  "findings": [],
+  "policy": "637c66963400485550a1b5a26b72ac8f3ac2c796b25387e2564138263509e78b",
+  "map": "ea0251e9338104c8316158f6ff2706237d31afd16f746f04f6cd56e13774145b"
+}

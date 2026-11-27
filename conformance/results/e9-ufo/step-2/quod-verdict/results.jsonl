@@ -1,0 +1,32 @@
+{"duration_ms":0.032,"name":"test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.033,"name":"test/base.test.ts::withoutBase > \"/api?test\"-\"/api\"","outcome":"passed","type":"result"}
+{"duration_ms":0.033,"name":"test/base.test.ts::withoutBase > \"https://test.com\"-\"/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.034,"name":"test/base.test.ts::withoutBase > \"/base/\"-\"/base\"","outcome":"passed","type":"result"}
+{"duration_ms":0.034,"name":"test/base.test.ts::withoutBase > \"/base/a\"-\"/base/a/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.034,"name":"test/base.test.ts::withoutBase > \"/base/a\"-\"/base\"","outcome":"passed","type":"result"}
+{"duration_ms":0.035,"name":"test/base.test.ts::withoutBase > \"/admin/dashboard\"-\"/admin/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.035,"name":"test/base.test.ts::withoutBase > \"/base\"-\"/base/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.035,"name":"test/base.test.ts::withoutBase > \"/test/\"-\"/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.036,"name":"test/base.test.ts::withoutBase > \"/admin/admin-dashboard\"-\"/admin/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.037,"name":"test/base.test.ts::withoutBase > \"/base/a\"-\"/base/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.038,"name":"test/base.test.ts::withBase > \"/base/\" + \"/base/a\"","outcome":"passed","type":"result"}
+{"duration_ms":0.038,"name":"test/base.test.ts::withoutBase > \"/admin-dashboard\"-\"/admin\"","outcome":"passed","type":"result"}
+{"duration_ms":0.038,"name":"test/base.test.ts::withoutBase > \"https://test.com\"-\"/base/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.039,"name":"test/base.test.ts::withBase > \"/admin/\" + \"/admin/dashboard\"","outcome":"passed","type":"result"}
+{"duration_ms":0.039,"name":"test/base.test.ts::withoutBase > \"/\"-\"/foo/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.04,"name":"test/base.test.ts::withBase > \"/admin\" + \"/admin-dashboard\"","outcome":"passed","type":"result"}
+{"duration_ms":0.041,"name":"test/base.test.ts::withoutBase > \"/bar\"-\"/foo\"","outcome":"passed","type":"result"}
+{"duration_ms":0.044,"name":"test/base.test.ts::withBase > \"/admin/\" + \"/admin/admin-dashboard\"","outcome":"passed","type":"result"}
+{"duration_ms":0.047,"name":"test/base.test.ts::withBase > \"/base\" + \"/base/a\"","outcome":"passed","type":"result"}
+{"duration_ms":0.049,"name":"test/base.test.ts::withoutBase > \"/?test\"-\"/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.054,"name":"test/base.test.ts::withBase > \"/base\" + \"/base/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.071,"name":"test/base.test.ts::withBase > \"/admin/\" + \"/admin-dashboard\"","outcome":"passed","type":"result"}
+{"duration_ms":0.081,"name":"test/base.test.ts::withoutBase > \"/\"-\"/foo\"","outcome":"passed","type":"result"}
+{"duration_ms":0.086,"name":"test/base.test.ts::withBase > \"/\" + \"https://test.com\"","outcome":"passed","type":"result"}
+{"duration_ms":0.095,"name":"test/base.test.ts::withoutBase > \"/\"-\"/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.118,"name":"test/base.test.ts::withBase > \"/foo/\" + \"/\"","outcome":"passed","type":"result"}
+{"duration_ms":0.126,"name":"test/base.test.ts::withBase > \"/base/\" + \"/base\"","outcome":"passed","type":"result"}
+{"duration_ms":0.162,"name":"test/base.test.ts::withBase > \"/base/\" + \"https://test.com\"","outcome":"passed","type":"result"}
+{"duration_ms":0.286,"name":"test/base.test.ts::withBase > \"/foo\" + \"/bar\"","outcome":"passed","type":"result"}
+{"duration_ms":0.351,"name":"test/base.test.ts::withBase > \"/foo\" + \"\"","outcome":"passed","type":"result"}
+{"duration_ms":0.899,"name":"test/base.test.ts::withBase > \"/\" + \"/\"","outcome":"passed","type":"result"}

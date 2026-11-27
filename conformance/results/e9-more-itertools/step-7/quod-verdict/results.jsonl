@@ -1,0 +1,7 @@
+{"duration_ms": 0.665, "name": "tests/test_more.py::OuterProductTests::test_basic", "outcome": "passed", "type": "result"}
+{"duration_ms": 4.319, "name": "tests/test_recipes.py::FactorTests::test_basic", "outcome": "passed", "type": "result"}
+{"duration_ms": 8.213, "name": "tests/test_recipes.py::PrimeFunctionTests::test_is_prime_pseudoprimes", "outcome": "passed", "type": "result"}
+{"duration_ms": 601.131, "name": "tests/test_recipes.py::PrimeFunctionTests::test_nth_prime_approximate", "outcome": "passed", "type": "result"}
+{"duration_ms": 6659.324, "name": "tests/test_recipes.py::PrimeFunctionTests::test_primes", "outcome": "failed", "type": "result"}
+{"duration_ms": 18.042, "name": "tests/test_recipes.py::PrimeFunctionTests::test_special_primes", "outcome": "passed", "type": "result"}
+{"duration_ms": 1.344, "name": "tests/test_recipes.py::TotientTests::test_basic", "outcome": "passed", "type": "result"}
