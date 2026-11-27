@@ -55,8 +55,11 @@ inputs:
       Comma-separated logins whose changes are recorded as agent-authored.
     default: copilot-swe-agent[bot],devin-ai-integration[bot],claude[bot],cursor[bot],chatgpt-codex-connector[bot]
   map-path:
-    description: Where the footprint map is stored in the workspace.
-    default: .quod/map.qmap
+    description: >-
+      Where the footprint map is kept. Empty: the runner's temp directory.
+      Keep it outside the checkout: a file there is part of the change Quod
+      analyses (one under .quod/ counts as a policy change, R004).
+    default: ''
   publish-map:
     description: >-
       record: upload each green map as the artifact `quod-map-<sha>`, so
@@ -128,7 +131,7 @@ runs:
         RUNNER: ${{ inputs.runner }}
         CMD: ${{ inputs.test-command }}
         PROBE_JS: ${{ steps.probe.outputs.js }}
-        MAP: ${{ inputs.map-path }}
+        MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
       run: |
         set -euo pipefail
         mkdir -p "$(dirname "$MAP")" "$RUNNER_TEMP/quod"
@@ -156,7 +159,7 @@ runs:
       if: inputs.mode == 'record'
       uses: actions/cache/save@v6
       with:
-        path: ${{ inputs.map-path }}
+        path: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
         key: quod-map-${{ github.sha }}
 
     - name: Mark green
@@ -239,7 +242,7 @@ runs:
       if: inputs.mode != 'record'
       uses: actions/cache/restore@v6
       with:
-        path: ${{ inputs.map-path }}
+        path: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
         key: quod-map-${{ steps.base.outputs.sha }}
         restore-keys: quod-map-
 
@@ -249,7 +252,7 @@ runs:
       shell: bash
       env:
         QUOD: ${{ steps.install.outputs.bin }}
-        MAP: ${{ inputs.map-path }}
+        MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
         KEY: ${{ inputs.signing-key }}
         PY: ${{ inputs.python }}
         HIT: ${{ steps.map.outputs.cache-matched-key }}

@@ -543,3 +543,22 @@ def test_skip_file_lists_whole_files_that_are_not_collected(tmp_path):
     assert res.returncode != 0
     assert "not skipping any tests" in res.stderr
     assert "collected" in res.stdout + res.stderr
+
+
+def test_runner_state_is_not_recorded(tmp_path):
+    """pytest's cache and bytecode are the runner's own state: a fresh CI
+    checkout has none, so recording them made every test look changed."""
+    d = tmp_path
+    (d / "tests").mkdir()
+    (d / "tests" / "test_a.py").write_text("def test_a():\n    assert True\n")
+    out = d / "capture.jsonl"
+    cmd = [sys.executable, "-m", "pytest", "-q", f"--quod-root={d}", "tests"]
+    # The first run creates .pytest_cache; the recorded second run reads it.
+    subprocess.run(cmd, cwd=d, capture_output=True, text=True, env=ENV, check=True)
+    res = subprocess.run([*cmd, f"--quod-record={out}"], cwd=d, capture_output=True, text=True, env=ENV)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert (d / ".pytest_cache").is_dir()
+    files = set()
+    for r in map(json.loads, out.read_text(encoding="utf-8").splitlines()):
+        files |= set(r.get("files", []))
+    assert not any(".pytest_cache/" in f or "__pycache__/" in f for f in files), files

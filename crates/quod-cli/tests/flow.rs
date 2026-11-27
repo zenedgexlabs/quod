@@ -187,6 +187,40 @@ fn function_edit_runs_only_its_test_and_skips_are_verified() {
     verify_ok(&f, &res);
 }
 
+/// CI restores the map from a cache, possibly inside the checkout. The map
+/// file must not count as part of the change (under .quod/ it would be a
+/// policy change, R004, and everything would run).
+#[test]
+fn a_map_inside_the_checkout_is_not_part_of_the_change() {
+    let f = setup();
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    let outside = select(&f);
+    fs::create_dir_all(f.root.join(".quod")).unwrap();
+    let inside = f.root.join(".quod/map.qmap");
+    fs::copy(&f.map, &inside).unwrap();
+    let repo = Repo::discover(&f.root).unwrap();
+    let res = run_select(
+        &repo,
+        &SelectOptions {
+            map: inside,
+            head: None,
+            policy: None,
+            key: Some(f.key.clone()),
+            advisory: false,
+            repo_id: "acme/app".into(),
+            python: None,
+            fingerprint_cmd: None,
+        },
+    )
+    .unwrap();
+    assert!(res.report.global.is_empty(), "{:?}", res.report.global);
+    assert_eq!(run_names(&res), run_names(&outside));
+}
+
 #[test]
 fn unexecuted_function_edit_skips_everything_passing() {
     let f = setup();

@@ -34,6 +34,8 @@ _SUBPROCESS_EVENTS = frozenset(
     {"subprocess.Popen", "os.system", "os.posix_spawn", "os.spawn", "os.exec", "os.startfile", "pty.spawn"}
 )
 _LISTING_EVENTS = frozenset({"os.listdir", "os.scandir", "glob.glob", "os.walk"})
+# Directories holding the test runner's own state, not test inputs.
+_RUNNER_STATE = frozenset({".pytest_cache", "__pycache__"})
 _LOOPBACK_PREFIXES = ("127.", "::1", "localhost", "0:0:0:0:0:0:0:1")
 
 
@@ -463,6 +465,11 @@ class Recorder:
                 result = ("pkg", info.name, info.native)
             elif p.startswith(self._repo_prefix):
                 rel = p[len(self._repo_prefix):].replace(os.sep, "/")
+                if not _RUNNER_STATE.isdisjoint(rel.split("/")[:-1]):
+                    # pytest's cache and bytecode: the runner's own state, absent from a fresh
+                    # checkout (CI). Source files are recorded through the code that runs.
+                    self._file_cache[raw] = None
+                    return None
                 # Keep the repository's own spelling of the path (normcase lowercases on Windows).
                 actual = os.path.relpath(os.path.realpath(_pyc_to_source(raw)), self.repo_root_real)
                 result = ("file", actual.replace(os.sep, "/") if not actual.startswith("..") else rel)

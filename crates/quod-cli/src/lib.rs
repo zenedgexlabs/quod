@@ -757,6 +757,20 @@ pub fn load_policy(repo: &Repo, explicit: Option<&Path>) -> Result<Policy> {
     }
 }
 
+/// `path` relative to the repository root with `/` separators, if it lies
+/// inside the repository.
+fn path_in_repo(repo: &Repo, path: &Path) -> Option<String> {
+    let abs = std::fs::canonicalize(path).ok()?;
+    let root = std::fs::canonicalize(repo.root()).ok()?;
+    let rel = abs.strip_prefix(&root).ok()?;
+    Some(
+        rel.components()
+            .map(|c| c.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("/"),
+    )
+}
+
 /// Change → policy → ladder → certificates, for the map's base commit.
 pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     let bytes =
@@ -785,6 +799,13 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
             },
         },
     )?;
+    // The map itself is never part of the change it is compared with. Kept
+    // inside the checkout (CI caches restore it there), it would otherwise be
+    // an untracked file, and under .quod/ a policy change (R004).
+    let mut change = change;
+    if let Some(rel) = path_in_repo(repo, &opts.map) {
+        change.files.retain(|f| f.change.path != rel);
+    }
     let behind = repo.commits_between(&base, &change.head).ok();
     let policy = load_policy(repo, opts.policy.as_deref())?;
     let fingerprint_cmd =
