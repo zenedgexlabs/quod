@@ -47,6 +47,12 @@ These are sound, but run more than strictly needed.
 
 - **Module-level changes** (a new import, a changed constant) run every
   test that imported the module or ran any of its functions (ADR 019).
+- **Modules that keep state** (ADR 014): a module-level dict, list or set
+  that the module could change (anything but a read-only table of
+  literals) makes every test that touches the module depend on every
+  function in it. When a package's `__init__` imports that module, that's
+  every test. For example, `RATES = {"EUR": Decimal("0.92")}` passed as a
+  default argument counts as state.
 - **Vitest with `isolate: false`** credits each test file with every
   module its worker loaded.
 - **Adding a function to a Python module** counts as a module change.

@@ -54,12 +54,17 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }   # the probe needs Python 3.12+
       - run: pip install -e .[test]        # your project and its test deps
-      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.3
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.4
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           test-command: python -m pytest -q
           python: python
 ```
+
+See it on a real project in
+[zenedgexlabs/quod-demo](https://github.com/zenedgexlabs/quod-demo): one
+pull request skips 55 of 59 tests, and another has a bug that Quod
+catches.
 
 - **Shadow mode** (start here) still runs every test, and the card says
   which tests Quod would have skipped, each with a certificate. Nothing
