@@ -146,7 +146,7 @@ pub fn compute(repo: &Repo, opts: &ChangeOptions) -> Result<ChangeSet, ChangeErr
 /// re-exports, dynamic `import()`, `require()`, and test-runner module mocks
 /// (automocks and `requireActual`/`importActual` spreads enumerate exports).
 const JS_NAMESPACE_PATTERN: &str = "^[[:space:]]*(import|export)([[:space:]]+type)?[[:space:]]*\\*\
-     |import[[:space:]]*\\(|require[[:space:]]*\\(|\\.mock[[:space:]]*\\(|Actual";
+     |import[[:space:]]*\\(|require[[:space:]]*\\(|\\.mock[[:space:]]*\\(|(require|import)Actual";
 const JS_PATHSPECS: &[&str] = &[
     "*.js", "*.mjs", "*.cjs", "*.jsx", "*.ts", "*.mts", "*.cts", "*.tsx",
 ];
@@ -340,13 +340,24 @@ mod tests {
                 "test/req.test.js",
                 "const u = require('../src/impl/util');\n",
             ),
+            (
+                "test/actual.test.js",
+                "const u = await vi.importActual('../src/impl/util');\n",
+            ),
         ] {
             fs::write(p.join(file), text).unwrap();
             let d = util_delta(&repo);
             assert!(d.module_changed, "{file}: {d:?}");
             fs::remove_file(p.join(file)).unwrap();
         }
-        // Back to no observers.
+        // Back to no observers. An identifier that merely contains
+        // "Actual" (luxon's `isActuallyEn`) is not a module mock.
+        fs::write(
+            p.join("src/locale.js"),
+            "const isActuallyEn = this.isEnglish();
+",
+        )
+        .unwrap();
         assert!(!util_delta(&repo).module_changed);
     }
 
