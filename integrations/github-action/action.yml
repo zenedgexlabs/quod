@@ -5,6 +5,9 @@ description: >-
   test executes, and test-integrity findings.
 author: Quod
 
+branding:
+  icon: check-circle
+  color: green
 inputs:
   mode:
     description: >-
@@ -28,11 +31,14 @@ inputs:
   quod-bin:
     description: >-
       The quod binary (a name on PATH or a path). When it isn't found, the
-      action downloads quod-version from this action's releases.
+      action downloads quod-version from quod-repo's releases.
     default: quod
   quod-version:
     description: Release tag to download when quod-bin isn't found, or `latest`.
     default: latest
+  quod-repo:
+    description: Repository whose releases provide the quod binary and the probes.
+    default: zenedgexlabs/quod
   install-probe:
     description: >-
       Install the probe from the same release as quod: the quod-probe wheel
@@ -86,7 +92,7 @@ runs:
       env:
         QUOD_BIN: ${{ inputs.quod-bin }}
         QUOD_VERSION: ${{ inputs.quod-version }}
-        QUOD_REPO: ${{ github.action_repository || github.repository }}
+        QUOD_REPO: ${{ inputs.quod-repo }}
         GH_TOKEN: ${{ github.token }}
       run: bash "$GITHUB_ACTION_PATH/install.sh"
 
@@ -99,7 +105,7 @@ runs:
         PROBE_JS: ${{ inputs.probe-js }}
         PY: ${{ inputs.python }}
         TAG: ${{ steps.install.outputs.tag }}
-        QUOD_REPO: ${{ github.action_repository || github.repository }}
+        QUOD_REPO: ${{ inputs.quod-repo }}
         GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail

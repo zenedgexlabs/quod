@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }  # the probe needs Python 3.12+
       - run: pip install -e .[test]       # your project and its test deps
-      - uses: zenedgexlabs/quod/integrations/github-action@v0.1.0-alpha.3
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.3
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           test-command: python -m pytest -q
@@ -60,7 +60,7 @@ Verdict is advisory.
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci
-      - uses: zenedgexlabs/quod/integrations/github-action@v0.1.0-alpha.3
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.3
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           runner: vitest                  # or jest
@@ -91,3 +91,9 @@ pnpm or yarn) is left as it is.
   in `quod.toml` to change the list (add `U001` to also block
   untested agent changes; `[]` turns it off). The verifier rejects a
   Verdict whose agent findings were lowered.
+
+## Where this action is published
+
+Workflows use it as `zenedgexlabs/quod-action`, a mirror of this directory
+on its own repository, as the GitHub Marketplace requires. Change it here;
+copy `action.yml`, `install.sh` and this README there for each release.
