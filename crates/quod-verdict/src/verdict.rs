@@ -164,6 +164,11 @@ pub struct Verdict {
     pub findings: Vec<Finding>,
     /// Skip certificates.
     pub certificates: CertRef,
+    /// Rules whose findings block because an agent authored the change
+    /// (policy `agent_block`); empty for other authors. A verifier checks
+    /// that every finding under these rules blocks.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_block: Option<Vec<String>>,
 }
 
 /// in-toto subject.
@@ -211,6 +216,8 @@ pub struct CompileInput {
     pub certificates: CertRef,
     /// Global rules that fired.
     pub fallback_rules: Vec<String>,
+    /// Policy `agent_block`: rules that block for agent-authored changes.
+    pub agent_block: Vec<String>,
 }
 
 /// Assembles the Verdict from inputs, results and lens findings.
@@ -244,6 +251,22 @@ pub fn compile(input: CompileInput, mut findings: Vec<Finding>) -> Verdict {
                 detail: "obligated by this change but skipped by the test runner".into(),
             }),
             Some(_) => {}
+        }
+    }
+    // Agent-authored changes: findings that could hide a change passing by
+    // weakening its own tests block instead of asking for review.
+    let agent_block: Option<Vec<String>> =
+        (input.change.author_kind == AuthorKind::Agent).then(|| {
+            let mut r = input.agent_block.clone();
+            r.sort();
+            r.dedup();
+            r
+        });
+    for f in &mut findings {
+        if f.severity < Severity::Block && agent_block.as_ref().is_some_and(|r| r.contains(&f.rule))
+        {
+            f.severity = Severity::Block;
+            f.detail.push_str(" (blocks: agent-authored change)");
         }
     }
     findings.sort();
@@ -293,6 +316,7 @@ pub fn compile(input: CompileInput, mut findings: Vec<Finding>) -> Verdict {
         },
         findings,
         certificates: input.certificates,
+        agent_block,
     }
 }
 
