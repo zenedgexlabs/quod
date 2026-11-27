@@ -8,8 +8,9 @@ first-parent commits C:
    mutant is added on top (an agent bug). The map stays at G, so it is
    increasingly behind HEAD, like a pulled map for an older ancestor.
 2. `tests_for` is called over MCP (`quod mcp`, stdio), as an agent would.
-3. The `run` command it returns is executed as-is (plus `--quod-results`).
-4. The full suite runs on the same tree: the ground truth.
+3. The `run` command it returns is executed as-is; it writes its own results file.
+4. The full suite runs on the same tree, through the same command with an
+   empty skip file (same costs, no recording): the ground truth.
 
 Escape: a test that fails in the full run, fails alone every time, and
 the MCP run did not execute. The gate is 0 escapes. Precision: the
@@ -42,7 +43,10 @@ def mcp_tests_for(ws: R.Workspace, map_path: Path) -> dict:
         {"jsonrpc": "2.0", "method": "notifications/initialized"},
         {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "tests_for", "arguments": {}}},
     ]
-    env = {**os.environ, "QUOD_PYTHON": str(ws.python)}
+    # How an agent's machine is found: the test venv for pytest, the
+    # quod-js CLI for Vitest and Jest.
+    env = {**os.environ, **({"QUOD_JS": str(R.JS_PROBE)} if ws.runner in R.JS_RUNNERS
+                            else {"QUOD_PYTHON": str(ws.python)})}
     out = R.sh([R.QUOD, "--repo-dir", ws.repo, "--repo-id", ws.name, "mcp", "--map", map_path],
                cwd=ws.repo, env=env, input="".join(json.dumps(m) + "\n" for m in msgs))
     reply = json.loads(out.stdout.splitlines()[-1])
@@ -54,11 +58,20 @@ def mcp_tests_for(ws: R.Workspace, map_path: Path) -> dict:
 
 def run_returned(ws: R.Workspace, plan: dict, tag: str, timeout: float) -> tuple[dict[str, str], float, int]:
     """Runs the returned command; outcomes by test name, wall time, exit code."""
-    results = ws.artifacts / f"{tag}-results.jsonl"
+    run = plan["run"]
+    argv = list(run["argv"])
+    # The returned command writes its own results file (pytest
+    # --quod-results=PATH, quod-js --results PATH): read it from there.
+    results = None
+    for i, a in enumerate(argv):
+        if a.startswith("--quod-results="):
+            results = Path(a.split("=", 1)[1])
+        elif a == "--results" and i + 1 < len(argv):
+            results = Path(argv[i + 1])
+    if results is None:
+        raise RuntimeError(f"the returned command writes no results file: {argv}")
     if results.exists():
         results.unlink()
-    run = plan["run"]
-    argv = [*run["argv"], f"--quod-results={results}"]
     t0 = time.monotonic()
     code = R.sh(argv, cwd=ws.repo / run["cwd"], check=False, timeout=timeout).returncode
     elapsed = time.monotonic() - t0
@@ -69,6 +82,37 @@ def run_returned(ws: R.Workspace, plan: dict, tag: str, timeout: float) -> tuple
             if r.get("type") == "result":
                 out[r["name"]] = r["outcome"]
     return out, elapsed, code
+
+
+def full_run(ws: R.Workspace, plan: dict, tag: str, timeout: float) -> tuple[dict, float]:
+    """The ground truth: the same command with an empty skip file, so both
+    runs pay the same costs (no recording) and only the skips differ."""
+    empty = ws.artifacts / f"{tag}-noskip.txt"
+    empty.write_text("", encoding="utf-8")
+    results = ws.artifacts / f"{tag}-results.jsonl"
+    if results.exists():
+        results.unlink()
+    argv, it = [], iter(plan["run"]["argv"])
+    for a in it:
+        if a.startswith("--quod-skip="):
+            argv.append(f"--quod-skip={empty}")
+        elif a.startswith("--quod-results="):
+            argv.append(f"--quod-results={results}")
+        elif a in ("--skip", "--results"):
+            next(it)
+            argv += [a, str(empty if a == "--skip" else results)]
+        else:
+            argv.append(a)
+    t0 = time.monotonic()
+    R.sh(argv, cwd=ws.repo / plan["run"]["cwd"], check=False, timeout=timeout)
+    elapsed = time.monotonic() - t0
+    out = {}
+    if results.exists():
+        for line in results.read_text(encoding="utf-8").splitlines():
+            r = json.loads(line)
+            if r.get("type") == "result":
+                out[r["name"]] = {"outcome": r["outcome"]}
+    return out, elapsed
 
 
 def step(ws: R.Workspace, map_path: Path, commit: str, k: int, rng: random.Random, mutate: bool,
@@ -88,12 +132,10 @@ def step(ws: R.Workspace, map_path: Path, commit: str, k: int, rng: random.Rando
     # A mutant can make the suite loop forever: such a step is dropped.
     try:
         mcp_out, mcp_time, mcp_code = run_returned(ws, plan, f"e8-{k}", timeout)
-        t0 = time.monotonic()
-        full, _, _ = R.run_suite(ws, f"e8-{k}-full", timeout=timeout)
+        full, full_time = full_run(ws, plan, f"e8-{k}-full", timeout)
     except R.SuiteTimeout:
         R.log(f"  step {k} dropped: the suite hangs under {desc or 'this change'}")
         return None
-    full_time = time.monotonic() - t0
     failing_full = R.failing(full) - ws.flaky
     not_run = {n for n in failing_full if n not in mcp_out}
     escapes = sorted(n for n in not_run if R.fails_alone(ws, n))
@@ -143,8 +185,6 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = tomllib.loads((R.ROOT / "conformance" / "repos.toml").read_text(encoding="utf-8"))["repos"][args.repo]
-    if cfg.get("runner", "pytest") != "pytest":
-        raise SystemExit("E8 drives pytest repos for now")
     os.environ.update({k: str(v) for k, v in cfg.get("env", {}).items()})
     ws = R.setup(args.repo, cfg, args.work / args.repo, args.python)
     branch = cfg["branch"]
