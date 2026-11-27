@@ -141,7 +141,7 @@ runs:
           node "$PROBE_JS" record --runner "$RUNNER" --out "$cap" --results "$res" -- $CMD || true
           "$QUOD" ingest --capture "$cap" --out "$MAP" --allow-dirty
         else
-          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD --quod-results "$res"
+          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD --quod-results "$res" || true  # failures are recorded; green says so
         fi
         # Green: every test passed. The commit becomes the reference for
         # Culprit when a later push turns main red.
@@ -289,7 +289,9 @@ runs:
         PROBE_JS: ${{ steps.probe.outputs.js }}
         READY: ${{ steps.plan.outputs.ready }}
       run: |
-        set -uo pipefail
+        # Not -e (GitHub's default for bash): failing tests are what the
+        # Verdict is about. The Outcome step fails the job afterwards.
+        set +e -uo pipefail
         dir="$RUNNER_TEMP/quod"
         skip="$dir/skip.txt"
         # Shadow mode runs everything: the skip list is only reported.
@@ -314,7 +316,7 @@ runs:
         ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
         AGENTS: ${{ inputs.agent-authors }}
       run: |
-        set -uo pipefail
+        set +e -uo pipefail  # a failing or blocked Verdict exits non-zero; Outcome decides
         dir="$RUNNER_TEMP/quod"
         mapfile -t args < "$dir/args.txt"
         # Drop the plan-only output flags.
