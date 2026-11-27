@@ -4,8 +4,9 @@ The fork's `main` is the commit E8 records its map at (G), plus one commit
 that swaps the project's workflows for Quod's (conformance/e9/*.yml). That
 push records the map on GitHub's runners. Then, for each of the next N real
 first-parent commits C, a branch on top of `main` gets C's exact tree (with
-Quod's workflow), plus a mutant on odd steps, and a pull request. Every
-pull request runs two jobs on the same commit:
+Quod's workflow), plus a mutant on odd steps, and a pull request; then C
+(without the mutant) lands on `main`, which records the next map, as CI
+does after a merge. Every pull request runs two jobs on the same commit:
 
 - shadow:  the full suite, and the tests Quod would skip;
 - enforce: only the tests Quod doesn't skip.
@@ -106,6 +107,17 @@ def push(args, cfg: dict, ws: R.Workspace, fork: str, good: str, window: list[st
         gh("pr", "create", "-R", fork, "--base", "main", "--head", branch,
            "--title", f"E9 step {k}: {subject}"[:120], "--body", body, check=False)
         R.log(f"  step {k} {c[:8]}{' + ' + desc if desc else ''}: {branch} @ {sha[:8]}")
+
+        # As in real CI, the change (without the mutant) lands on main, which
+        # records the map the next pull request is compared with. The pull
+        # request's merge base stays `base`, whose map is already recorded.
+        ws.checkout(base)
+        ws.git("read-tree", "-u", "--reset", c)
+        with_quod_workflow(ws, cfg)
+        base = commit(ws, f"E9 main: {subject}")
+        ws.git("push", "-q", "--force", "fork", f"{base}:refs/heads/main")
+        R.log(f"    main = {base[:8]} (upstream {c[:8]}); recording the map")
+        wait_for_run(fork, base)
 
 
 def runs_for(fork: str, sha: str) -> list[dict]:
