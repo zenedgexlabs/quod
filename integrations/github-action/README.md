@@ -63,4 +63,10 @@ arguments in `test-command`.
 - **Map writes.** Only `record` runs on the default branch write the map
   cache. Pull requests only read it.
 - **Agent authors.** Logins listed in `agent-authors` are recorded as agent
-  authors in the Verdict.
+  authors in the Verdict, and their changes are held to a stricter bar: a
+  test edited together with the code it guards (I001), tests removed or
+  skip markers added (R011), or an obligated test skipped by the runner
+  (O002) block the merge instead of asking for review. Set `agent_block`
+  in `quod.toml` to change the list (add `U001` to also block
+  untested agent changes; `[]` turns it off). The verifier rejects a
+  Verdict whose agent findings were lowered.

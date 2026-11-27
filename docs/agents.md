@@ -50,6 +50,16 @@ That is always the safe answer, and the response says why:
 - **A global rule fired** (`fallback`): for example a test-runner config or
   the policy changed.
 
+## Merge gate for agent changes
+
+`check` is advisory. The merge gate is the signed Verdict from CI, and for
+pull requests from agent logins (`agent-authors` in the Action) it is
+stricter: a change that passes by weakening its own tests (editing a test
+together with the code it guards, removing tests or adding skip markers,
+skipping an obligated test) is **blocked**, not sent for review. `check`
+reports the same findings, so the agent can fix them before it opens the
+pull request.
+
 ## Environment mode
 
 The server finds the test environment itself: for pytest, `$QUOD_PYTHON`
