@@ -27,6 +27,47 @@ An independent open verifier re-checks every claim. See
 > - The GitHub Action is in
 >   [integrations/github-action](integrations/github-action/README.md).
 
+## Skip tests in CI (GitHub Actions)
+
+Add one workflow. Pushes to `main` record what each test depends on;
+every pull request then gets a plan, and a Verdict card in the job summary.
+
+```yaml
+# .github/workflows/quod.yml
+name: quod
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }   # the probe needs Python 3.12+
+      - run: pip install -e .[test]        # your project and its test deps
+      - uses: zenedgexlabs/quod/integrations/github-action@v0.1.0-alpha.3
+        with:
+          mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
+          test-command: python -m pytest -q
+          python: python
+```
+
+- **Shadow mode** (start here) still runs every test, and the card says
+  which tests Quod would have skipped, each with a certificate. Nothing
+  about your CI changes.
+- **Enforce mode** skips the certified tests. Switch when the shadow
+  Verdicts have earned your trust.
+- For Vitest or Jest, set `runner: vitest` (or `jest`) and install your
+  dependencies with your own package manager. See the
+  [Action's README](integrations/github-action/README.md).
+
+Quod saves the most on slow suites and large repositories. On a suite
+that finishes in seconds, start-up dominates, and what Quod adds is the
+evidence for each skip rather than speed.
+
 ## Install
 
 Each [release](https://github.com/zenedgexlabs/quod/releases) has `quod` and
