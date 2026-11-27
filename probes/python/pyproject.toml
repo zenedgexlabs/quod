@@ -9,6 +9,24 @@ description = "pytest plugin that records per-test footprints for Quod"
 requires-python = ">=3.12"
 dependencies = ["pytest>=8"]
 license = { text = "Apache-2.0" }
+readme = "README.md"
+authors = [{ name = "zenedgex labs" }]
+keywords = ["pytest", "test selection", "test impact analysis", "ci"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/zenedgexlabs/quod"
+Documentation = "https://github.com/zenedgexlabs/quod#readme"
+Issues = "https://github.com/zenedgexlabs/quod/issues"
 
 [project.entry-points.pytest11]
 quod = "quod_probe.plugin"

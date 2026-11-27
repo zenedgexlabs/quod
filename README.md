@@ -78,15 +78,16 @@ evidence for each skip rather than speed.
 
 Each [release](https://github.com/zenedgexlabs/quod/releases) has `quod` and
 `quod-verify` for Linux x86_64, macOS (arm64, x86_64) and Windows x86_64,
-the Python probe wheel (`quod_probe`) and the JS probe package (`quod-js`),
-each with a SHA-256 file. The GitHub Action downloads the binary by itself
+the Python probe wheel (`quod_probe`, also on PyPI as
+[`quod-probe`](https://pypi.org/project/quod-probe/)) and the JS probe
+package (`quod-js`), each with a SHA-256 file. The GitHub Action downloads the binary by itself
 (`quod-version`, default `latest`). To build from source: `cargo install
 --path crates/quod-cli`.
 
 ## Quickstart (Python / pytest)
 
 ```sh
-pip install ./probes/python                 # the pytest plugin, into the project's env
+pip install quod-probe                      # the pytest plugin (PyPI), into the project's env
 cargo build --release                       # builds `quod` and `quod-verify`
 
 quod keygen --out ci-key.seed           # keep the seed secret; note the printed key id
