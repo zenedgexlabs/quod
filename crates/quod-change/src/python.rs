@@ -202,6 +202,7 @@ fn emit(
 
 /// Builtin names: looking one up can't raise. Any other plain name can
 /// (`NameError` when it isn't bound yet, which fails the module's import).
+#[rustfmt::skip]
 const BUILTIN_NAMES: &[&str] = &[
     "ArithmeticError", "AssertionError", "AttributeError", "BaseException", "BytesWarning",
     "DeprecationWarning", "Ellipsis", "EOFError", "Exception", "FutureWarning",
@@ -242,7 +243,9 @@ fn side_effect_free(node: Node<'_>, src: &[u8]) -> bool {
         "unary_operator" => node
             .child_by_field_name("argument")
             .is_some_and(|a| matches!(a.kind(), "integer" | "float")),
-        "tuple" | "list" | "set" | "dictionary" => named(node).into_iter().all(|c| side_effect_free(c, src)),
+        "tuple" | "list" | "set" | "dictionary" => {
+            named(node).into_iter().all(|c| side_effect_free(c, src))
+        }
         "pair" => named(node).into_iter().all(|c| side_effect_free(c, src)),
         _ => false,
     }
