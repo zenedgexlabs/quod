@@ -76,6 +76,28 @@ and the engine exempts only those.
 Root-scope observations (pytest enumerating conftest and plugin
 namespaces) turn a namespace change into R017, as for any root node.
 
+### JavaScript
+
+E8 on luxon (2026-11-27) hit the same case: the only change to
+`src/impl/util.js` was a new `export function snapFloatingPoint`, and since
+`util.js` is imported everywhere, all 1,190 tests ran on every step.
+JavaScript makes the exemption simpler than Python:
+
+- function declarations are hoisted, so adding one runs no code when the
+  module is evaluated;
+- an ES module can't import a name that doesn't exist (a link-time
+  error), so there is no failed-lookup case to observe;
+- a new export is visible only to code that enumerates or dynamically
+  indexes the module namespace: `import * as ns` with `Object.keys(ns)` or
+  `ns[name]`, `export * from`, dynamic `import()`, and CommonJS interop
+  (`require`).
+
+So a new top-level `function` declaration (exported or not) under a name
+unused in the base file could be exempt when no file in the repository
+reaches the module through a namespace import, `export *`, `import()` or
+`require` (matched conservatively by the specifier's basename). That is a
+static check, with no probe support needed.
+
 ## Remaining assumptions
 
 - The namespace reached without going through the module object: a
