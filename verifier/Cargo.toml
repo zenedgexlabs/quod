@@ -5,6 +5,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
+repository.workspace = true
 
 # Trusted base: schemas (quod-model), hashing (quod-hash) and .qmap decoding
 # (quod-graph format only). The decision checks here are re-implemented and

@@ -128,3 +128,7 @@ The toolchain is pinned in `rust-toolchain.toml` (stable, with rustfmt and clipp
 - **I4:** a nondeterministic test is never skipped through dedup.
 - **I5:** changed test code always runs.
 - **I6:** only trusted CI mints certificates.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
