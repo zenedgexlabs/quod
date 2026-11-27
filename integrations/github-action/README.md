@@ -35,26 +35,47 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }          # Quod diffs against the map's commit
       - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: pip install -e . quod-probe  # your deps + the pytest plugin
-      - run: |                            # until releases are published
-          cargo install --locked --git https://github.com/quodhq/quod quod-cli
-      - uses: quodhq/quod/integrations/github-action@main
+        with: { python-version: '3.13' }  # the probe needs Python 3.12+
+      - run: pip install -e .[test]       # your project and its test deps
+      - uses: zenedgexlabs/quod/integrations/github-action@v0.1.0-alpha.2
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           test-command: python -m pytest -q
-          signing-key: ${{ secrets.QUOD_SIGNING_KEY }}
           python: python
+          signing-key: ${{ secrets.QUOD_SIGNING_KEY }}
 ```
 
-Generate the key once with `quod keygen --out quod.seed`. Store the seed as
-the `QUOD_SIGNING_KEY` secret. Publish the printed key ID, so anyone can
-verify your Verdicts.
+The action downloads `quod` and the matching `quod-probe` from the same
+release (`quod-version`, default `latest`) and checks the binary's
+SHA-256. Pin the action to a release tag.
 
-## Vitest
+Generate the signing key once with `quod keygen --out quod.seed`. Store the
+seed as the `QUOD_SIGNING_KEY` secret, and publish the printed key ID, so
+anyone can verify your Verdicts. Without a key (for example on forks), the
+Verdict is advisory.
 
-Set `runner: vitest`, set `probe-js` to the quod-js CLI, and put the Vitest
-arguments in `test-command`.
+## Vitest and Jest
+
+```yaml
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - uses: zenedgexlabs/quod/integrations/github-action@v0.1.0-alpha.2
+        with:
+          mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
+          runner: vitest                  # or jest
+          test-command: ''                # extra arguments for the runner
+```
+
+`quod-js` is installed into its own directory, so your `node_modules` (npm,
+pnpm or yarn) is left as it is.
+
+## What you get per pull request
+
+- The job summary: the Verdict card. In shadow mode it also says how many
+  tests Quod would have skipped.
+- The `quod-verdict` artifact: the signed Verdict, the plan (every test run
+  or skipped, with its reason), the skip list and the test results.
 
 ## Trust
 

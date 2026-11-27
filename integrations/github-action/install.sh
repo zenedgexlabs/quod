@@ -6,11 +6,19 @@
 # QUOD_REPO      repository that publishes the releases (OWNER/NAME)
 # GH_TOKEN       token for `gh` (the workflow's github.token)
 #
-# Writes `bin=<path>` to $GITHUB_OUTPUT. A download is checked against the
+# Writes `tag=<release>` and `bin=<path>` to $GITHUB_OUTPUT. A download is checked against the
 # release's SHA-256 file before use.
 set -euo pipefail
 
 out="${GITHUB_OUTPUT:-/dev/stdout}"
+tag="$QUOD_VERSION"
+if [ "$tag" = latest ]; then
+  tag="$(gh release list -R "$QUOD_REPO" --limit 1 --json tagName -q '.[0].tagName')"
+  [ -n "$tag" ] || { echo "::error::$QUOD_REPO has no releases"; exit 1; }
+fi
+# The probes are installed from the same release.
+echo "tag=$tag" >> "$out"
+
 if command -v "$QUOD_BIN" > /dev/null 2>&1; then
   echo "bin=$(command -v "$QUOD_BIN")" >> "$out"
   exit 0
@@ -26,12 +34,6 @@ case "${RUNNER_OS:-$(uname -s)}-${RUNNER_ARCH:-$(uname -m)}" in
     exit 1
     ;;
 esac
-
-tag="$QUOD_VERSION"
-if [ "$tag" = latest ]; then
-  tag="$(gh release list -R "$QUOD_REPO" --limit 1 --json tagName -q '.[0].tagName')"
-  [ -n "$tag" ] || { echo "::error::$QUOD_REPO has no releases"; exit 1; }
-fi
 
 name="quod-$tag-$target"
 dir="${RUNNER_TEMP:-/tmp}/quod-install"

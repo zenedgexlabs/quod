@@ -13,7 +13,7 @@ inputs:
       certified tests; the Verdict gates the job).
     default: shadow
   runner:
-    description: pytest or vitest.
+    description: pytest, vitest or jest.
     default: pytest
   test-command:
     description: >-
@@ -33,8 +33,17 @@ inputs:
   quod-version:
     description: Release tag to download when quod-bin isn't found, or `latest`.
     default: latest
+  install-probe:
+    description: >-
+      Install the probe from the same release as quod: the quod-probe wheel
+      into `python` (pytest), or the quod-js package into a separate
+      directory (vitest, jest; the project's node_modules is left alone).
+      Set to false if your environment already has it.
+    default: 'true'
   probe-js:
-    description: Path to the quod-js CLI (probes/js/src/cli.mjs), for vitest.
+    description: >-
+      Path to the quod-js CLI (src/cli.mjs), for vitest and jest. Empty: the
+      one install-probe installed.
     default: ''
   python:
     description: >-
@@ -78,6 +87,37 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: bash "$GITHUB_ACTION_PATH/install.sh"
 
+    - name: Install the probe
+      id: probe
+      shell: bash
+      env:
+        INSTALL: ${{ inputs.install-probe }}
+        RUNNER: ${{ inputs.runner }}
+        PROBE_JS: ${{ inputs.probe-js }}
+        PY: ${{ inputs.python }}
+        TAG: ${{ steps.install.outputs.tag }}
+        QUOD_REPO: ${{ github.action_repository || github.repository }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/quod-probe"; mkdir -p "$dir"
+        js="$PROBE_JS"
+        if [ "$INSTALL" = true ]; then
+          if [ "$RUNNER" = pytest ]; then
+            gh release download "$TAG" -R "$QUOD_REPO" -p 'quod_probe-*.whl' -D "$dir" --clobber
+            "${PY:-python}" -m pip install --quiet "$dir"/quod_probe-*.whl
+          elif [ -z "$js" ]; then
+            gh release download "$TAG" -R "$QUOD_REPO" -p 'quod-js-*.tgz' -D "$dir" --clobber
+            npm install --prefix "$dir/js" --no-audit --no-fund --silent "$dir"/quod-js-*.tgz
+            js="$dir/js/node_modules/quod-js/src/cli.mjs"
+          fi
+        fi
+        if [ "$RUNNER" != pytest ] && [ ! -f "$js" ]; then
+          echo "::error::no quod-js CLI: set probe-js, or install-probe: true"
+          exit 1
+        fi
+        echo "js=$js" >> "$GITHUB_OUTPUT"
+
     # ---- record (default branch) ------------------------------------------
     - name: Record footprints
       id: record
@@ -87,7 +127,7 @@ runs:
         QUOD: ${{ steps.install.outputs.bin }}
         RUNNER: ${{ inputs.runner }}
         CMD: ${{ inputs.test-command }}
-        PROBE_JS: ${{ inputs.probe-js }}
+        PROBE_JS: ${{ steps.probe.outputs.js }}
         MAP: ${{ inputs.map-path }}
       run: |
         set -euo pipefail
@@ -243,7 +283,7 @@ runs:
         MODE: ${{ inputs.mode }}
         RUNNER: ${{ inputs.runner }}
         CMD: ${{ inputs.test-command }}
-        PROBE_JS: ${{ inputs.probe-js }}
+        PROBE_JS: ${{ steps.probe.outputs.js }}
         READY: ${{ steps.plan.outputs.ready }}
       run: |
         set -uo pipefail
@@ -251,8 +291,8 @@ runs:
         skip="$dir/skip.txt"
         # Shadow mode runs everything: the skip list is only reported.
         [ "$MODE" = enforce ] && [ "$READY" = true ] || { skip="$dir/empty.txt"; : > "$skip"; }
-        if [ "$RUNNER" = vitest ]; then
-          node "$PROBE_JS" run --skip "$skip" --results "$dir/results.jsonl" -- $CMD
+        if [ "$RUNNER" = vitest ] || [ "$RUNNER" = jest ]; then
+          node "$PROBE_JS" run --runner "$RUNNER" --skip "$skip" --results "$dir/results.jsonl" -- $CMD
         else
           extra=(--quod-results "$dir/results.jsonl")
           [ -s "$skip" ] && extra+=(--quod-skip "$skip")
@@ -305,7 +345,13 @@ runs:
       uses: actions/upload-artifact@v7
       with:
         name: quod-verdict
-        path: ${{ runner.temp }}/quod/verdict.json
+        # The Verdict, and what it was computed from: the plan (every run
+        # and skip with its reason), the skip list and the test results.
+        path: |
+          ${{ runner.temp }}/quod/verdict.json
+          ${{ runner.temp }}/quod/plan.json
+          ${{ runner.temp }}/quod/skip.txt
+          ${{ runner.temp }}/quod/results.jsonl
         if-no-files-found: ignore
 
     # ---- outcome -------------------------------------------------------------
