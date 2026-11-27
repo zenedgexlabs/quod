@@ -10,7 +10,9 @@ first-parent commits C:
 2. `tests_for` is called over MCP (`quod mcp`, stdio), as an agent would.
 3. The `run` command it returns is executed as-is; it writes its own results file.
 4. The full suite runs on the same tree, through the same command with an
-   empty skip file (same costs, no recording): the ground truth.
+   empty skip file (same costs, no recording): the ground truth. An
+   untimed warm-up run comes first, so neither timed run pays for cold
+   caches.
 
 Escape: a test that fails in the full run, fails alone every time, and
 the MCP run did not execute. The gate is 0 escapes. Precision: the
@@ -129,13 +131,23 @@ def step(ws: R.Workspace, map_path: Path, commit: str, k: int, rng: random.Rando
                 desc = R.apply_mutant(path, rng.choice(sites))
                 break
     plan = mcp_tests_for(ws, map_path)
-    # A mutant can make the suite loop forever: such a step is dropped.
-    try:
-        mcp_out, mcp_time, mcp_code = run_returned(ws, plan, f"e8-{k}", timeout)
-        full, full_time = full_run(ws, plan, f"e8-{k}-full", timeout)
-    except R.SuiteTimeout:
-        R.log(f"  step {k} dropped: the suite hangs under {desc or 'this change'}")
-        return None
+    # A mutant can make the suite loop forever: such a step is dropped. A
+    # timeout is retried once first: the clock also runs while the machine
+    # sleeps, which isn't a hang.
+    for attempt in (1, 2):
+        try:
+            # Untimed warm-up: the first run after the tree changes pays for
+            # the runner's caches (Jest transforms, bytecode). Without it,
+            # whichever timed run goes first is slower.
+            full_run(ws, plan, f"e8-{k}-warm", timeout)
+            mcp_out, mcp_time, mcp_code = run_returned(ws, plan, f"e8-{k}", timeout)
+            full, full_time = full_run(ws, plan, f"e8-{k}-full", timeout)
+            break
+        except R.SuiteTimeout:
+            if attempt == 2:
+                R.log(f"  step {k} dropped: the suite hangs under {desc or 'this change'}")
+                return None
+            R.log(f"  step {k}: timed out, retrying once")
     failing_full = R.failing(full) - ws.flaky
     not_run = {n for n in failing_full if n not in mcp_out}
     escapes = sorted(n for n in not_run if R.fails_alone(ws, n))
