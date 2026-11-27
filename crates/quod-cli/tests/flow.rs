@@ -178,6 +178,12 @@ fn function_edit_runs_only_its_test_and_skips_are_verified() {
         res.skip_names
             .contains(&"tests/test_http.py::test_get".to_string())
     );
+    // Whole files the runner needn't collect (path mode too): only the one
+    // whose every recorded test is skipped.
+    assert_eq!(
+        res.skip_header,
+        vec!["# quod-skip-file tests/test_http.py".to_string()]
+    );
     verify_ok(&f, &res);
 }
 
@@ -446,6 +452,10 @@ fn environment_mode_replaces_ci_rules_and_binds_the_environment() {
             "# quod-environment envdigest".to_string(),
             "# quod-invocation invdigest".to_string(),
             format!("# quod-env API_URL {H1}"),
+            // Every recorded test in these files is skipped; test_misc.py
+            // still runs test_broken.
+            "# quod-skip-file tests/test_http.py".to_string(),
+            "# quod-skip-file tests/test_pay.py".to_string(),
         ]
     );
     let graph = FootprintGraph::decode(&fs::read(&f.map).unwrap())

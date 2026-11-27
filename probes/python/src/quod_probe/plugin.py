@@ -7,7 +7,9 @@ Options:
     Under pytest-xdist each worker writes ``PATH.<worker id>``.
 ``--quod-skip PATH``
     Deselect the tests named in PATH (one test name per line), as produced
-    by ``quod select``. Every test not listed runs. Header lines
+    by ``quod select``. Every test not listed runs. Files listed as
+    ``# quod-skip-file PATH`` (every recorded test in them is skipped) aren't
+    collected at all. Header lines
     (``# quod-environment D``, ``# quod-invocation D``,
     ``# quod-env NAME H``) are checked against this process first. On
     any mismatch nothing is deselected (ADR 012).
@@ -341,27 +343,66 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
 # Selection ----------------------------------------------------------------
 
 
-def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: list[pytest.Item]) -> None:
+_NO_PLAN = object()
+
+
+def _skip_plan(config: pytest.Config) -> tuple[set[str], set[str], str] | None:
+    """The skip file's test names and whole test files, once its conditions
+    are confirmed in this process; ``None`` (skip nothing) otherwise."""
+    cached = getattr(config, "_quod_skip_plan", _NO_PLAN)
+    if cached is not _NO_PLAN:
+        return cached
+    plan = None
     path = config.getoption("quod_skip")
-    if not path:
-        return
-    skip: set[str] = set()
-    checks: list[tuple[str, ...]] = []
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("# quod-"):
-                checks.append(tuple(line[len("# quod-"):].split()))
-            elif line and not line.startswith("#"):
-                skip.add(line)
+    if path:
+        names: set[str] = set()
+        files: set[str] = set()
+        checks: list[tuple[str, ...]] = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("# quod-skip-file "):
+                    files.add(line[len("# quod-skip-file "):])
+                elif line.startswith("# quod-"):
+                    checks.append(tuple(line[len("# quod-"):].split()))
+                elif line and not line.startswith("#"):
+                    names.add(line)
+        try:
+            problem = _check_skip_file(config, checks)
+        except Exception as e:  # noqa: BLE001 - can't confirm the conditions: don't skip
+            problem = f"could not check the skip file ({type(e).__name__}: {e})"
+        if problem:
+            sys.stderr.write(f"quod: not skipping any tests: {problem}\n")
+        else:
+            root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
+            plan = (names, files, root)
+            config._quod_skip_files = ({f.rsplit("/", 1)[-1] for f in files}, os.path.realpath(root))
+    config._quod_skip_plan = plan
+    return plan
+
+
+def pytest_ignore_collect(collection_path, config: pytest.Config):
+    """Test files whose every recorded test is skipped aren't collected at
+    all: importing them is the slow part of a small run."""
+    plan = _skip_plan(config)
+    if not plan or not plan[1]:
+        return None
+    basenames, real_root = config._quod_skip_files
+    if collection_path.name not in basenames:
+        return None
     try:
-        problem = _check_skip_file(config, checks)
-    except Exception as e:  # noqa: BLE001 - can't confirm the conditions: don't skip
-        problem = f"could not check the skip file ({type(e).__name__}: {e})"
-    if problem:
-        sys.stderr.write(f"quod: not skipping any tests: {problem}\n")
+        # The same spelling as test names (``item_name``).
+        rel = os.path.relpath(os.path.realpath(str(collection_path)), real_root).replace(os.sep, "/")
+    except ValueError:  # another drive
+        return None
+    return True if rel in plan[1] else None
+
+
+def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: list[pytest.Item]) -> None:
+    plan = _skip_plan(config)
+    if not plan:
         return
-    root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
+    skip, _, root = plan
     keep, drop = [], []
     for item in items:
         (drop if item_name(item, root)[0] in skip else keep).append(item)

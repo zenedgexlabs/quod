@@ -296,3 +296,29 @@ describe('Vitest without isolation (isolate: false)', () => {
     }
   });
 });
+
+describe('Vitest skip mode with whole files', () => {
+  const FIX = path.join(HERE, 'fixtures', 'skipfiles');
+  const run = (skipText) => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-skipfiles-'));
+    const skip = path.join(tmp, 'skip.txt');
+    fs.writeFileSync(skip, skipText);
+    const res = path.join(tmp, 'res.jsonl');
+    const status = main(['run', '--skip', skip, '--results', res, '--root', FIX]);
+    const ran = fs.existsSync(res)
+      ? fs.readFileSync(res, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l).name)
+      : [];
+    return { status, ran };
+  };
+
+  test('a `# quod-skip-file` file is not collected', () => {
+    // b.test.ts throws when imported: collecting it would fail the run.
+    const { status, ran } = run('# quod-skip-file test/b.test.ts\ntest/b.test.ts::b\n');
+    assert.equal(status, 0);
+    assert.deepEqual(ran, ['test/a.test.ts::a']);
+  });
+
+  test('a test named alone is still collected (only whole files are excluded)', () => {
+    assert.notEqual(run('test/b.test.ts::b\n').status, 0);
+  });
+});
