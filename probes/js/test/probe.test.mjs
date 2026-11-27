@@ -75,8 +75,14 @@ describe('recorded Vitest run', () => {
     assert.ok(results.every((r) => r.type === 'result' && ['passed', 'failed', 'skipped'].includes(r.outcome)));
   });
 
+  test('isolated test files are not attributed modules from other files', () => {
+    // Guards isolation detection (`isolate: true` is Vitest's default): if it
+    // failed, every test would get every module the worker evaluated.
+    assert.deepEqual(tests['test/env.test.ts::reads env'].files, ['test/env.test.ts']);
+  });
+
   test('header and names', () => {
-    assert.equal(header.probe, 'js-probe/0.1.0');
+    assert.equal(header.probe, 'js-probe/0.2.0');
     assert.equal(header.ecosystem, 'npm');
     assert.deepEqual(Object.keys(tests).sort(), [
       'test/calc.test.ts::calc > ',
@@ -266,5 +272,27 @@ describe('recorded Jest run', () => {
     // Certified skips aren't results; everything else ran and passed.
     assert.deepEqual(ran.map((r) => r.name).sort(), ['test/calc.test.js::calc > add', 'test/calc.test.js::reads env']);
     assert.ok(ran.every((r) => r.outcome === 'passed'));
+  });
+});
+
+describe('Vitest without isolation (isolate: false)', () => {
+  test('a module evaluated by an earlier test file is attributed to later ones (ADR 019)', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-shared-'));
+    const out = path.join(tmp, 'cap.jsonl');
+    const status = main(['record', '--out', out, '--root', path.join(HERE, 'fixtures', 'shared')]);
+    assert.equal(status, 0);
+    const tests = Object.fromEntries(
+      fs
+        .readFileSync(out, 'utf8')
+        .trim()
+        .split('\n')
+        .map((l) => JSON.parse(l))
+        .filter((r) => r.type === 'test')
+        .map((r) => [r.name, r]),
+    );
+    // Both only read `CONST`; `src/consts.ts` ran once, in the first file's window.
+    for (const name of ['test/a.test.ts::a', 'test/b.test.ts::b']) {
+      assert.ok(tests[name].files.includes('src/consts.ts'), `${name}: ${tests[name].files}`);
+    }
   });
 });

@@ -62,7 +62,9 @@ function moduleFor(abs) {
 }
 
 if (RECORD_DIR) {
-  const rec = await createRecorder({ root: ROOT, recordDir: RECORD_DIR, moduleFor }).module();
+  // Unknown isolation counts as shared (conservative).
+  const sharedModules = globalThis.__vitest_worker__?.config?.isolate !== true;
+  const rec = await createRecorder({ root: ROOT, recordDir: RECORD_DIR, moduleFor, sharedModules }).module();
 
   // vi.stubEnv reads the old value only to restore it later.
   try {

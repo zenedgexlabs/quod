@@ -14,7 +14,11 @@
 // - module evaluation, `beforeAll` and `afterAll` (outside every window) are
 //   attributed to every test of the module;
 // - recording runs one test at a time; tests that still overlap are flagged
-//   `untraced`.
+//   `untraced`;
+// - when test files share modules (Vitest `isolate: false`), a module's top
+//   level runs once per worker, in the first importer's window. Every later
+//   test module of the worker is then attributed every module evaluated in
+//   the worker so far (ADR 019). Isolated runs re-evaluate per test file.
 
 import { createHash } from 'node:crypto';
 import inspector from 'node:inspector';
@@ -193,8 +197,17 @@ function trackEnv(sc, proc) {
  * - `moduleFor(abs)`: optional `{ code, map }` from the runner's module
  *   system (Vite); otherwise inline source maps are used.
  * - `store`: an object to keep the inspector session on (one per worker).
+ * - `sharedModules`: test files share one module cache (no per-file
+ *   isolation), so module evaluation is attributed worker-wide.
  */
-export function createRecorder({ root, recordDir, proc = process, moduleFor = () => null, store = globalThis }) {
+export function createRecorder({
+  root,
+  recordDir,
+  proc = process,
+  moduleFor = () => null,
+  store = globalThis,
+  sharedModules = false,
+}) {
   const rel = (abs) => slash(path.relative(root, abs));
   let sc = null;
   let markWritten = () => {};
@@ -221,7 +234,15 @@ export function createRecorder({ root, recordDir, proc = process, moduleFor = ()
           if (e) throw e;
         });
       }
-      sc = store.__quod = { s: { post }, sources: new Map(), packages: new Map(), lineCounts: new Map(), env: new Map() };
+      sc = store.__quod = {
+        s: { post },
+        sources: new Map(),
+        packages: new Map(),
+        lineCounts: new Map(),
+        env: new Map(),
+        // Files whose module-level code ran in this worker.
+        evaluated: new Set(),
+      };
     }
     if (!proc.__quodEnv) {
       proc.__quodEnv = trackEnv(sc, proc);
@@ -267,6 +288,7 @@ export function createRecorder({ root, recordDir, proc = process, moduleFor = ()
           sc.lineCounts.set(file, n);
         }
         out.whole.set(file, sc.lineCounts.get(file));
+        sc.evaluated.add(file);
       };
       let source = sc.sources.get(script.scriptId);
       if (source === undefined) {
@@ -315,7 +337,10 @@ export function createRecorder({ root, recordDir, proc = process, moduleFor = ()
         whole();
         continue;
       }
-      if (res.module) out.files.add(file);
+      if (res.module) {
+        out.files.add(file);
+        sc.evaluated.add(file);
+      }
       if (res.starts.length) {
         const set = out.positions.get(file) ?? new Set();
         for (const [l, c] of res.starts) set.add(`${l}:${c}`);
@@ -371,6 +396,7 @@ export function createRecorder({ root, recordDir, proc = process, moduleFor = ()
       },
       async finish() {
         merge(shared, await take());
+        if (sharedModules) for (const f of sc.evaluated) shared.files.add(f);
         const record = {
           module: moduleFile ? rel(moduleFile) : null,
           concurrent,

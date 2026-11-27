@@ -71,7 +71,12 @@ Two layers, both conservative:
     handed over from elsewhere) are covered only by layer 1;
   - modules loaded by direct `exec_module` (pytest's `importlib` import
     mode) record their own file but no closure.
-- The JS probe needs the same analysis. ESM modules are evaluated once
-  per worker; Vitest isolates per test file, but tests within one file
-  share one evaluation. Layer 1 covers functions; reading an exported
-  binding without calling anything is the remaining gap.
+- **JS probe (0.2.0).** Module evaluation is attributed to every test of
+  the test file it happens in, and Jest and Vitest's default
+  (`isolate: true`) re-evaluate modules for each test file, so the gap is
+  only Vitest with `isolate: false`. There the worker keeps every file
+  whose module-level code ran, and each test file is attributed all of
+  them (a sound over-approximation). Isolation is read from the worker's
+  resolved config; unknown counts as shared. Reproduced with a fixture
+  (`test/fixtures/shared`): before, the second test file read a constant
+  without recording its module.
