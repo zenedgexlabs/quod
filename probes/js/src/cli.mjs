@@ -84,7 +84,7 @@ export function wrapperSource({ root, userConfig, setup, reporter, cacheDir }) {
     ? `import userExport from ${JSON.stringify(pathToFileURL(userConfig).href)};`
     : 'const userExport = {};';
   return `${imp}
-import { mergeConfig } from 'vitest/config';
+import { configDefaults, mergeConfig } from 'vitest/config';
 import { wrapProjects } from ${JSON.stringify(pathToFileURL(path.join(HERE, 'projects.mjs')).href)};
 
 export default async (env) => {
@@ -108,6 +108,13 @@ export default async (env) => {
       setup: ${JSON.stringify(setup)},
       cacheDir: ${JSON.stringify(cacheDir ?? root)},
     });
+  }
+  // Test files whose every recorded test is skipped aren't collected at all.
+  const skipFiles = JSON.parse(process.env.QUOD_SKIP_FILES || '[]');
+  if (skipFiles.length && !Array.isArray(config.test.projects)) {
+    config.test.exclude = [...(config.test.exclude ?? configDefaults.exclude), ...skipFiles];
+    // Every file excluded (nothing to run) is a pass, as when every test is skipped by name.
+    config.test.passWithNoTests = true;
   }
   const reporters = [].concat(config.test.reporters ?? ['default']);
   config.test.reporters = [...reporters, ${JSON.stringify(reporter)}];
@@ -175,8 +182,18 @@ module.exports = async () => {
   const rootDir = config.rootDir ?? ${JSON.stringify(root)};
   // The Quod environment extends the project's own.
   process.env.QUOD_JEST_BASE_ENV = config.testEnvironment ?? 'node';
+  // Test files whose every recorded test is skipped aren't collected at all.
+  const skip = JSON.parse(process.env.QUOD_SKIP_PATTERNS || '[]');
+  const ignore = skip.length && !config.projects
+    ? {
+        testPathIgnorePatterns: [...(config.testPathIgnorePatterns ?? ['/node_modules/']), ...skip],
+        // Every file excluded (nothing to run) is a pass, as when every test is skipped by name.
+        passWithNoTests: true,
+      }
+    : {};
   return {
     ...config,
+    ...ignore,
     rootDir,
     testEnvironment: ${JSON.stringify(environment)},
     setupFilesAfterEnv: [${JSON.stringify(setup)}, ...(config.setupFilesAfterEnv ?? [])],
@@ -217,6 +234,8 @@ export function checkSkipFile(file, { root, dir, args, runner }) {
       if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
     } else if (kind === 'invocation' && rest.length === 1) {
       if (digest(invocation(args, { runner, root, dir })) !== rest[0]) return 'the test runner invocation differs from the recorded one';
+    } else if (kind === 'skip-file') {
+      // Not a condition: a file the runner needn't collect (skipFiles).
     } else if (kind === 'env' && rest.length === 2) {
       const [name, expected] = rest;
       const actual = name === '*' ? environHash() : envValueHash(process.env[name]);
@@ -226,6 +245,42 @@ export function checkSkipFile(file, { root, dir, args, runner }) {
     }
   }
   return null;
+}
+
+/**
+ * `# quod-skip-file PATH` lines (repository-relative) as exclude globs
+ * relative to the runner's directory. Files outside it are left alone.
+ */
+export function skipFiles(file, { root, dir }) {
+  const out = [];
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.startsWith('# quod-skip-file ')) continue;
+    const r = path.relative(dir, path.join(root, line.slice('# quod-skip-file '.length).trim()));
+    if (!r || r.startsWith('..') || path.isAbsolute(r)) continue;
+    // Escape glob syntax: the path is matched literally.
+    out.push(r.split(path.sep).join('/').replace(/[\\*?[\]{}()!+@]/g, '\\$&'));
+  }
+  return out;
+}
+
+/**
+ * `# quod-skip-file PATH` lines as Jest `testPathIgnorePatterns`: regexes
+ * matching exactly that absolute path, with either path separator.
+ */
+export function jestIgnorePatterns(file, { root }) {
+  const meta = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Windows paths are case-insensitive (the drive letter's case varies).
+  const esc =
+    process.platform === 'win32'
+      ? (s) => meta(s).replace(/[a-zA-Z]/g, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`)
+      : meta;
+  const out = [];
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.startsWith('# quod-skip-file ')) continue;
+    const abs = path.resolve(root, line.slice('# quod-skip-file '.length).trim());
+    out.push(`^${abs.split(/[\\/]/).map(esc).join('[\\\\/]')}$`);
+  }
+  return out;
 }
 
 export function main(argv) {
@@ -301,7 +356,11 @@ export function main(argv) {
       problem = `could not check the skip file (${e?.message ?? e})`;
     }
     if (problem) process.stderr.write(`quod: not skipping any tests: ${problem}\n`);
-    else env.QUOD_SKIP_FILE = path.resolve(opts.skip);
+    else {
+      env.QUOD_SKIP_FILE = path.resolve(opts.skip);
+      if (jest) env.QUOD_SKIP_PATTERNS = JSON.stringify(jestIgnorePatterns(opts.skip, { root: opts.root }));
+      else env.QUOD_SKIP_FILES = JSON.stringify(skipFiles(opts.skip, { root: opts.root, dir: opts.dir }));
+    }
   }
   const runArgs = jest
     ? [jestBin(opts.dir), '--config', wrapper, ...(opts.cmd === 'record' ? ['--maxConcurrency=1'] : []), ...opts.passthrough]

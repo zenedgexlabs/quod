@@ -520,3 +520,26 @@ def test_cached_imports_carry_the_import_closure(tmp_path):
     for t in ("test_a", "test_b", "test_c", "test_d", "test_f"):
         assert {"lib/consts.py", "lib/helper.py"} <= tests[t], (t, tests[t])
     assert not any(f.startswith("lib/") for f in tests["test_e"]), tests["test_e"]
+
+
+def test_skip_file_lists_whole_files_that_are_not_collected(tmp_path):
+    """``# quod-skip-file`` files aren't imported at all, but only once the
+    skip file's conditions hold; otherwise everything is collected."""
+    d = tmp_path
+    (d / "tests").mkdir()
+    (d / "tests" / "test_a.py").write_text("def test_a():\n    assert True\n")
+    # Importing this file fails: collecting it would be a collection error.
+    (d / "tests" / "test_b.py").write_text("raise RuntimeError('collected')\n\ndef test_b():\n    pass\n")
+    skip = d / "skip.txt"
+    skip.write_text("# quod-skip-file tests/test_b.py\ntests/test_b.py::test_b\n")
+    res = _pytest(d, f"--quod-skip={skip}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "1 passed" in res.stdout
+
+    # A condition that doesn't hold: nothing is skipped, so test_b.py is
+    # collected (and fails to import).
+    skip.write_text("# quod-env QUOD_TEST_UNSET_VAR 00\n# quod-skip-file tests/test_b.py\ntests/test_b.py::test_b\n")
+    res = _pytest(d, f"--quod-skip={skip}", "tests")
+    assert res.returncode != 0
+    assert "not skipping any tests" in res.stderr
+    assert "collected" in res.stdout + res.stderr

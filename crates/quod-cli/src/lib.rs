@@ -493,6 +493,29 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
     Ok(st.b.build())
 }
 
+/// Test files with at least one recorded test, every one of them skipped.
+/// The runner needn't collect them: collecting a test file (its module
+/// body, data it reads, parametrisation) is attributed to every test it
+/// defines, so a file whose tests are all certified still defines the same
+/// tests. New test files aren't in the map and are never listed.
+pub fn skip_files(graph: &FootprintGraph, selection: &Selection) -> Vec<String> {
+    let skipped: BTreeSet<u32> = selection.skipped.iter().map(|(t, _)| t.0).collect();
+    let mut files: BTreeMap<&str, bool> = BTreeMap::new();
+    for i in 0..graph.test_count() as u32 {
+        let t = quod_graph::TestIdx(i);
+        let Some((file, _)) = graph.test_name(t).split_once("::") else {
+            continue;
+        };
+        let all = files.entry(file).or_insert(true);
+        *all &= skipped.contains(&i);
+    }
+    files
+        .into_iter()
+        .filter(|(_, all)| *all)
+        .map(|(f, _)| f.to_owned())
+        .collect()
+}
+
 /// Options for [`run_select`].
 #[derive(Clone, Debug, Default)]
 pub struct SelectOptions {
@@ -676,8 +699,9 @@ pub struct SelectResult {
     pub certificates: Vec<Certificate>,
     /// Names of skipped tests (the `--quod-skip` file content).
     pub skip_names: Vec<String>,
-    /// Header lines for the skip file, checked by the plugin (environment
-    /// mode only).
+    /// Header lines for the skip file: conditions the plugin checks
+    /// (environment mode only), then `# quod-skip-file PATH` for test files
+    /// the runner needn't collect at all.
     pub skip_header: Vec<String>,
     /// The report.
     pub report: Report,
@@ -844,6 +868,9 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         for (name, h) in vars {
             skip_header.push(format!("# quod-env {name} {}", h.to_hex()));
         }
+    }
+    for f in skip_files(&graph, &selection) {
+        skip_header.push(format!("# quod-skip-file {f}"));
     }
     let skipped_ms = selection
         .skipped

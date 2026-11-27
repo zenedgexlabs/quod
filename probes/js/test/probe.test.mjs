@@ -273,6 +273,25 @@ describe('recorded Jest run', () => {
     assert.deepEqual(ran.map((r) => r.name).sort(), ['test/calc.test.js::calc > add', 'test/calc.test.js::reads env']);
     assert.ok(ran.every((r) => r.outcome === 'passed'));
   });
+
+  test('skip mode excludes whole files (testPathIgnorePatterns)', () => {
+    const skip = path.join(tmp, 'skip-files.txt');
+    fs.writeFileSync(
+      skip,
+      [
+        // Only `add` is named: if the file were collected, `mul` and
+        // `reads env` would run and appear in the results.
+        '# quod-skip-file test/calc.test.js',
+        'test/calc.test.js::calc > add',
+        '',
+      ].join('\n'),
+    );
+    const res = path.join(tmp, 'res-skip-files.jsonl');
+    // The only test file is excluded: nothing runs, and that is a pass.
+    assert.equal(main(['run', '--runner', 'jest', '--skip', skip, '--results', res, '--root', JEST_FIXTURE]), 0);
+    const ran = fs.existsSync(res) ? fs.readFileSync(res, 'utf8').trim() : '';
+    assert.equal(ran, '');
+  });
 });
 
 describe('Vitest without isolation (isolate: false)', () => {
@@ -294,5 +313,31 @@ describe('Vitest without isolation (isolate: false)', () => {
     for (const name of ['test/a.test.ts::a', 'test/b.test.ts::b']) {
       assert.ok(tests[name].files.includes('src/consts.ts'), `${name}: ${tests[name].files}`);
     }
+  });
+});
+
+describe('Vitest skip mode with whole files', () => {
+  const FIX = path.join(HERE, 'fixtures', 'skipfiles');
+  const run = (skipText) => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-skipfiles-'));
+    const skip = path.join(tmp, 'skip.txt');
+    fs.writeFileSync(skip, skipText);
+    const res = path.join(tmp, 'res.jsonl');
+    const status = main(['run', '--skip', skip, '--results', res, '--root', FIX]);
+    const ran = fs.existsSync(res)
+      ? fs.readFileSync(res, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l).name)
+      : [];
+    return { status, ran };
+  };
+
+  test('a `# quod-skip-file` file is not collected', () => {
+    // b.test.ts throws when imported: collecting it would fail the run.
+    const { status, ran } = run('# quod-skip-file test/b.test.ts\ntest/b.test.ts::b\n');
+    assert.equal(status, 0);
+    assert.deepEqual(ran, ['test/a.test.ts::a']);
+  });
+
+  test('a test named alone is still collected (only whole files are excluded)', () => {
+    assert.notEqual(run('test/b.test.ts::b\n').status, 0);
   });
 });
