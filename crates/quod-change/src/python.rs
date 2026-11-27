@@ -200,11 +200,30 @@ fn emit(
     out.push_str(") ");
 }
 
-/// True if evaluating `node` can't run code or raise: literals, plain names,
-/// and tuple/list/set/dict displays of those. Attribute access, calls,
-/// subscripts and operators on non-literals can (descriptors, `__getattr__`,
-/// operator overloads), so they aren't.
-fn side_effect_free(node: Node<'_>) -> bool {
+/// Builtin names: looking one up can't raise. Any other plain name can
+/// (`NameError` when it isn't bound yet, which fails the module's import).
+const BUILTIN_NAMES: &[&str] = &[
+    "ArithmeticError", "AssertionError", "AttributeError", "BaseException", "BytesWarning",
+    "DeprecationWarning", "Ellipsis", "EOFError", "Exception", "FutureWarning",
+    "ImportError", "IndexError", "KeyError", "LookupError", "MemoryError", "NotImplemented",
+    "NotImplementedError", "OSError", "OverflowError", "RecursionError", "RuntimeError",
+    "RuntimeWarning", "StopAsyncIteration", "StopIteration", "SyntaxError", "SystemError",
+    "TimeoutError", "TypeError", "UnicodeError", "UserWarning", "ValueError",
+    "Warning", "ZeroDivisionError", "abs", "all", "any", "ascii", "bin", "bool", "bytearray",
+    "bytes", "callable", "chr", "classmethod", "complex", "dict", "dir", "divmod", "enumerate",
+    "filter", "float", "format", "frozenset", "getattr", "hasattr", "hash", "hex", "id",
+    "int", "isinstance", "issubclass", "iter", "len", "list", "map", "max", "memoryview",
+    "min", "next", "object", "oct", "open", "ord", "pow", "print", "property", "range",
+    "repr", "reversed", "round", "set", "setattr", "slice", "sorted", "staticmethod", "str",
+    "sum", "super", "tuple", "type", "vars", "zip",
+];
+
+/// True if evaluating `node` can't run code or raise: literals, builtin
+/// names, and tuple/list/set/dict displays of those. Other names can raise
+/// `NameError`. Attribute access, calls, subscripts and operators on
+/// non-literals can run code (descriptors, `__getattr__`, operator
+/// overloads), so they aren't.
+fn side_effect_free(node: Node<'_>, src: &[u8]) -> bool {
     fn named(n: Node<'_>) -> Vec<Node<'_>> {
         let mut c = n.walk();
         n.named_children(&mut c)
@@ -212,16 +231,19 @@ fn side_effect_free(node: Node<'_>) -> bool {
             .collect()
     }
     match node.kind() {
-        "integer" | "float" | "true" | "false" | "none" | "ellipsis" | "identifier" => true,
+        "integer" | "float" | "true" | "false" | "none" | "ellipsis" => true,
+        "identifier" => {
+            BUILTIN_NAMES.contains(&String::from_utf8_lossy(&src[node.byte_range()]).as_ref())
+        }
         // Plain strings only: an f-string's interpolations are expressions.
         "string" => named(node).iter().all(|c| c.kind() != "interpolation"),
-        "concatenated_string" => named(node).into_iter().all(side_effect_free),
-        "parenthesized_expression" => named(node).into_iter().all(side_effect_free),
+        "concatenated_string" => named(node).into_iter().all(|c| side_effect_free(c, src)),
+        "parenthesized_expression" => named(node).into_iter().all(|c| side_effect_free(c, src)),
         "unary_operator" => node
             .child_by_field_name("argument")
             .is_some_and(|a| matches!(a.kind(), "integer" | "float")),
-        "tuple" | "list" | "set" | "dictionary" => named(node).into_iter().all(side_effect_free),
-        "pair" => named(node).into_iter().all(side_effect_free),
+        "tuple" | "list" | "set" | "dictionary" => named(node).into_iter().all(|c| side_effect_free(c, src)),
+        "pair" => named(node).into_iter().all(|c| side_effect_free(c, src)),
         _ => false,
     }
 }
@@ -252,7 +274,7 @@ fn effective_function_header(
         let mut pc = params.walk();
         for p in params.named_children(&mut pc) {
             if let Some(v) = p.child_by_field_name("value") {
-                if !side_effect_free(v) {
+                if !side_effect_free(v, cx.src) {
                     out.push_str("(default ");
                     emit(v, cx, scope, &mut out, entities);
                     out.push_str(") ");
@@ -543,7 +565,7 @@ mod tests {
             old.replace("b=None", "bb=None"),
             old.replace("a=1", "a=-1"),
             old.replace("b=None", "b={'k': (1, 'x')}"),
-            old.replace("b=None", "b=SENTINEL"),
+            old.replace("b=None", "b=int"),
         ] {
             let split = ds(old, &new);
             assert!(!split.module_changed, "{new}");
@@ -586,6 +608,14 @@ mod tests {
             "def f(a=f\"{x}\"):\n    pass\n",
             "def f(a=1 + x):\n    pass\n",
             "def f(a=lambda: 1):\n    pass\n",
+            // A plain name can be unbound at definition time: NameError
+            // fails the module's import, which every importer observes.
+            "def f(a=SENTINEL):
+    pass
+",
+            "def f(a=(1, SENTINEL)):
+    pass
+",
             "async def f(a=1):\n    pass\n",
             "def g(a=1):\n    pass\n",
         ] {

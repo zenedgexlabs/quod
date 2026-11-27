@@ -97,3 +97,15 @@ observes.
 - New tests: `quod-change` split rules (`split_headers_*`), probe introspection
   capture (`test_introspection_counts_as_use`), and the CLI capability gate
   (`header_split_requires_the_introspection_capability`).
+
+## Addendum: plain names can raise (2026-11-27)
+
+The table above counted a plain name as a default free of side effects.
+Looking one up can raise `NameError`: `def f(b=SENTINEL)` with `SENTINEL`
+unbound when the `def` runs (a typo, or a name bound later in the module)
+fails the module's import. Every importer observes that failure, but the
+change was attributed to `f` alone, so importers that never call `f`
+were skipped. Only builtin names (`int`, `object`, ...) are now free of
+side effects; any other name stays in the enclosing scope's stream. That
+costs precision only when such a default changes: an unchanged `=SENTINEL`
+hashes the same on both sides.
