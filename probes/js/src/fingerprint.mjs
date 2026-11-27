@@ -135,20 +135,22 @@ export function installedPackages(dirs) {
     walkModules(path.join(pkgDir, 'node_modules'));
   };
   const walkModules = (nm) => {
-    let real;
-    try {
-      real = fs.realpathSync(nm);
-    } catch {
-      return;
-    }
-    if (seen.has(real)) return;
-    seen.add(real);
+    // Most packages have no nested node_modules: one failed readdir, no
+    // realpath (Node's JS realpath stats every path component).
     let entries;
     try {
       entries = fs.readdirSync(nm, { withFileTypes: true });
     } catch {
       return;
     }
+    let real;
+    try {
+      real = fs.realpathSync.native(nm);
+    } catch {
+      return;
+    }
+    if (seen.has(real)) return;
+    seen.add(real);
     for (const e of entries) {
       if (e.isSymbolicLink()) continue;
       const p = path.join(nm, e.name);

@@ -316,8 +316,9 @@ describe('Vitest without isolation (isolate: false)', () => {
   });
 });
 
-describe('Vitest skip mode with whole files', () => {
-  const FIX = path.join(HERE, 'fixtures', 'skipfiles');
+for (const fixture of ['skipfiles', 'skipfiles-projects']) describe(`Vitest skip mode with whole files (${fixture})`, () => {
+  // skipfiles-projects: an inline project with `extends: true` inherits the exclusion.
+  const FIX = path.join(HERE, 'fixtures', fixture);
   const run = (skipText) => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'quod-js-skipfiles-'));
     const skip = path.join(tmp, 'skip.txt');

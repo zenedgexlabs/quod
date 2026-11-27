@@ -111,7 +111,15 @@ export default async (env) => {
   }
   // Test files whose every recorded test is skipped aren't collected at all.
   const skipFiles = JSON.parse(process.env.QUOD_SKIP_FILES || '[]');
-  if (skipFiles.length && !Array.isArray(config.test.projects)) {
+  // The globs are relative to this config's root. Inline projects with
+  // \`extends: true\` inherit them with the same root; one that sets its own
+  // root would match them against another directory, so then nothing is
+  // excluded. Other projects (files, non-extending objects) inherit nothing
+  // and keep name-level skips.
+  const anchored = [].concat(config.test.projects ?? []).every(
+    (p) => !(p && typeof p === 'object' && p.extends === true && (p.root || p.test?.root)),
+  );
+  if (skipFiles.length && anchored) {
     config.test.exclude = [...(config.test.exclude ?? configDefaults.exclude), ...skipFiles];
     // Every file excluded (nothing to run) is a pass, as when every test is skipped by name.
     config.test.passWithNoTests = true;
