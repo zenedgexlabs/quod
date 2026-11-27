@@ -1,0 +1,38 @@
+# E9: Quod on GitHub-hosted CI (Vitest). Push to main records the map; each
+# pull request runs two jobs on the same commit:
+#   shadow  - the full suite, plus the list of tests Quod would skip
+#             (a would-skip test that fails is an escape);
+#   enforce - only the tests Quod doesn't skip (the time it saves).
+name: quod
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  record:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx --yes pnpm@10 install --frozen-lockfile --ignore-scripts
+      - uses: zenedgexlabs/quod/integrations/github-action@main
+        with: { mode: record, quod-version: v0.1.0-alpha.2, runner: vitest, test-command: '' }
+
+  pr:
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix: { mode: [shadow, enforce] }
+    runs-on: ubuntu-latest
+    name: ${{ matrix.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx --yes pnpm@10 install --frozen-lockfile --ignore-scripts
+      - uses: zenedgexlabs/quod/integrations/github-action@main
+        with: { mode: '${{ matrix.mode }}', quod-version: v0.1.0-alpha.2, runner: vitest, test-command: '' }
