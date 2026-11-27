@@ -273,6 +273,25 @@ describe('recorded Jest run', () => {
     assert.deepEqual(ran.map((r) => r.name).sort(), ['test/calc.test.js::calc > add', 'test/calc.test.js::reads env']);
     assert.ok(ran.every((r) => r.outcome === 'passed'));
   });
+
+  test('skip mode excludes whole files (testPathIgnorePatterns)', () => {
+    const skip = path.join(tmp, 'skip-files.txt');
+    fs.writeFileSync(
+      skip,
+      [
+        // Only `add` is named: if the file were collected, `mul` and
+        // `reads env` would run and appear in the results.
+        '# quod-skip-file test/calc.test.js',
+        'test/calc.test.js::calc > add',
+        '',
+      ].join('\n'),
+    );
+    const res = path.join(tmp, 'res-skip-files.jsonl');
+    // The only test file is excluded: nothing runs, and that is a pass.
+    assert.equal(main(['run', '--runner', 'jest', '--skip', skip, '--results', res, '--root', JEST_FIXTURE]), 0);
+    const ran = fs.existsSync(res) ? fs.readFileSync(res, 'utf8').trim() : '';
+    assert.equal(ran, '');
+  });
 });
 
 describe('Vitest without isolation (isolate: false)', () => {

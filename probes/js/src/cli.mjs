@@ -113,6 +113,8 @@ export default async (env) => {
   const skipFiles = JSON.parse(process.env.QUOD_SKIP_FILES || '[]');
   if (skipFiles.length && !Array.isArray(config.test.projects)) {
     config.test.exclude = [...(config.test.exclude ?? configDefaults.exclude), ...skipFiles];
+    // Every file excluded (nothing to run) is a pass, as when every test is skipped by name.
+    config.test.passWithNoTests = true;
   }
   const reporters = [].concat(config.test.reporters ?? ['default']);
   config.test.reporters = [...reporters, ${JSON.stringify(reporter)}];
@@ -180,8 +182,18 @@ module.exports = async () => {
   const rootDir = config.rootDir ?? ${JSON.stringify(root)};
   // The Quod environment extends the project's own.
   process.env.QUOD_JEST_BASE_ENV = config.testEnvironment ?? 'node';
+  // Test files whose every recorded test is skipped aren't collected at all.
+  const skip = JSON.parse(process.env.QUOD_SKIP_PATTERNS || '[]');
+  const ignore = skip.length && !config.projects
+    ? {
+        testPathIgnorePatterns: [...(config.testPathIgnorePatterns ?? ['/node_modules/']), ...skip],
+        // Every file excluded (nothing to run) is a pass, as when every test is skipped by name.
+        passWithNoTests: true,
+      }
+    : {};
   return {
     ...config,
+    ...ignore,
     rootDir,
     testEnvironment: ${JSON.stringify(environment)},
     setupFilesAfterEnv: [${JSON.stringify(setup)}, ...(config.setupFilesAfterEnv ?? [])],
@@ -247,6 +259,26 @@ export function skipFiles(file, { root, dir }) {
     if (!r || r.startsWith('..') || path.isAbsolute(r)) continue;
     // Escape glob syntax: the path is matched literally.
     out.push(r.split(path.sep).join('/').replace(/[\\*?[\]{}()!+@]/g, '\\$&'));
+  }
+  return out;
+}
+
+/**
+ * `# quod-skip-file PATH` lines as Jest `testPathIgnorePatterns`: regexes
+ * matching exactly that absolute path, with either path separator.
+ */
+export function jestIgnorePatterns(file, { root }) {
+  const meta = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Windows paths are case-insensitive (the drive letter's case varies).
+  const esc =
+    process.platform === 'win32'
+      ? (s) => meta(s).replace(/[a-zA-Z]/g, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`)
+      : meta;
+  const out = [];
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.startsWith('# quod-skip-file ')) continue;
+    const abs = path.resolve(root, line.slice('# quod-skip-file '.length).trim());
+    out.push(`^${abs.split(/[\\/]/).map(esc).join('[\\\\/]')}$`);
   }
   return out;
 }
@@ -326,7 +358,8 @@ export function main(argv) {
     if (problem) process.stderr.write(`quod: not skipping any tests: ${problem}\n`);
     else {
       env.QUOD_SKIP_FILE = path.resolve(opts.skip);
-      if (!jest) env.QUOD_SKIP_FILES = JSON.stringify(skipFiles(opts.skip, { root: opts.root, dir: opts.dir }));
+      if (jest) env.QUOD_SKIP_PATTERNS = JSON.stringify(jestIgnorePatterns(opts.skip, { root: opts.root }));
+      else env.QUOD_SKIP_FILES = JSON.stringify(skipFiles(opts.skip, { root: opts.root, dir: opts.dir }));
     }
   }
   const runArgs = jest
