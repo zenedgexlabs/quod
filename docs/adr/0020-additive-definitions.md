@@ -1,6 +1,6 @@
 # ADR 020: New top-level functions affect only namespace observers
 
-Status: Proposed (design; not implemented)
+Status: JavaScript/TypeScript part accepted and implemented; Python part proposed
 
 ## Context
 
@@ -92,11 +92,24 @@ JavaScript makes the exemption simpler than Python:
   `ns[name]`, `export * from`, dynamic `import()`, and CommonJS interop
   (`require`).
 
-So a new top-level `function` declaration (exported or not) under a name
-unused in the base file could be exempt when no file in the repository
-reaches the module through a namespace import, `export *`, `import()` or
-`require` (matched conservatively by the specifier's basename). That is a
-static check, with no probe support needed.
+Implemented (`quod-change`):
+
+- `lang::diff` collects top-level `function`/`function*` declarations,
+  plain or `export`ed but not `export default`, whose name doesn't occur
+  anywhere in the base file (code, comments or strings). It removes them
+  from the head source and re-analyses: only if the module stream then
+  equals the base's is the change additive (`module_changed = false`,
+  `added` lists the names). A removal that changes how the remaining code
+  parses never matches, so it is never exempt.
+- `compute` then runs one `git grep` over the head (commit, or working
+  tree with untracked files) for lines that could observe a module's set
+  of names: `import * as`, `export *`, `import()`, `require()`,
+  `.mock(`, `requireActual`/`importActual`. A matching line names the
+  module if one of its string literals ends in the module's stem (or its
+  directory, for `index` files). A line with no readable literal (a
+  dynamic specifier, a template with substitutions, a statement split
+  over lines) counts as naming every module. Any match makes the change a
+  module change again.
 
 ## Remaining assumptions
 

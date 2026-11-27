@@ -229,6 +229,11 @@ impl Language {
         })
     }
 
+    /// JavaScript or TypeScript (ES module semantics).
+    pub fn is_js_family(self) -> bool {
+        matches!(self, Self::JavaScript | Self::TypeScript | Self::Tsx)
+    }
+
     /// The language's entity spec.
     pub fn spec(self) -> &'static Spec {
         match self {
@@ -486,10 +491,25 @@ pub fn diff(
         .collect();
     entities.sort();
     entities.dedup();
-    let module_changed = match (&a, &b) {
+    let mut module_changed = match (&a, &b) {
         (Some(x), Some(y)) => x.module != y.module || parse_error,
         _ => true,
     };
+    // ADR 020: new top-level function declarations, and nothing else at
+    // module level. The caller still checks the repository for code that
+    // could observe the module's set of names.
+    let mut added = Vec::new();
+    if module_changed && !parse_error && lang.is_js_family() {
+        if let (Some(x), Some(old), Some(new)) = (&a, old, new) {
+            if let Some((names, stripped)) = js_added_functions(lang, old, new)? {
+                let y = analyze(lang, &stripped)?;
+                if !y.had_error && y.module == x.module {
+                    module_changed = false;
+                    added = names;
+                }
+            }
+        }
+    }
     let removed = ea
         .keys()
         .filter(|k| !eb.contains_key(*k))
@@ -502,7 +522,89 @@ pub fn diff(
         parse_error,
         removed,
         skip_markers: (count_skip_markers(spec, old), count_skip_markers(spec, new)),
+        added,
     })
+}
+
+/// True for byte `c` that can be part of a JavaScript identifier (ASCII).
+fn js_ident_byte(c: u8) -> bool {
+    c.is_ascii_alphanumeric() || c == b'_' || c == b'$'
+}
+
+/// True if `name` occurs in `src` as a whole identifier-like word: in code,
+/// comments or strings alike (so `obj[name]`, `"name"` and forward
+/// references all count).
+fn js_word_occurs(src: &[u8], name: &str) -> bool {
+    let n = name.as_bytes();
+    if n.is_empty() || src.len() < n.len() {
+        return false;
+    }
+    (0..=src.len() - n.len()).any(|i| {
+        &src[i..i + n.len()] == n
+            && (i == 0 || !js_ident_byte(src[i - 1]))
+            && src.get(i + n.len()).is_none_or(|&c| !js_ident_byte(c))
+    })
+}
+
+/// Names of added functions, and the new source without them.
+type Added = (Vec<String>, Vec<u8>);
+
+/// Top-level function declarations in `new` (plain or `export`ed, not
+/// `export default`) whose names don't occur anywhere in `old`, with `new`
+/// minus those statements. `None` if there are none.
+///
+/// Declaring a function runs no code (declarations are hoisted) and only
+/// binds a name nothing at `old` could refer to; an ES module can't import
+/// a name that doesn't exist (a link error). Whether the rest of the module
+/// is unchanged is decided by comparing streams, so a removal that changes
+/// how the remaining code parses is never exempt.
+fn js_added_functions(
+    lang: Language,
+    old: &[u8],
+    new: &[u8],
+) -> Result<Option<Added>, ChangeError> {
+    const DECLS: [&str; 2] = ["function_declaration", "generator_function_declaration"];
+    let tree = parse(lang, new)?;
+    let root = tree.root_node();
+    let mut cut: Vec<(usize, usize)> = Vec::new();
+    let mut names: Vec<String> = Vec::new();
+    let mut cursor = root.walk();
+    for stmt in root.named_children(&mut cursor) {
+        let decl = if DECLS.contains(&stmt.kind()) {
+            Some(stmt)
+        } else if stmt.kind() == "export_statement" {
+            let mut c = stmt.walk();
+            let default = stmt.children(&mut c).any(|ch| ch.kind() == "default");
+            stmt.child_by_field_name("declaration")
+                .filter(|d| !default && DECLS.contains(&d.kind()))
+        } else {
+            None
+        };
+        let Some(decl) = decl else { continue };
+        let Some(name) = decl.child_by_field_name("name") else {
+            continue;
+        };
+        let name = String::from_utf8_lossy(&new[name.byte_range()]).into_owned();
+        if js_word_occurs(old, &name) {
+            continue;
+        }
+        cut.push((stmt.start_byte(), stmt.end_byte()));
+        names.push(name);
+    }
+    if cut.is_empty() {
+        return Ok(None);
+    }
+    let mut stripped = Vec::with_capacity(new.len());
+    let mut at = 0;
+    for (s, e) in cut {
+        stripped.extend_from_slice(&new[at..s]);
+        stripped.push(b'\n');
+        at = e;
+    }
+    stripped.extend_from_slice(&new[at..]);
+    names.sort();
+    names.dedup();
+    Ok(Some((names, stripped)))
 }
 
 /// A definition's (start, end, name index); positions are 0-based
@@ -1053,6 +1155,64 @@ const LIMIT = 10;
             .replace("  run(n)", "  /* x */ run(n)");
         let none = d(Language::JavaScript, JS, &fmt);
         assert!(!none.module_changed && none.entities.is_empty(), "{none:?}");
+    }
+
+    /// ADR 020 (luxon, E8): a new top-level function is not a module change.
+    #[test]
+    fn added_functions_are_not_module_changes() {
+        for (new, name) in [
+            (
+                format!("{JS}export function snap(v) {{\n  return Math.round(v);\n}}\n"),
+                "snap",
+            ),
+            (format!("function helper() {{}}\n{JS}"), "helper"),
+            (
+                JS.replace("const LIMIT", "function* gen() {}\nconst LIMIT"),
+                "gen",
+            ),
+            (
+                format!("{JS}export async function load() {{ await 0; }}\n"),
+                "load",
+            ),
+        ] {
+            let delta = d(Language::JavaScript, JS, &new);
+            assert!(!delta.module_changed, "{new}");
+            assert_eq!(delta.added, vec![name.to_owned()], "{new}");
+            assert_eq!(delta.entities, vec![name.to_owned()], "{new}");
+        }
+        let ts = "export const a = 1;\n";
+        let ts_new =
+            "export const a = 1;\nexport function f(x: number): number {\n  return x;\n}\n";
+        assert!(!d(Language::TypeScript, ts, ts_new).module_changed);
+
+        // The name occurs at base (here in a string, as in `obj["later"]`):
+        // something may have looked it up.
+        let base = format!("{JS}const k = 'later';\n");
+        let delta = d(
+            Language::JavaScript,
+            &base,
+            &format!("{base}function later() {{}}\n"),
+        );
+        assert!(delta.module_changed && delta.added.is_empty(), "{delta:?}");
+
+        // Still module changes:
+        for new in [
+            // Another module-level change comes with it.
+            JS.replace("const LIMIT = 10;", "const LIMIT = 10;\nconst k = 'later';")
+                + "function later() {}\n",
+            // Default export: changes what `import x from` gets.
+            format!("{JS}export default function main() {{}}\n"),
+            // Anything else at module level changed too.
+            JS.replace("LIMIT = 10", "LIMIT = 11") + "function extra() {}\n",
+            // Not a declaration: a const arrow function runs an initializer.
+            format!("{JS}export const fresh = () => 1;\n"),
+        ] {
+            let delta = d(Language::JavaScript, JS, &new);
+            assert!(delta.module_changed, "{new}");
+        }
+        // Removing a function is a module change (an importer of it breaks).
+        let without = JS.replace("export function add(a, b) {\n  return a + b;\n}\n", "");
+        assert!(d(Language::JavaScript, JS, &without).module_changed);
     }
 
     #[test]

@@ -61,6 +61,11 @@ pub struct SourceDelta {
     /// `skipif`, `xfail`, `pytest.skip(`, `unittest.skip`). An increase in a
     /// test file is an integrity finding.
     pub skip_markers: (u32, u32),
+    /// Top-level definitions added without any other module-level change
+    /// (ADR 020), sorted. When non-empty, `module_changed` is false only
+    /// because these names are new: [`crate::compute`] sets it back to true
+    /// if anything in the repository can observe the module's set of names.
+    pub added: Vec<String>,
 }
 
 const SKIP_MARKERS: [&str; 5] = [
@@ -414,6 +419,7 @@ pub fn diff_with(
         parse_error,
         removed,
         skip_markers: (count_skip_markers(old), count_skip_markers(new)),
+        added: Vec::new(),
     })
 }
 
