@@ -144,7 +144,7 @@ runs:
           node "$PROBE_JS" record --runner "$RUNNER" --out "$cap" --results "$res" -- $CMD || true
           "$QUOD" ingest --capture "$cap" --out "$MAP" --allow-dirty
         else
-          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD --quod-results "$res" || true  # failures are recorded; green says so
+          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD "--quod-results=$res" || true  # failures are recorded; green says so
         fi
         # Green: every test passed. The commit becomes the reference for
         # Culprit when a later push turns main red.
@@ -302,8 +302,8 @@ runs:
         if [ "$RUNNER" = vitest ] || [ "$RUNNER" = jest ]; then
           node "$PROBE_JS" run --runner "$RUNNER" --skip "$skip" --results "$dir/results.jsonl" -- $CMD
         else
-          extra=(--quod-results "$dir/results.jsonl")
-          [ -s "$skip" ] && extra+=(--quod-skip "$skip")
+          extra=("--quod-results=$dir/results.jsonl")
+          [ -s "$skip" ] && extra+=("--quod-skip=$skip")
           $CMD "${extra[@]}"
         fi
         echo "exit=$?" >> "$GITHUB_OUTPUT"

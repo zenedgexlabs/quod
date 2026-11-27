@@ -1,6 +1,6 @@
 """Quod Python probe: records which code, files and packages each test observes."""
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 PROBE_ID = f"python-probe/{__version__}"
 CAPTURE_VERSION = 1
 # Capabilities declared in the capture header. ``py.introspection``: signature

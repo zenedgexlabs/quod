@@ -38,7 +38,7 @@ _PROCESS_ENV_NAMES = frozenset({"TZ", "LANG", "LANGUAGE"})
 # pytest reads these before any plugin is loaded.
 _PYTEST_ENV_NAMES = ("PYTEST_ADDOPTS", "PYTEST_PLUGINS", "PYTEST_DISABLE_PLUGIN_AUTOLOAD", "PYTEST_DEBUG")
 
-_QUOD_OPTIONS = ("--quod-record", "--quod-skip", "--quod-root", "--quod-results")
+QUOD_OPTIONS = ("--quod-record", "--quod-skip", "--quod-root", "--quod-results")
 
 # Variables the test runner sets in its own process (pytest, pytest-xdist).
 # They aren't inputs: their values follow from the installed distributions,
@@ -184,10 +184,10 @@ def strip_quod_args(args) -> list[str]:
         if skip_next:
             skip_next = False
             continue
-        if a in _QUOD_OPTIONS:
+        if a in QUOD_OPTIONS:
             skip_next = True
             continue
-        if a.startswith(tuple(o + "=" for o in _QUOD_OPTIONS)):
+        if a.startswith(tuple(o + "=" for o in QUOD_OPTIONS)):
             continue
         out.append(a)
     return out

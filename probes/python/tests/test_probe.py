@@ -462,6 +462,33 @@ def test_quod_options_are_stripped_in_both_forms():
     assert strip_quod_args(args) == ["-q", "tests"]
 
 
+def test_skip_file_outside_the_project_needs_the_equals_form(tmp_path):
+    """pytest picks its rootdir and ini file before plugin options are
+    parsed, so ``--quod-skip PATH`` makes PATH (an existing file) a test
+    path: rootdir moves to PATH's directory and the project's ini file is
+    lost. ``--quod-skip=PATH`` doesn't. Found by the GitHub Action, whose
+    skip file lives in the runner's temp directory."""
+    proj = tmp_path / "proj"
+    (proj / "tests").mkdir(parents=True)
+    (proj / "pyproject.toml").write_text('[tool.pytest.ini_options]\ntestpaths = ["tests"]\n')
+    (proj / "tests" / "test_a.py").write_text("def test_one():\n    pass\n\ndef test_two():\n    pass\n")
+    cap = tmp_path / "capture.jsonl"
+    res = _pytest(proj, f"--quod-record={cap}")
+    assert res.returncode == 0, res.stdout + res.stderr
+    header = json.loads(cap.read_text(encoding="utf-8").splitlines()[0])
+    elsewhere = tmp_path / "temp"
+    elsewhere.mkdir()
+    skip = elsewhere / "skip.txt"
+    skip.write_text(f"# quod-invocation {fingerprint.digest(header['invocation'])}\ntests/test_a.py::test_one\n")
+
+    res = _pytest(proj, f"--quod-skip={skip}")
+    assert "1 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
+
+    res = _pytest(proj, "--quod-skip", str(skip))
+    assert "deselected" not in res.stdout, res.stdout
+    assert "Pass --quod-skip=PATH, not --quod-skip PATH" in res.stderr, res.stderr
+
+
 def test_real_paths_match_realpath(tmp_path):
     """The per-directory resolution gives exactly ``normcase(realpath())``,
     including for a file that is itself a symlink."""

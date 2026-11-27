@@ -2,10 +2,10 @@
 
 Options:
 
-``--quod-record PATH``
+``--quod-record=PATH``
     Record per-test footprints to a capture file (JSON Lines, protocol v1).
     Under pytest-xdist each worker writes ``PATH.<worker id>``.
-``--quod-skip PATH``
+``--quod-skip=PATH``
     Deselect the tests named in PATH (one test name per line), as produced
     by ``quod select``. Every test not listed runs. Files listed as
     ``# quod-skip-file PATH`` (every recorded test in them is skipped) aren't
@@ -13,11 +13,11 @@ Options:
     (``# quod-environment D``, ``# quod-invocation D``,
     ``# quod-env NAME H``) are checked against this process first. On
     any mismatch nothing is deselected (ADR 012).
-``--quod-results PATH``
+``--quod-results=PATH``
     Write each test's outcome to PATH (JSON Lines: ``{"type": "result",
     "name", "outcome", "duration_ms"}``), for ``quod verdict``. Under
     pytest-xdist only the controller writes it.
-``--quod-root DIR``
+``--quod-root=DIR``
     Repository root (default: ``git rev-parse --show-toplevel``, else rootdir).
 
 Capture protocol v1 (one JSON object per line):
@@ -372,6 +372,12 @@ def _skip_plan(config: pytest.Config) -> tuple[set[str], set[str], str] | None:
         except Exception as e:  # noqa: BLE001 - can't confirm the conditions: don't skip
             problem = f"could not check the skip file ({type(e).__name__}: {e})"
         if problem:
+            spaced = _space_separated_quod_options(config.invocation_params.args)
+            if spaced:
+                problem += (
+                    f". Pass {spaced[0]}=PATH, not {spaced[0]} PATH: pytest chooses its rootdir and ini"
+                    " file before Quod's options are known, and reads a separate PATH as a test path"
+                )
             sys.stderr.write(f"quod: not skipping any tests: {problem}\n")
         else:
             root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
@@ -409,6 +415,11 @@ def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config
     if drop:
         config.hook.pytest_deselected(items=drop)
         items[:] = keep
+
+
+def _space_separated_quod_options(args) -> list[str]:
+    """Quod options given as ``--quod-x PATH`` rather than ``--quod-x=PATH``."""
+    return [str(a) for a in args if str(a) in fingerprint.QUOD_OPTIONS]
 
 
 def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> str | None:
