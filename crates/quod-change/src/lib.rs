@@ -133,12 +133,127 @@ pub fn compute(repo: &Repo, opts: &ChangeOptions) -> Result<ChangeSet, ChangeErr
         });
     }
     files.sort_by(|a, b| a.change.path.cmp(&b.change.path));
+    observe_added_exports(repo, opts.head.as_deref(), &mut files)?;
     Ok(ChangeSet {
         base,
         head,
         tree,
         files,
     })
+}
+
+/// Lines that can observe a JS/TS module's set of names: star imports and
+/// re-exports, dynamic `import()`, `require()`, and test-runner module mocks
+/// (automocks and `requireActual`/`importActual` spreads enumerate exports).
+const JS_NAMESPACE_PATTERN: &str = "^[[:space:]]*(import|export)([[:space:]]+type)?[[:space:]]*\\*\
+     |import[[:space:]]*\\(|require[[:space:]]*\\(|\\.mock[[:space:]]*\\(|Actual";
+const JS_PATHSPECS: &[&str] = &[
+    "*.js", "*.mjs", "*.cjs", "*.jsx", "*.ts", "*.mts", "*.cts", "*.tsx",
+];
+// Longest first: `x.d.ts` is `x`, not `x.d`.
+const JS_EXTENSIONS: &[&str] = &[
+    ".d.ts", ".js", ".mjs", ".cjs", ".jsx", ".ts", ".mts", ".cts", ".tsx",
+];
+
+/// ADR 020: a JS/TS module whose only change is new top-level functions
+/// stays a function-level change only if nothing in the repository (at
+/// head) can observe its set of names. Otherwise it is a module change.
+fn observe_added_exports(
+    repo: &Repo,
+    head: Option<&str>,
+    files: &mut [FileDetail],
+) -> Result<(), ChangeError> {
+    let additive: Vec<usize> = files
+        .iter()
+        .enumerate()
+        .filter(|(_, f)| {
+            f.source
+                .as_ref()
+                .is_some_and(|s| !s.module_changed && !s.added.is_empty())
+        })
+        .map(|(i, _)| i)
+        .collect();
+    if additive.is_empty() {
+        return Ok(());
+    }
+    let hits = repo.grep(head, JS_NAMESPACE_PATTERN, JS_PATHSPECS)?;
+    for i in additive {
+        let stems = module_stems(&files[i].change.path);
+        if hits.iter().any(|(_, line)| line_may_observe(line, &stems)) {
+            if let Some(s) = files[i].source.as_mut() {
+                s.module_changed = true;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The specifier tails that can name `path`: its file stem, and for an
+/// `index` file its directory's name (and `.`/`..`).
+fn module_stems(path: &str) -> Vec<String> {
+    let file = path.rsplit('/').next().unwrap_or(path);
+    let stem = strip_js_ext(file).to_owned();
+    let mut out = vec![stem.clone()];
+    if stem == "index" {
+        let mut parts = path.rsplit('/');
+        parts.next();
+        if let Some(dir) = parts.next() {
+            out.push(dir.to_owned());
+        }
+        out.extend([".".to_owned(), "..".to_owned(), String::new()]);
+    }
+    out
+}
+
+fn strip_js_ext(s: &str) -> &str {
+    JS_EXTENSIONS
+        .iter()
+        .find_map(|e| s.strip_suffix(e))
+        .unwrap_or(s)
+}
+
+/// True if a matched line may refer to a module named by `stems`: one of
+/// its string literals names it, or it has none we can read (a dynamic
+/// specifier, or a statement continued on another line).
+fn line_may_observe(line: &str, stems: &[String]) -> bool {
+    match string_literals(line) {
+        None => true,
+        Some(lits) if lits.is_empty() => true,
+        Some(lits) => lits.iter().any(|l| {
+            let tail = l.trim_end_matches('/').rsplit('/').next().unwrap_or(l);
+            stems.iter().any(|s| strip_js_ext(tail) == s)
+        }),
+    }
+}
+
+/// The string literals on a line, or `None` if one is unterminated or is
+/// a template with substitutions (its value isn't known statically).
+fn string_literals(line: &str) -> Option<Vec<String>> {
+    let mut out = Vec::new();
+    let mut chars = line.chars();
+    while let Some(c) = chars.next() {
+        if c != '"' && c != '\'' && c != '`' {
+            continue;
+        }
+        let mut lit = String::new();
+        let mut closed = false;
+        while let Some(d) = chars.next() {
+            if d == '\\' {
+                chars.next();
+                continue;
+            }
+            if d == c {
+                closed = true;
+                break;
+            }
+            lit.push(d);
+        }
+        if !closed || (c == '`' && lit.contains("${")) {
+            return None;
+        }
+        out.push(lit);
+    }
+    Some(out)
 }
 
 #[cfg(test)]
@@ -164,6 +279,75 @@ mod tests {
             .unwrap()
             .success();
         assert!(ok, "git {args:?}");
+    }
+
+    /// ADR 020: a new exported function stays function-level unless some
+    /// file can observe the module's set of names.
+    #[test]
+    fn added_js_function_is_function_level_unless_the_namespace_is_observable() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path();
+        git(p, &["init", "-q", "-b", "main"]);
+        fs::create_dir_all(p.join("src/impl")).unwrap();
+        fs::create_dir_all(p.join("test")).unwrap();
+        let util = "export function round(v) {\n  return Math.round(v);\n}\n";
+        fs::write(p.join("src/impl/util.js"), util).unwrap();
+        fs::write(
+            p.join("test/a.test.js"),
+            "import { round } from '../src/impl/util.js';\nconst fs = require('fs');\nexport * from './other.js';\n",
+        )
+        .unwrap();
+        git(p, &["add", "-A"]);
+        git(p, &["commit", "-q", "-m", "base"]);
+        fs::write(
+            p.join("src/impl/util.js"),
+            format!("{util}export function snap(v) {{\n  return v;\n}}\n"),
+        )
+        .unwrap();
+
+        let repo = Repo::discover(p).unwrap();
+        let util_delta = |repo: &Repo| {
+            let cs = compute(
+                repo,
+                &ChangeOptions {
+                    base: "HEAD".into(),
+                    head: None,
+                    python: DiffOptions::default(),
+                },
+            )
+            .unwrap();
+            cs.files
+                .into_iter()
+                .find(|f| f.change.path == "src/impl/util.js")
+                .unwrap()
+                .source
+                .unwrap()
+        };
+        let d = util_delta(&repo);
+        assert!(!d.module_changed, "{d:?}");
+        assert_eq!(d.added, vec!["snap".to_string()]);
+
+        // Each of these can see the new name: the change is a module change.
+        for (file, text) in [
+            (
+                "test/ns.test.js",
+                "import * as util from '../src/impl/util.js';\n",
+            ),
+            ("src/index.js", "export * from './impl/util';\n"),
+            ("test/mock.test.js", "vi.mock('../src/impl/util.js');\n"),
+            ("test/dyn.test.js", "const m = await import(name);\n"),
+            (
+                "test/req.test.js",
+                "const u = require('../src/impl/util');\n",
+            ),
+        ] {
+            fs::write(p.join(file), text).unwrap();
+            let d = util_delta(&repo);
+            assert!(d.module_changed, "{file}: {d:?}");
+            fs::remove_file(p.join(file)).unwrap();
+        }
+        // Back to no observers.
+        assert!(!util_delta(&repo).module_changed);
     }
 
     #[test]

@@ -1120,6 +1120,7 @@ mod tests {
             parse_error: false,
             removed: vec![],
             skip_markers: (0, 0),
+            added: vec![],
         }
     }
 

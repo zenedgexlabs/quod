@@ -220,6 +220,64 @@ impl Repo {
             .collect())
     }
 
+    /// Lines matching the extended regex `pattern` in files matching
+    /// `pathspecs`, at `rev`, or in the working tree (tracked and untracked,
+    /// not ignored) when `rev` is `None`. Returns `(path, line)` pairs.
+    pub fn grep(
+        &self,
+        rev: Option<&str>,
+        pattern: &str,
+        pathspecs: &[&str],
+    ) -> Result<Vec<(String, String)>, ChangeError> {
+        // With --null, each match is "path\0text" (-H: always the path).
+        let mut args: Vec<&str> = vec![
+            "grep",
+            "-I",
+            "-H",
+            "--null",
+            "--no-color",
+            "-E",
+            "-e",
+            pattern,
+        ];
+        match rev {
+            Some(r) => args.push(r),
+            None => args.push("--untracked"),
+        }
+        args.push("--");
+        args.extend_from_slice(pathspecs);
+        let out = Command::new("git")
+            .arg("-C")
+            .arg(&self.root)
+            .args(["-c", "core.quotepath=off"])
+            .args(&args)
+            .output()
+            .map_err(|e| ChangeError::Git(format!("failed to run git: {e}")))?;
+        // Exit 1: no match.
+        if out.status.code() == Some(1) && out.stdout.is_empty() {
+            return Ok(Vec::new());
+        }
+        if !out.status.success() {
+            return Err(ChangeError::Git(format!(
+                "`git {}` failed: {}",
+                args.join(" "),
+                String::from_utf8_lossy(&out.stderr).trim()
+            )));
+        }
+        let prefix = rev.map(|r| format!("{r}:"));
+        Ok(String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .filter_map(|l| {
+                let (path, text) = l.split_once('\0')?;
+                let path = prefix
+                    .as_deref()
+                    .and_then(|p| path.strip_prefix(p))
+                    .unwrap_or(path);
+                Some((path.to_owned(), text.to_owned()))
+            })
+            .collect())
+    }
+
     /// Contents of `path` in the working tree, or `None` if absent.
     pub fn read_worktree(&self, path: &str) -> Result<Option<Vec<u8>>, ChangeError> {
         match std::fs::read(self.root.join(path)) {
