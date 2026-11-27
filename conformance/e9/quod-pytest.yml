@@ -25,7 +25,7 @@ jobs:
         with: { python-version: '3.13' }
       - run: pip install -e . pytest
       - uses: zenedgexlabs/quod/integrations/github-action@main
-        with: { mode: record, quod-version: v0.1.0-alpha.2, test-command: python -m pytest -q tests, python: python }
+        with: { mode: record, quod-version: v0.1.0-alpha.3, test-command: python -m pytest -q tests, python: python }
 
   pr:
     if: github.event_name == 'pull_request'
@@ -42,4 +42,4 @@ jobs:
         with: { python-version: '3.13' }
       - run: pip install -e . pytest
       - uses: zenedgexlabs/quod/integrations/github-action@main
-        with: { mode: '${{ matrix.mode }}', quod-version: v0.1.0-alpha.2, test-command: python -m pytest -q tests, python: python }
+        with: { mode: '${{ matrix.mode }}', quod-version: v0.1.0-alpha.3, test-command: python -m pytest -q tests, python: python }
