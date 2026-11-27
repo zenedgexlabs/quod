@@ -1,8 +1,5 @@
 name: Quod Verdict
-description: >-
-  A signed Verdict for every change: which tests the change obligates, proof
-  for every test skipped, failures the change did not cause, changed code no
-  test executes, and test-integrity findings.
+description: Run only the tests a change can affect, with a signed certificate for every test skipped.
 author: Quod
 
 branding:
