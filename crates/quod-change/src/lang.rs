@@ -611,9 +611,10 @@ fn js_added_functions(
 /// (row, column).
 type Span = ((usize, usize), (usize, usize), u32);
 
-/// Leaf values a read-only table may hold: immutable literals, and tuples
-/// of them.
-fn py_immutable_literal(n: Node<'_>) -> bool {
+/// Leaf values a read-only table may hold: immutable literals, tuples of
+/// them, and `Decimal(...)` / `Fraction(...)` of literals when the file
+/// imports those names from the standard library (`numbers` lists them).
+fn py_immutable_literal(n: Node<'_>, numbers: &[&str], src: &[u8]) -> bool {
     match n.kind() {
         "string" | "concatenated_string" | "integer" | "float" | "true" | "false" | "none" => true,
         "unary_operator" => {
@@ -625,10 +626,80 @@ fn py_immutable_literal(n: Node<'_>) -> bool {
             let mut c = n.walk();
             n.named_children(&mut c)
                 .filter(|ch| ch.kind() != "comment")
-                .all(py_immutable_literal)
+                .all(|ch| py_immutable_literal(ch, numbers, src))
+        }
+        "call" => {
+            let callee = n
+                .child_by_field_name("function")
+                .map(|f| std::str::from_utf8(&src[f.byte_range()]).unwrap_or(""))
+                .unwrap_or("");
+            let Some(args) = n.child_by_field_name("arguments") else {
+                return false;
+            };
+            let mut c = args.walk();
+            numbers.contains(&callee)
+                && args.kind() == "argument_list"
+                && args
+                    .named_children(&mut c)
+                    .filter(|ch| ch.kind() != "comment")
+                    .all(|ch| {
+                        matches!(ch.kind(), "string" | "integer" | "float" | "unary_operator")
+                            && py_immutable_literal(ch, numbers, src)
+                    })
         }
         _ => false,
     }
+}
+
+/// Constructors of immutable numbers the file imports from the standard
+/// library: `Decimal` / `Fraction` (`from decimal import Decimal`), or
+/// `decimal.Decimal` / `fractions.Fraction` (`import decimal`). An alias or
+/// a module-level redefinition doesn't count.
+fn py_number_constructors(root: Node<'_>, src: &[u8]) -> Vec<&'static str> {
+    let text = |n: Node<'_>| std::str::from_utf8(&src[n.byte_range()]).unwrap_or("");
+    let mut out = Vec::new();
+    let mut c = root.walk();
+    for stmt in root.named_children(&mut c) {
+        let t = text(stmt).split_whitespace().collect::<Vec<_>>().join(" ");
+        for (module, name, qualified) in [
+            ("decimal", "Decimal", "decimal.Decimal"),
+            ("fractions", "Fraction", "fractions.Fraction"),
+        ] {
+            let from = format!("from {module} import ");
+            match stmt.kind() {
+                "import_from_statement" if t.starts_with(&from) => {
+                    if t[from.len()..]
+                        .trim_matches(|ch| ch == '(' || ch == ')')
+                        .split(',')
+                        .any(|w| w.trim() == name)
+                    {
+                        out.push(name);
+                    }
+                }
+                "import_statement" if t == format!("import {module}") => out.push(qualified),
+                _ => {}
+            }
+        }
+    }
+    // A module-level rebinding (`Decimal = ...`, `def Decimal`, `class
+    // Decimal`) means the name isn't the standard library's.
+    let mut c = root.walk();
+    let rebound: Vec<String> = root
+        .named_children(&mut c)
+        .filter_map(|stmt| match stmt.kind() {
+            "function_definition" | "class_definition" => {
+                stmt.child_by_field_name("name").map(|n| text(n).to_owned())
+            }
+            "expression_statement" => stmt
+                .named_child(0)
+                .filter(|a| a.kind() == "assignment")
+                .and_then(|a| a.child_by_field_name("left"))
+                .map(|l| text(l).to_owned()),
+            _ => None,
+        })
+        .collect();
+    out.retain(|n| !rebound.iter().any(|r| r == n));
+    out
 }
 
 /// A module-level `NAME = <list/dict/set display of immutable literals>`
@@ -637,10 +708,56 @@ fn py_immutable_literal(n: Node<'_>) -> bool {
 /// Every use of NAME must be read-only: an index read (not an assignment
 /// or `del` target), the iterable of a loop or comprehension, a comparison
 /// (`in`) or condition, an argument to a pure builtin, a non-mutating
-/// method call, or a rebinding. Anything else (passing it elsewhere,
+/// method call, a rebinding, or the default value of a parameter that is
+/// itself only read in its function. Anything else (passing it elsewhere,
 /// returning or aliasing it, mutating methods, `global`) might mutate it.
 /// Mutation from other files stays the documented cross-file assumption.
 fn py_read_only_table(assign: Node<'_>, root: Node<'_>, src: &[u8]) -> bool {
+    let text = |n: Node<'_>| std::str::from_utf8(&src[n.byte_range()]).unwrap_or("");
+    // Only module-level simple names (`NAME = ...` directly under the module).
+    let module_level = assign
+        .parent()
+        .is_some_and(|p| p.kind() == "expression_statement" && p.parent() == Some(root));
+    let (Some(left), Some(right)) = (
+        assign.child_by_field_name("left"),
+        assign.child_by_field_name("right"),
+    ) else {
+        return false;
+    };
+    if !module_level || left.kind() != "identifier" {
+        return false;
+    }
+    let numbers = py_number_constructors(root, src);
+    let leaf = |n: Node<'_>| py_immutable_literal(n, &numbers, src);
+    let elements_immutable = match right.kind() {
+        "list" | "set" => {
+            let mut c = right.walk();
+            right
+                .named_children(&mut c)
+                .filter(|ch| ch.kind() != "comment")
+                .all(leaf)
+        }
+        "dictionary" => {
+            let mut c = right.walk();
+            right
+                .named_children(&mut c)
+                .filter(|ch| ch.kind() != "comment")
+                .all(|pair| {
+                    pair.kind() == "pair"
+                        && pair.child_by_field_name("key").is_some_and(leaf)
+                        && pair.child_by_field_name("value").is_some_and(leaf)
+                })
+        }
+        _ => false,
+    };
+    elements_immutable && py_only_read(root, text(left), src, 2)
+}
+
+/// True if every use of `name` under `scope` is read-only (see
+/// [`py_read_only_table`]). A use as a parameter's default value is
+/// read-only if that parameter is only read in its function's body,
+/// followed through at most `depth` such defaults.
+fn py_only_read(scope: Node<'_>, name: &str, src: &[u8], depth: u32) -> bool {
     const PURE_CALLS: &[&str] = &[
         "len",
         "sorted",
@@ -684,48 +801,6 @@ fn py_read_only_table(assign: Node<'_>, root: Node<'_>, src: &[u8]) -> bool {
         "isdisjoint",
     ];
     let text = |n: Node<'_>| std::str::from_utf8(&src[n.byte_range()]).unwrap_or("");
-    // Only module-level simple names (`NAME = ...` directly under the module).
-    let module_level = assign
-        .parent()
-        .is_some_and(|p| p.kind() == "expression_statement" && p.parent() == Some(root));
-    let (Some(left), Some(right)) = (
-        assign.child_by_field_name("left"),
-        assign.child_by_field_name("right"),
-    ) else {
-        return false;
-    };
-    if !module_level || left.kind() != "identifier" {
-        return false;
-    }
-    let elements_immutable = match right.kind() {
-        "list" | "set" => {
-            let mut c = right.walk();
-            right
-                .named_children(&mut c)
-                .filter(|ch| ch.kind() != "comment")
-                .all(py_immutable_literal)
-        }
-        "dictionary" => {
-            let mut c = right.walk();
-            right
-                .named_children(&mut c)
-                .filter(|ch| ch.kind() != "comment")
-                .all(|pair| {
-                    pair.kind() == "pair"
-                        && pair
-                            .child_by_field_name("key")
-                            .is_some_and(py_immutable_literal)
-                        && pair
-                            .child_by_field_name("value")
-                            .is_some_and(py_immutable_literal)
-                })
-        }
-        _ => false,
-    };
-    if !elements_immutable {
-        return false;
-    }
-    let name = text(left);
     let read_only_use = |id: Node<'_>| -> bool {
         let Some(p) = id.parent() else { return false };
         let is = |field: &str| p.child_by_field_name(field) == Some(id);
@@ -765,12 +840,25 @@ fn py_read_only_table(assign: Node<'_>, root: Node<'_>, src: &[u8]) -> bool {
             // (`f(x=NAME)` passes the table on, which may mutate it.)
             "attribute" => true,
             "keyword_argument" => is("name"),
+            // `def f(x=NAME)`: every call without x hands NAME to f, so f's
+            // uses of x must be read-only too (the mutable-default problem).
+            "default_parameter" | "typed_default_parameter" if is("value") => {
+                let param = p.child_by_field_name("name").map(text).unwrap_or("");
+                let body = p
+                    .parent()
+                    .and_then(|ps| ps.parent())
+                    .filter(|f| f.kind() == "function_definition")
+                    .and_then(|f| f.child_by_field_name("body"));
+                depth > 0
+                    && !param.is_empty()
+                    && body.is_some_and(|b| py_only_read(b, param, src, depth - 1))
+            }
             _ => false,
         }
     };
-    let mut stack = vec![root];
+    let mut stack = vec![scope];
     while let Some(n) = stack.pop() {
-        if n.kind() == "global_statement"
+        if matches!(n.kind(), "global_statement" | "nonlocal_statement")
             && text(n)
                 .split_whitespace()
                 .any(|w| w.trim_matches(',') == name)
@@ -1524,6 +1612,29 @@ class C:
                 "_t = [[1], [2]]\ndef f():\n    for row in _t:\n        row.append(0)\n",
             ),
             (Python, "n = 0\ndef inc():\n    global n\n    n += 1\n"),
+            // A table as a parameter's default: the function must only read it.
+            (Python, "_t = {'a': 1}\ndef f(k, t=_t):\n    t[k] = 2\n"),
+            (Python, "_t = {'a': 1}\ndef f(t=_t):\n    return t\n"),
+            (Python, "_t = {'a': 1}\ndef f(g, t=_t):\n    g(t)\n"),
+            (Python, "_t = [1]\ndef f(t=_t):\n    t.append(2)\n"),
+            (Python, "_t = [1]\ndef f(t: list = _t):\n    t.append(2)\n"),
+            // Decimal(...) leaves: only the standard library's, of literals.
+            (
+                Python,
+                "from money import Decimal\n_t = {'a': Decimal('1')}\n",
+            ),
+            (
+                Python,
+                "from decimal import Decimal\nDecimal = list\n_t = {'a': Decimal('1')}\n",
+            ),
+            (
+                Python,
+                "from decimal import Decimal\nx = '1'\n_t = {'a': Decimal(x)}\n",
+            ),
+            (
+                Python,
+                "from decimal import Decimal as D\n_t = {'a': D('1')}\n",
+            ),
             (Go, "package p\n\nvar cache = map[string]int{}\n"),
             (Rust, "static COUNT: AtomicUsize = AtomicUsize::new(0);\n"),
             (
@@ -1550,6 +1661,16 @@ class C:
             (
                 Python,
                 "_TESTS = [(2047, (2,)), (1373653, (2, 3))]\n_NAMES = {'a': 1, 'b': -2}\ndef f(n):\n    for lim, bases in _TESTS:\n        if n < lim:\n            return bases\n    return _NAMES.get('a'), len(_TESTS), 'a' in _NAMES, _NAMES['b']\n",
+            ),
+            // From the demo repository: a rate table of Decimals, passed as a
+            // default argument that the function only indexes.
+            (
+                Python,
+                "from decimal import ROUND_HALF_EVEN, Decimal\n\nRATES: dict[str, Decimal] = {\n    \"USD\": Decimal(\"1\"),\n    \"EUR\": Decimal(\"0.92\"),\n}\n\n\ndef convert(cents, frm, to, rates: dict[str, Decimal] = RATES):\n    try:\n        usd = Decimal(cents) / rates[frm]\n        return (usd * rates[to]).quantize(Decimal(\"1\"), rounding=ROUND_HALF_EVEN)\n    except KeyError as e:\n        raise ValueError(e.args[0]) from None\n",
+            ),
+            (
+                Python,
+                "import decimal\nfrom fractions import Fraction\n_t = [decimal.Decimal('1.5'), Fraction(1, 3), Fraction(-2)]\ndef f(i, t=_t):\n    return t[i] if i < len(t) else None\n",
             ),
             // Declarations, not state: export lists, slots, match args.
             (

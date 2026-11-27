@@ -104,3 +104,27 @@ by keyword, returning or aliasing it, a mutating method, or `global`.
 Immutable elements mean that iterating over the table can't hand out
 anything mutable. Mutation from other files stays the documented
 cross-file assumption.
+
+## Amendment (2026-11-27): numbers and read-only defaults
+
+Found by the demo repository: `RATES = {"EUR": Decimal("0.92"), ...}`,
+used as `def convert(amount, to, rates=RATES)`, made `currency.py`
+stateful. The package's `__init__` imports it, so every test was credited
+with every function in it, and a change to `convert` ran the whole suite.
+
+Two more forms are read-only tables:
+
+- **Immutable numbers.** An element may be `Decimal(...)` or
+  `Fraction(...)` with literal arguments, when the file imports the name
+  from the standard library (`from decimal import Decimal`, or
+  `import decimal` and `decimal.Decimal`). An alias (`as D`), an import
+  from anywhere else, or a module-level rebinding of the name doesn't
+  count.
+- **Defaults that are only read.** `def f(x=NAME)` hands NAME to every
+  call that omits `x`: the classic mutable-default problem. It counts as a
+  read-only use only if every use of `x` in `f`'s body is read-only by the
+  same rules (index reads, iteration, comparisons, pure builtins,
+  non-mutating methods). Returning `x`, passing it on or mutating it keeps
+  the file stateful. Defaults of defaults are followed two levels deep.
+
+Mutation from other files stays the documented cross-file assumption.
