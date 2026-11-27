@@ -8,10 +8,16 @@ on:
   push: { branches: [main] }
   pull_request:
 
+# A new push to a branch cancels its run in progress.
+concurrency:
+  group: quod-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   record:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # a mutant can make the suite loop forever
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -27,6 +33,7 @@ jobs:
       fail-fast: false
       matrix: { mode: [shadow, enforce] }
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # a mutant can make the suite loop forever
     name: ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@v4
