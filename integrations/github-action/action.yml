@@ -18,7 +18,8 @@ inputs:
   test-command:
     description: >-
       pytest: the command that runs the suite, e.g. `python -m pytest -q`.
-      vitest: extra arguments passed to Vitest.
+      vitest, jest: extra arguments passed to the runner. Split on spaces;
+      quotes aren't interpreted, so no argument can contain a space.
     default: python -m pytest -q
   signing-key:
     description: >-

@@ -115,3 +115,22 @@ install = [["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]]
 mutate = ["src/*.js", "src/impl/*.js"]
 # As in the project's CI: the tests assume this time zone and locale.
 env = { TZ = "America/New_York", LANG = "en_US.utf8" }
+
+# Slower suites, for the outreach batch (E9 on forks). `ci_timeout` is the
+# per-job limit in minutes on GitHub's runners.
+
+[repos.networkx]
+url = "https://github.com/networkx/networkx"
+branch = "main"
+install = ["-e", ".[test]"]
+pytest = ["networkx", "-q", "-p", "no:cacheprovider"]
+mutate = ["networkx/algorithms/*.py", "networkx/classes/*.py"]
+ci_timeout = 40
+
+[repos.sqlfluff]
+url = "https://github.com/sqlfluff/sqlfluff"
+branch = "main"
+install = ["-e", ".", "hypothesis"]
+pytest = ["test", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/sqlfluff/core/parser/*.py", "src/sqlfluff/core/rules/*.py", "src/sqlfluff/rules/*/*.py"]
+ci_timeout = 60
