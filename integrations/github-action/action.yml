@@ -344,7 +344,7 @@ runs:
       if: steps.verdict.outputs.envelope != ''
       uses: actions/upload-artifact@v7
       with:
-        name: quod-verdict
+        name: quod-verdict${{ inputs.mode == 'shadow' && '-shadow' || '' }}
         # The Verdict, and what it was computed from: the plan (every run
         # and skip with its reason), the skip list and the test results.
         path: |
