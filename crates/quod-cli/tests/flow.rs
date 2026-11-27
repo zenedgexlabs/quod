@@ -658,13 +658,19 @@ fn javascript_lines_map_to_functions() {
     fs::write(root.join("src/calc.js"), CALC_JS.replace("a + b", "b + a")).unwrap();
     assert_eq!(select_js(&root, &map, &key), vec!["test/calc.test.js::add"]);
 
-    // A module-level edit runs the tests that evaluated the module's top level.
+    // A module-level edit runs the tests that evaluated the module's top
+    // level, and the tests that ran any of its functions: a function's
+    // closure is the module scope, which may have been evaluated in another
+    // test's scope (module caching).
     fs::write(
         root.join("src/calc.js"),
         CALC_JS.replace("RATE = 2", "RATE = 3"),
     )
     .unwrap();
-    assert_eq!(select_js(&root, &map, &key), vec!["test/calc.test.js::mul"]);
+    assert_eq!(
+        select_js(&root, &map, &key),
+        vec!["test/calc.test.js::add", "test/calc.test.js::mul"]
+    );
 
     // A dependency manifest without a delta parser runs everything (R006).
     fs::write(root.join("src/calc.js"), CALC_JS).unwrap();

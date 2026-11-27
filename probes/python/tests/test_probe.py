@@ -479,3 +479,44 @@ def test_real_paths_match_realpath(tmp_path):
     real = _RealPaths()
     for p in paths:
         assert real(str(p)) == os.path.normcase(os.path.realpath(p)), p
+
+
+def test_cached_imports_carry_the_import_closure(tmp_path):
+    """A module's body runs once, in the first importer's scope. Every later
+    importer still depends on it (and on what it imported): a changed
+    constant in ``lib/helper.py`` must reach every test that reads
+    ``lib.consts.CONST``, however it got the module."""
+    d = tmp_path
+    (d / "lib").mkdir()
+    (d / "lib" / "__init__.py").write_text("")
+    (d / "lib" / "helper.py").write_text("BASE = 1\n")
+    (d / "lib" / "consts.py").write_text("from lib.helper import BASE\nCONST = BASE + 1\n")
+    (d / "lib" / "rel.py").write_text("from . import consts\nVALUE = consts.CONST\n")
+    (d / "tests").mkdir()
+    files = {
+        # Loads lib.consts (and lib.helper) first.
+        "test_a.py": "import lib.consts\n\ndef test_a():\n    assert lib.consts.CONST == 2\n",
+        # Cached: ``from package import submodule``.
+        "test_b.py": "from lib import consts\n\ndef test_b():\n    assert consts.CONST == 2\n",
+        # Cached, inside the test.
+        "test_c.py": "def test_c():\n    import lib.consts as c\n    assert c.CONST == 2\n",
+        # Cached, through importlib.
+        "test_d.py": "import importlib\n\ndef test_d():\n    assert importlib.import_module('lib.consts').CONST == 2\n",
+        # Imports nothing from lib.
+        "test_e.py": "def test_e():\n    assert True\n",
+        # New module whose body does a cached relative import.
+        "test_f.py": "from lib import rel\n\ndef test_f():\n    assert rel.VALUE == 2\n",
+    }
+    for name, src in files.items():
+        (d / "tests" / name).write_text(src)
+    out = d / "capture.jsonl"
+    res = _pytest(d, f"--quod-record={out}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    tests = {
+        r["name"].split("::")[-1]: set(r["files"])
+        for r in map(json.loads, out.read_text(encoding="utf-8").splitlines())
+        if r["type"] == "test"
+    }
+    for t in ("test_a", "test_b", "test_c", "test_d", "test_f"):
+        assert {"lib/consts.py", "lib/helper.py"} <= tests[t], (t, tests[t])
+    assert not any(f.startswith("lib/") for f in tests["test_e"]), tests["test_e"]

@@ -35,6 +35,8 @@ Attribution rules (what makes skips sound):
   teardown, **plus** the observations of every non-function-scoped fixture
   it uses, **plus** the observations made while importing its module (and
   enclosing packages) during collection;
+- every import, including a cached one, adds the imported module and its
+  import closure (what loading it observed) to the current scope (ADR 019);
 - shared collectors re-enable monitoring when pushed, so code that already
   ran earlier in the same test isn't missed.
 """

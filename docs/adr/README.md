@@ -24,6 +24,7 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [016](0016-flake-proof.md) | Accepted | A failure is cleared (F001) only when its footprint is complete and untouched, no global rule fired, and its file didn't change | A wrong "not your fault" merges a regression |
 | [017](0017-advisory-verdicts.md) | Accepted | Agents get advisory Verdicts over MCP; only trusted CI seals proof; unmet obligations block | Agents control their sandboxes and are documented gaming tests |
 | [018](0018-culprit.md) | Accepted | `quod culprit` names the commit(s) that changed what a failing test executes; one means a revert-sufficient culprit, none means not code; drifts and global rules withhold claims | Red main is the top CI pain; footprints answer it without bisecting |
+| [019](0019-import-closures.md) | Accepted | A file change obligates every test that ran its functions; the Python probe gives cached imports the imported module's closure | A module body runs once, in the first importer's scope: a changed constant skipped a test that read it |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.

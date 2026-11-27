@@ -17,7 +17,7 @@
 //! 3. the change intersects the test's footprint means run;
 //! 4. otherwise, skip with a `disjoint` certificate.
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use quod_change::{ChangeSet, LockDelta};
 use quod_graph::{FootprintGraph, NodeId, TestIdx, kind_tag};
@@ -112,11 +112,17 @@ pub fn resolve_changes(
     // Files that have function-level observations. For those, an absent
     // function means no test executed it.
     let mut fn_files: HashSet<NodeId> = HashSet::new();
+    // Function nodes per file. A function's globals are its module's
+    // namespace, so a test that ran any function of a file depends on the
+    // file's module-level code, even if the module body ran earlier, in
+    // another test's scope (imports are cached).
+    let mut fns_of: HashMap<NodeId, Vec<NodeId>> = HashMap::new();
     for i in 0..graph.node_count() as u32 {
         let node = graph.node(NodeId(i));
         if node.kind == NodeKind::Function {
             if let Some(p) = node.parent {
                 fn_files.insert(NodeId(p));
+                fns_of.entry(NodeId(p)).or_default().push(NodeId(i));
             }
         }
     }
@@ -128,6 +134,9 @@ pub fn resolve_changes(
             Some(n) => {
                 nodes.insert(n);
                 refs.insert(graph.node_ref(n));
+                if c.kind == NodeKind::File {
+                    nodes.extend(fns_of.get(&n).into_iter().flatten().copied());
+                }
             }
             None => match (&c.kind, &c.fallback_file) {
                 (NodeKind::Function, Some(file)) => match graph.find_node(NodeKind::File, file) {
@@ -392,6 +401,68 @@ mod tests {
         let mut v: Vec<String> = ts.map(|t| g.test_name(t).to_owned()).collect();
         v.sort();
         v
+    }
+
+    /// `test_b` ran `util.f` but not util's module body: that ran once, in
+    /// `test_a`'s scope (imports are cached). `f` reads module globals, so a
+    /// module-level change must still run `test_b`.
+    #[test]
+    fn module_change_runs_callers_of_its_functions() {
+        let mut b = GraphBuilder::new(MapMeta {
+            repo: "acme/app".into(),
+            ..MapMeta::default()
+        });
+        let h = |s: &str| Some(hash_domain(Domain::Blob, s.as_bytes()));
+        let util = b.node(NodeKind::File, "src/util.py", h("u"), None);
+        let f = b.node(
+            NodeKind::Function,
+            &names::function("src/util.py", "f"),
+            h("f"),
+            Some(util),
+        );
+        let ta = b.test(
+            StableTestId::derive("tests/test_a.py", "test_a", ""),
+            "tests/test_a.py::test_a",
+            TestFlags::default(),
+            5,
+        );
+        b.observe(ta, util);
+        b.observe(ta, f);
+        let tb = b.test(
+            StableTestId::derive("tests/test_b.py", "test_b", ""),
+            "tests/test_b.py::test_b",
+            TestFlags::default(),
+            5,
+        );
+        b.observe(tb, f);
+        let g = b.build();
+        let (_, root) = g.encode().unwrap();
+        let policy = Policy::default_policy();
+        let cs = change(vec![py("src/util.py", true, &[])]);
+        let ev = policy.evaluate(
+            &cs,
+            &EvalContext {
+                map_commits_behind: Some(0),
+                environment: None,
+                transpile_only: false,
+            },
+        );
+        let sel = select(&SelectInput {
+            repo: "acme/app",
+            engine: "0.1.0",
+            graph: &g,
+            map_digest: root,
+            policy: &policy,
+            evaluation: &ev,
+            change: &cs,
+            advisory: false,
+            environment: None,
+        })
+        .unwrap();
+        assert_eq!(
+            names_of(&g, sel.run.iter().map(|r| r.0)),
+            vec!["tests/test_a.py::test_a", "tests/test_b.py::test_b"]
+        );
     }
 
     #[test]

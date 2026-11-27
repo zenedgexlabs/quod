@@ -48,6 +48,10 @@ class Collector:
     # Environment variables read from outside the process: name -> value hash.
     # ``*`` is the whole environment (iteration).
     env: dict[str, str] = field(default_factory=dict)
+    # Import closures already merged in (``imports.ImportTracker``), by id.
+    closures_merged: set[int] = field(default_factory=set, compare=False, repr=False)
+    # Cached imports already recorded: (absolute name, fromlist).
+    imports_seen: set[tuple] = field(default_factory=set, compare=False, repr=False)
 
     def merge(self, other: "Collector") -> None:
         self.files |= other.files
@@ -421,6 +425,9 @@ class Recorder:
         self.caches = CacheTracker()
         self.introspection = IntrospectionTracker(self._on_introspect)
         self.environ = EnvTracker(self._on_env)
+        from .imports import ImportTracker
+
+        self.imports = ImportTracker(self)
 
     @staticmethod
     def _site_dirs() -> tuple[str, ...]:
@@ -596,6 +603,7 @@ class Recorder:
         self.caches.install()
         self.introspection.install()
         self.environ.install()
+        self.imports.install()
         if not Recorder._audit_installed:
             sys.addaudithook(Recorder._audit_trampoline)  # cannot be removed; gated by _active
             Recorder._audit_installed = True
@@ -610,6 +618,7 @@ class Recorder:
         self.caches.uninstall()
         self.introspection.uninstall()
         self.environ.uninstall()
+        self.imports.uninstall()
         Recorder._active = None
 
     def boundary(self) -> None:
