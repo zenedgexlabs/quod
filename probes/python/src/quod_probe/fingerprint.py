@@ -116,9 +116,35 @@ CI_BOOKKEEPING_NAMES = frozenset(
         "_",
         "OLDPWD",
         "SHLVL",
+        # the hosted runner's image: its version, host settings and the
+        # locations of tools it ships (they differ between image versions and
+        # machine types in GitHub's own fleet)
+        "ACCEPT_EULA",
+        "AGENT_TOOLSDIRECTORY",
+        "ANT_HOME",
+        "AZURE_EXTENSION_DIR",
+        "BOOTSTRAP_HASKELL_NONINTERACTIVE",
+        "CHROMEWEBDRIVER",
+        "CHROME_BIN",
+        "EDGEWEBDRIVER",
+        "ENABLE_RUNNER_TRACING",
+        "GECKOWEBDRIVER",
+        "GRADLE_HOME",
+        "HCA_CLOUD_PROVIDER",
+        "ImageOS",
+        "ImageVersion",
+        "JAVA_HOME",
+        "NVM_DIR",
+        "POWERSHELL_DISTRIBUTION_CHANNEL",
+        "PSModulePath",
+        "SELENIUM_JAR_PATH",
+        "SGX_AESM_ADDR",
+        "SWIFT_PATH",
+        "USE_BAZEL_FALLBACK_VERSION",
+        "VCPKG_INSTALLATION_ROOT",
     }
 )
-CI_BOOKKEEPING_PREFIXES = ("ACTIONS_",)
+CI_BOOKKEEPING_PREFIXES = ("ACTIONS_", "ANDROID_", "DOTNET_", "GHCUP_", "GOROOT_", "HOMEBREW_", "JAVA_HOME_", "MEMORY_PRESSURE_", "PIPX_")
 
 
 def quod_own(key: str) -> bool:
@@ -127,8 +153,12 @@ def quod_own(key: str) -> bool:
     return key == "QUOD" or key.startswith("QUOD_")
 
 
+_CI_BOOKKEEPING_UPPER = frozenset(n.upper() for n in CI_BOOKKEEPING_NAMES)
+
+
 def ci_bookkeeping(key: str) -> bool:
-    return key in CI_BOOKKEEPING_NAMES or key.startswith(CI_BOOKKEEPING_PREFIXES)
+    # Case-insensitively: Windows spells names in upper case (env_key).
+    return key.upper() in _CI_BOOKKEEPING_UPPER or key.upper().startswith(CI_BOOKKEEPING_PREFIXES)
 
 
 def environ_hash(environ: dict[str, str] | None = None) -> str:

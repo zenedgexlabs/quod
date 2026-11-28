@@ -55,6 +55,16 @@ was ever skipped. Any project whose start-up enumerates the environment
    runs: quod in the Plan step, python in the test step), `OLDPWD` and
    `SHLVL` are left out of `env:*` too (found on networkx, after 1-3).
 
+5. **The runner image.** GitHub rotates image versions and machine types:
+   across nine jobs of one replay, `ImageVersion`, `GRADLE_HOME`,
+   `HCA_CLOUD_PROVIDER` and `SGX_AESM_ADDR` differed. The variables that
+   describe the image (its version, host settings, and where the tools it
+   ships live: `JAVA_HOME_*`, `ANDROID_*`, `DOTNET_*`, `GOROOT_*`, browser
+   drivers, ...) are left out of `env:*`. `PATH`, `HOME`, `LANG`,
+   `LD_LIBRARY_PATH`, `CI` and the interpreter's locations are not: a test
+   can depend on them through enumeration. A test that runs one of the
+   image's tools does so in a subprocess, and always runs (R013).
+
 ## Why this is sound enough
 
 The exclusion is an assumption, and it is documented as one: a test whose

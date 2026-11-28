@@ -41,10 +41,40 @@ export const CI_BOOKKEEPING_NAMES = new Set([
   'GITHUB_TRIGGERING_ACTOR', 'GITHUB_WORKFLOW', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA',
   'RUNNER_NAME', 'RUNNER_TRACKING_ID', 'INVOCATION_ID', 'JOURNAL_STREAM', 'SYSTEMD_EXEC_PID',
   '_', 'OLDPWD', 'SHLVL',
+  // the hosted runner's image
+  'ACCEPT_EULA',
+  'AGENT_TOOLSDIRECTORY',
+  'ANT_HOME',
+  'AZURE_EXTENSION_DIR',
+  'BOOTSTRAP_HASKELL_NONINTERACTIVE',
+  'CHROMEWEBDRIVER',
+  'CHROME_BIN',
+  'EDGEWEBDRIVER',
+  'ENABLE_RUNNER_TRACING',
+  'GECKOWEBDRIVER',
+  'GRADLE_HOME',
+  'HCA_CLOUD_PROVIDER',
+  'ImageOS',
+  'ImageVersion',
+  'JAVA_HOME',
+  'NVM_DIR',
+  'POWERSHELL_DISTRIBUTION_CHANNEL',
+  'PSModulePath',
+  'SELENIUM_JAR_PATH',
+  'SGX_AESM_ADDR',
+  'SWIFT_PATH',
+  'USE_BAZEL_FALLBACK_VERSION',
+  'VCPKG_INSTALLATION_ROOT',
 ]);
+const CI_BOOKKEEPING_PREFIXES = ['ACTIONS_', 'ANDROID_', 'DOTNET_', 'GHCUP_', 'GOROOT_', 'HOMEBREW_', 'JAVA_HOME_', 'MEMORY_PRESSURE_', 'PIPX_'];
 /** Quod's own variables (`QUOD`, the binary the Action passes, and `QUOD_*`): never test inputs. */
 export const quodOwn = (k) => k === 'QUOD' || k.startsWith('QUOD_');
-export const ciBookkeeping = (k) => CI_BOOKKEEPING_NAMES.has(k) || k.startsWith('ACTIONS_');
+const CI_BOOKKEEPING_UPPER = new Set([...CI_BOOKKEEPING_NAMES].map((n) => n.toUpperCase()));
+// Case-insensitively: Windows spells names in upper case (envKey).
+export const ciBookkeeping = (k) => {
+  const u = k.toUpperCase();
+  return CI_BOOKKEEPING_UPPER.has(u) || CI_BOOKKEEPING_PREFIXES.some((p) => u.startsWith(p));
+};
 
 /** Hash of the whole environment (the `env:*` node), minus Quod's own variables and CI bookkeeping. */
 export function environHash(env = process.env) {
