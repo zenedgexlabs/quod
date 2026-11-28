@@ -70,6 +70,20 @@ Verdict is advisory.
 `quod-js` is installed into its own directory, so your `node_modules` (npm,
 pnpm or yarn) is left as it is.
 
+## Monorepos
+
+Set `working-directory` to the project's directory, relative to the
+repository root. Quod records and selects from there; the map and the
+change are still the whole repository's.
+
+```yaml
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.7
+        with:
+          working-directory: services/billing
+          test-command: python -m pytest -q
+          python: python
+```
+
 ## What you get per pull request
 
 - The job summary: the Verdict card. In shadow mode it also says how many

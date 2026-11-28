@@ -344,10 +344,23 @@ fn run(cli: Cli) -> Result<ExitCode> {
             let dir = std::env::temp_dir().join(format!("quod-capture-{}", std::process::id()));
             fs::create_dir_all(&dir)?;
             let capture = dir.join("capture.jsonl");
+            // In the current directory when it's inside the repository (a
+            // project in a subdirectory of a monorepo), else at the root.
+            // (Compared canonically, but run from the plain path: Windows'
+            // verbatim `\\?\` form confuses the interpreter's path handling.)
+            let run_dir = std::env::current_dir()
+                .ok()
+                .filter(
+                    |d| match (std::fs::canonicalize(d), std::fs::canonicalize(repo.root())) {
+                        (Ok(d), Ok(root)) => d.starts_with(root),
+                        _ => false,
+                    },
+                )
+                .unwrap_or_else(|| repo.root().to_path_buf());
             let status = Command::new(&command[0])
                 .args(&command[1..])
                 .arg(format!("--quod-record={}", capture.display()))
-                .current_dir(repo.root())
+                .current_dir(&run_dir)
                 .status()
                 .with_context(|| format!("running {:?}", command[0]))?;
             let mut captures: Vec<PathBuf> = fs::read_dir(&dir)?

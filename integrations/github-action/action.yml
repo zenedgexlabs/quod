@@ -21,6 +21,11 @@ inputs:
       vitest, jest: extra arguments passed to the runner. Split on spaces;
       quotes aren't interpreted, so no argument can contain a space.
     default: python -m pytest -q
+  working-directory:
+    description: >-
+      Directory the tests run in, relative to the repository root (a project
+      in a subdirectory of a monorepo). Default: the repository root.
+    default: .
   signing-key:
     description: >-
       Ed25519 seed from `quod keygen` (a secret). Without it (for example on
@@ -130,6 +135,7 @@ runs:
       id: record
       if: inputs.mode == 'record'
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         QUOD: ${{ steps.install.outputs.bin }}
         QUOD_RUNNER: ${{ inputs.runner }}
@@ -196,6 +202,7 @@ runs:
     - name: Find the culprit
       if: inputs.mode == 'record' && steps.record.outputs.green == 'false'
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         QUOD: ${{ steps.install.outputs.bin }}
         QUOD_PY: ${{ inputs.python }}
@@ -254,6 +261,7 @@ runs:
       id: plan
       if: inputs.mode != 'record'
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         QUOD: ${{ steps.install.outputs.bin }}
         QUOD_MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
@@ -286,6 +294,7 @@ runs:
       id: tests
       if: inputs.mode != 'record'
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         QUOD_MODE: ${{ inputs.mode }}
         QUOD_RUNNER: ${{ inputs.runner }}
@@ -314,6 +323,7 @@ runs:
       id: verdict
       if: inputs.mode != 'record' && steps.plan.outputs.ready == 'true'
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         QUOD: ${{ steps.install.outputs.bin }}
         QUOD_MODE: ${{ inputs.mode }}
