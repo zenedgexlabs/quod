@@ -122,7 +122,9 @@ env = { TZ = "America/New_York", LANG = "en_US.utf8" }
 [repos.networkx]
 url = "https://github.com/networkx/networkx"
 branch = "main"
-install = ["-e", ".[test]"]
+# As in its test-default and nightly jobs: without numpy and scipy, about
+# 1,100 tests are skipped and the functions they cover are never recorded.
+install = ["-e", ".[default,test]"]
 pytest = ["networkx", "-q", "-p", "no:cacheprovider"]
 mutate = ["networkx/algorithms/*.py", "networkx/classes/*.py"]
 ci_timeout = 40
