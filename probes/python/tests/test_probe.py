@@ -363,6 +363,17 @@ def test_introspection_is_not_a_global_use(captured):
     assert ("app/api.py", "handler") not in fns(tests["tests/test_pay.py::test_charge"])
 
 
+def test_pytest_reading_signatures_is_not_a_root_scope_use(captured):
+    """pytest reads every test's signature during collection (root scope) to
+    resolve its fixtures. That must not put test functions in the root scope:
+    editing one test would then run every test (E9 networkx)."""
+    _, _, tests, root = captured
+    root_test_fns = {f for f in fns(root) if f[0].startswith("tests/")}
+    assert root_test_fns == set(), root_test_fns
+    # The test itself still observes its own function.
+    assert ("tests/test_pay.py", "test_charge") in fns(tests["tests/test_pay.py::test_charge"])
+
+
 def env_of(rec: dict) -> dict[str, str]:
     return dict(map(tuple, rec["env"]))
 

@@ -424,6 +424,10 @@ def _marking_written(orig, written: set[str], env_key):
     return wrapper
 
 
+# Distributions whose introspection is the test runner's own bookkeeping.
+_RUNNER_DISTRIBUTIONS = frozenset({"pytest", "pluggy"})
+
+
 def _noting(orig, note):
     def wrapper(obj, *args, **kwargs):
         note(obj)
@@ -571,6 +575,8 @@ class Recorder:
 
     def _on_introspect(self, obj) -> None:
         try:
+            if self._introspected_by_runner():
+                return
             for f in _introspected_functions(obj):
                 self._record_code(f.__code__)
         except Exception:  # noqa: BLE001 - a probe bug must not break the test run
@@ -644,6 +650,28 @@ class Recorder:
                         self._flag(FLAG_DYNAMIC_IMPORT)
         except Exception:  # noqa: BLE001
             self._mark_untraced()
+
+    def _introspected_by_runner(self) -> bool:
+        """True if the nearest non-stdlib caller of an introspection is the
+        test runner itself (pytest, pluggy).
+
+        pytest reads every test's and fixture's signature to resolve
+        fixtures, during collection, in the root scope. Recording that would
+        put every test function in the root scope, so editing any test would
+        run all of them. Only the test (or the tests using the fixture)
+        depends on that signature, and they already observe the function
+        itself. Introspection by the project or by other libraries is still
+        recorded.
+        """
+        f = sys._getframe(2)
+        for _ in range(40):
+            if f is None:
+                return False
+            cls = self.classify_path(f.f_code.co_filename)
+            if cls is not None:
+                return cls[0] == "pkg" and cls[1] in _RUNNER_DISTRIBUTIONS
+            f = f.f_back
+        return False
 
     def _listing_by_repo_code(self) -> bool:
         """True if the nearest non-stdlib caller of a directory listing is

@@ -109,3 +109,20 @@ were skipped. Only builtin names (`int`, `object`, ...) are now free of
 side effects; any other name stays in the enclosing scope's stream. That
 costs precision only when such a default changes: an unchanged `=SENTINEL`
 hashes the same on both sides.
+
+## Amendment (2026-11-28): the test runner's own introspection isn't a use
+
+E9 on networkx: editing any test ran all 10,271 tests. pytest reads the
+signature of every test and fixture during collection to resolve fixtures.
+Collection runs in the root scope, so the probe recorded every test
+function there (3,851 function nodes), plus, through ADR 014's widening,
+the whole of 25 test files with module-level tables. Every change to a test
+became a root-scope change (R017).
+
+The probe (0.4.8) no longer records an introspection whose nearest caller
+outside the standard library and the probe is pytest or pluggy. Only the
+test, or the tests using the fixture, depend on that signature, and they
+already observe the function itself: its body runs when they do, and its
+header belongs to it. Introspection by the project or by any other library
+(Hypothesis, Click, Pydantic) is still recorded wherever it happens.
+Regression test: `test_pytest_reading_signatures_is_not_a_root_scope_use`.
