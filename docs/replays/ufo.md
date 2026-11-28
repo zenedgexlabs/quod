@@ -6,19 +6,20 @@ We replayed recent commits of [unjs/ufo](https://github.com/unjs/ufo) on a fork 
 |---|---|
 | Pull requests scored | 10 of 10 |
 | Tests Quod ran | 1,535 of 4,830 (32%) |
-| ...of which pytest itself skips (skip and xfail markers) | 0 |
+| ...of which Vitest itself skips (skip and xfail markers) | 0 |
 | Test step time, enforce vs full | 57 s vs 73 s (78%) |
+| ...on the 5 commits without an injected bug | 27 s vs 35 s (77%) |
 | Failing tests in the full run | 41 |
 | ...also failed in the enforce run | 41 |
 | **Missed failures (escapes)** | **0** |
 
 An escape is a test that failed in the full run but that Quod would have skipped. Times are the Quod step in each job (install, plan, tests, Verdict), as reported by GitHub in whole seconds.
 
-Tests that pytest skips (a skip or xfail marker, a missing optional dependency) never pass while Quod records them, so Quod can't prove what they depend on and always keeps them. They are counted as run here, but pytest skips them at once, so they cost almost no time.
+Tests that Vitest skips (a skip or xfail marker, a missing optional dependency) never pass while Quod records them, so Quod can't prove what they depend on and always keeps them. They are counted as run here, but Vitest skips them at once, so they cost almost no time.
 
 ## Per pull request
 
-| # | Change | Injected bug | Tests run (pytest-skipped) | Failing | Escapes | Enforce | Full |
+| # | Change | Injected bug | Tests run (Vitest-skipped) | Failing | Escapes | Enforce | Full |
 |---|---|---|---|---|---|---|---|
 | [1](https://github.com/zenedgexlabs/ufo/pull/1) | chore(deps): update all non-major dependencies (#312) | yes | 475 of 475 | 33 | 0 | 6 s | 7 s |
 | [2](https://github.com/zenedgexlabs/ufo/pull/2) | fix(withBase, withoutBase): prevent false prefix matches (#313) |  | 32 of 483 | 0 | 0 | 6 s | 7 s |

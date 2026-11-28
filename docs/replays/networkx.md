@@ -8,6 +8,7 @@ We replayed recent commits of [networkx/networkx](https://github.com/networkx/ne
 | Tests Quod ran | 19,524 of 102,703 (19%) |
 | ...of which pytest itself skips (skip and xfail markers) | 8,160 |
 | Test step time, enforce vs full | 374 s vs 1321 s (28%) |
+| ...on the 5 commits without an injected bug | 225 s vs 633 s (36%) |
 | Failing tests in the full run | 8 |
 | ...also failed in the enforce run | 8 |
 | **Missed failures (escapes)** | **0** |
