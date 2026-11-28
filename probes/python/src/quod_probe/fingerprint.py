@@ -149,7 +149,8 @@ def _safe(f) -> str:
 def _system() -> dict[str, str]:
     out = {
         "system.os": platform.system(),
-        "system.os_release": _safe(platform.release),
+        # Not the kernel release (ADR 012 amendment): it varies across a CI
+        # provider's own fleet, and the OS, libc and libraries are here.
         "system.libc": _safe(lambda: " ".join(platform.libc_ver())),
         "system.tzname": _safe(lambda: ",".join(time.tzname)),
         "system.timezone_offset": _safe(lambda: time.timezone),

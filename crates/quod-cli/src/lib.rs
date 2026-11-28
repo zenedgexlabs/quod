@@ -566,6 +566,10 @@ fn fingerprint(argv: &[String], env_names: &[String]) -> Result<Fingerprint> {
     serde_json::from_slice(&out.stdout).context("parsing the fingerprint")
 }
 
+/// Environment fingerprint keys that older probes recorded but that aren't
+/// part of the environment's identity any more (ADR 012 amendment).
+const IGNORED_ENVIRONMENT_KEYS: &[&str] = &["system.os_release"];
+
 /// Compares the recorded environment with the target one.
 fn environment_delta(graph: &FootprintGraph, current: &Fingerprint) -> EnvironmentDelta {
     let recorded = &graph.meta().environment;
@@ -575,6 +579,11 @@ fn environment_delta(graph: &FootprintGraph, current: &Fingerprint) -> Environme
     };
     let keys: BTreeSet<&String> = recorded.keys().chain(current.environment.keys()).collect();
     for k in keys {
+        // Maps recorded by older probes carry the kernel release, which the
+        // environment no longer includes (ADR 012 amendment).
+        if IGNORED_ENVIRONMENT_KEYS.contains(&k.as_str()) {
+            continue;
+        }
         if recorded.get(k) == current.environment.get(k) {
             continue;
         }

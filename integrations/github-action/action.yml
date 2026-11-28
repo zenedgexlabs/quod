@@ -198,20 +198,20 @@ runs:
       shell: bash
       env:
         QUOD: ${{ steps.install.outputs.bin }}
-        PY: ${{ inputs.python }}
-        HIT: ${{ steps.green.outputs.cache-matched-key }}
+        QUOD_PY: ${{ inputs.python }}
+        QUOD_HIT: ${{ steps.green.outputs.cache-matched-key }}
       run: |
         set -uo pipefail
         dir="$RUNNER_TEMP/quod"
         green_map="$dir/green/map.qmap"
         green_sha="$(cat "$dir/green/sha.txt" 2>/dev/null || true)"
-        if [ -z "$HIT" ] || [ ! -f "$green_map" ] || [ -z "$green_sha" ]; then
+        if [ -z "$QUOD_HIT" ] || [ ! -f "$green_map" ] || [ -z "$green_sha" ]; then
           echo "::notice::Quod: no green commit recorded yet; can't name a culprit"
           exit 0
         fi
         git fetch --no-tags --quiet origin "$green_sha" 2>/dev/null || true
         args=(culprit --map "$green_map" --good "$green_sha" --bad HEAD --results "$dir/results.jsonl")
-        [ -n "$PY" ] && args+=(--python "$PY")
+        [ -n "$QUOD_PY" ] && args+=(--python "$QUOD_PY")
         {
           echo "### Quod Culprit: which commit broke main"
           echo
@@ -256,27 +256,27 @@ runs:
       shell: bash
       env:
         QUOD: ${{ steps.install.outputs.bin }}
-        MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
-        KEY: ${{ inputs.signing-key }}
-        PY: ${{ inputs.python }}
-        HIT: ${{ steps.map.outputs.cache-matched-key }}
+        QUOD_MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
+        QUOD_KEY: ${{ inputs.signing-key }}
+        QUOD_PY: ${{ inputs.python }}
+        QUOD_HIT: ${{ steps.map.outputs.cache-matched-key }}
       run: |
         set -euo pipefail
         dir="$RUNNER_TEMP/quod"; mkdir -p "$dir"
         : > "$dir/skip.txt"
-        if [ -z "$HIT" ] || [ ! -f "$MAP" ]; then
+        if [ -z "$QUOD_HIT" ] || [ ! -f "$QUOD_MAP" ]; then
           echo "::notice::Quod: no footprint map yet (record one on the default branch); running everything"
           echo "ready=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        args=(--map "$MAP" --skip-out "$dir/skip.txt" --report-out "$dir/plan.json")
-        if [ -n "$KEY" ]; then
-          printf '%s' "$KEY" > "$dir/key.seed"; chmod 600 "$dir/key.seed"
+        args=(--map "$QUOD_MAP" --skip-out "$dir/skip.txt" --report-out "$dir/plan.json")
+        if [ -n "$QUOD_KEY" ]; then
+          printf '%s' "$QUOD_KEY" > "$dir/key.seed"; chmod 600 "$dir/key.seed"
           args+=(--key "$dir/key.seed")
         else
           args+=(--advisory)
         fi
-        [ -n "$PY" ] && args+=(--python "$PY")
+        [ -n "$QUOD_PY" ] && args+=(--python "$QUOD_PY")
         "$QUOD" select "${args[@]}"
         printf '%s\n' "${args[@]}" > "$dir/args.txt"
         echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -316,9 +316,9 @@ runs:
       shell: bash
       env:
         QUOD: ${{ steps.install.outputs.bin }}
-        MODE: ${{ inputs.mode }}
-        ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
-        AGENTS: ${{ inputs.agent-authors }}
+        QUOD_MODE: ${{ inputs.mode }}
+        QUOD_ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
+        QUOD_AGENTS: ${{ inputs.agent-authors }}
       run: |
         set +e -uo pipefail  # a failing or blocked Verdict exits non-zero; Outcome decides
         dir="$RUNNER_TEMP/quod"
@@ -331,14 +331,14 @@ runs:
           sel+=("$a")
         done
         author=human
-        case ",$AGENTS," in *",$ACTOR,"*) author=agent;; esac
+        case ",$QUOD_AGENTS," in *",$QUOD_ACTOR,"*) author=agent;; esac
         "$QUOD" verdict "${sel[@]}" --results "$dir/results.jsonl" \
           --out "$dir/verdict.json" --card "$dir/card.md" --author "$author" \
-          $( [ "$author" = agent ] && printf -- '--agent %s' "$ACTOR" ) > /dev/null
+          $( [ "$author" = agent ] && printf -- '--agent %s' "$QUOD_ACTOR" ) > /dev/null
         code=$?
         status=$(python3 -c "import json,base64,sys; e=json.load(open(sys.argv[1])); print(json.loads(base64.b64decode(e['payload']))['predicate']['status'])" "$dir/verdict.json" 2>/dev/null || echo unknown)
         {
-          if [ "$MODE" = shadow ]; then
+          if [ "$QUOD_MODE" = shadow ]; then
             skipped=$(grep -vc '^#' "$dir/skip.txt" || true)
             echo "> **Shadow mode:** the full suite ran. In enforce mode Quod would have skipped **$skipped** tests, each with a certificate."
             echo

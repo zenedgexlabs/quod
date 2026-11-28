@@ -150,3 +150,12 @@ The JavaScript probe implements the same contract:
   edits change nothing by themselves, as Python ones don't: the installed
   packages are compared directly (`EnvironmentDelta::npm_observed`). A map
   with only a Python fingerprint still counts them.
+- **Kernel release** (2026-11-28). `system.os_release` (`platform.release()`,
+  `os.release()`) is no longer part of the fingerprint. GitHub's hosted
+  runners don't all run the same kernel: in E9, 2 of about 60 jobs landed
+  on a different kernel than the recording, and R018 ran every test. What
+  tests depend on in practice (the OS, libc, the interpreter, OpenSSL,
+  SQLite, zlib, the installed packages) is still fingerprinted. A test that
+  depends on the kernel version itself isn't covered; run it in a container
+  (`QUOD_CONTAINER_DIGEST`) or mark it never-skip. `quod select` ignores
+  the key in maps recorded by older probes.

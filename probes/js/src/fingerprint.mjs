@@ -101,7 +101,8 @@ function system() {
   };
   return {
     'system.os': process.platform,
-    'system.os_release': safe(() => os.release()),
+    // Not the kernel release (ADR 012 amendment): it varies across a CI
+    // provider's own fleet, and the OS, libc and libraries are here.
     'system.timezone': safe(() => Intl.DateTimeFormat().resolvedOptions().timeZone),
     'system.timezone_offset': safe(() => new Date(0).getTimezoneOffset()),
     'system.locale': safe(() => Intl.DateTimeFormat().resolvedOptions().locale),

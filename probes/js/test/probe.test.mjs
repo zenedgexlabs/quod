@@ -82,7 +82,7 @@ describe('recorded Vitest run', () => {
   });
 
   test('header and names', () => {
-    assert.equal(header.probe, 'js-probe/0.2.1');
+    assert.equal(header.probe, 'js-probe/0.2.2');
     assert.equal(header.ecosystem, 'npm');
     assert.deepEqual(Object.keys(tests).sort(), [
       'test/calc.test.ts::calc > ',

@@ -1,6 +1,6 @@
 # ADR 021: Enumerating the environment, and CI bookkeeping
 
-Status: Accepted (probes: Python 0.4.3, JS 0.2.1)
+Status: Accepted (probes: Python 0.4.3, JS 0.2.1; Action step settings as `QUOD_*` from quod-action v0.1.0-alpha.6)
 
 ## Context
 
