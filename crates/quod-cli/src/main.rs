@@ -161,6 +161,30 @@ enum Cmd {
         #[arg(long)]
         json: bool,
     },
+    /// Mutation check for the change (ADR 025): small edits to each changed
+    /// function, each run against the tests that execute it. Reports the
+    /// mutants no test notices. Advisory; pytest only.
+    ///
+    /// Example: `quod mutate --map map.qmap --python python -- python -m pytest -q`
+    Mutate {
+        #[command(flatten)]
+        sel: SelectArgs,
+        /// At most this many mutants in all.
+        #[arg(long, default_value_t = 30)]
+        max_mutants: usize,
+        /// Seconds per test run; a mutant that runs longer counts as killed.
+        #[arg(long, default_value_t = 300)]
+        timeout: u64,
+        /// Write the JSON report here.
+        #[arg(long)]
+        report_out: Option<PathBuf>,
+        /// Write the Markdown card section here (else print it).
+        #[arg(long)]
+        card_out: Option<PathBuf>,
+        /// The test command (Quod appends `--quod-only` or `--quod-skip`).
+        #[arg(last = true, required = true)]
+        command: Vec<String>,
+    },
     /// Serve the agent tools (tests_for, why, culprit, check) over MCP on
     /// stdio.
     ///
@@ -570,6 +594,39 @@ fn run(cli: Cli) -> Result<ExitCode> {
             } else {
                 ExitCode::from(1)
             })
+        }
+        Cmd::Mutate {
+            sel,
+            max_mutants,
+            timeout,
+            report_out,
+            card_out,
+            command,
+        } => {
+            let repo = Repo::discover(&cli.repo_dir)?;
+            let mut select = select_options(&cli, &repo, sel);
+            select.advisory = true;
+            select.key = None;
+            let opts = quod_cli::mutate::MutateOptions {
+                select,
+                python: sel
+                    .python
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from("python")),
+                command: command.clone(),
+                max_mutants: *max_mutants,
+                timeout: std::time::Duration::from_secs(*timeout),
+            };
+            let report = quod_cli::mutate::run_mutate(&repo, &opts)?;
+            if let Some(p) = report_out {
+                fs::write(p, serde_json::to_string_pretty(&report)?)?;
+            }
+            let card = report.markdown();
+            match card_out {
+                Some(p) => fs::write(p, &card)?,
+                None => print!("{card}"),
+            }
+            Ok(ExitCode::SUCCESS)
         }
         Cmd::Mcp {
             cmd:

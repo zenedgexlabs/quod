@@ -86,6 +86,14 @@ the certified-skipped tests keep their footprints. The map is the one a full
 recording would give (ADR 024). Every 25th run records every test
 (`full-record-every`); `incremental: false` always does.
 
+## Mutation check
+
+With `mutation: true`, pull request runs (pytest) also make small edits to
+each function the change touched, one at a time, and run only the tests that
+execute that function. Edits no test notices ("surviving mutants") are logic
+nothing checks, and are listed in the card. It's advisory and never fails the
+job; `mutation-max` (default 30) bounds the number of edits (ADR 025).
+
 ## Vitest and Jest
 
 ```yaml

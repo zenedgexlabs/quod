@@ -6,6 +6,7 @@
 pub mod agent;
 pub mod install;
 pub mod mcp;
+pub mod mutate;
 pub mod pull;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};

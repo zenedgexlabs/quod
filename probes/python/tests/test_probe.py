@@ -685,6 +685,56 @@ def test_recording_leaves_the_import_builtins_alone(tmp_path):
     assert "3 passed" in res.stdout
 
 
+MUTANT_SAMPLE = '''
+class Money:
+    def allocate(self, parts):
+        """Split."""
+        if parts <= 0:
+            raise ValueError
+
+        def inner(x):
+            return x + 1
+
+        return [self.cents // parts + (1 if i < self.cents % parts else 0) for i in range(parts)]
+
+
+def f(*args, a=True):
+    return a and len(args) == 2
+'''
+
+
+def test_mutants_cover_the_functions_own_body_only():
+    """ADR 025: docstrings and nested definitions (entities of their own)
+    aren't mutated, and every mutant compiles (`*args` is left alone)."""
+    from quod_probe.mutants import sites
+
+    def got(q):
+        return [(s["line"], s["old"], s["new"]) for s in sites(MUTANT_SAMPLE, q)]
+
+    assert got("Money.allocate") == [
+        (5, "<=", ">"),
+        (5, "0", "1"),
+        (11, "//", "*"),
+        (11, "+", "-"),
+        (11, "1", "2"),
+        (11, "<", ">="),
+        (11, "0", "1"),
+    ]
+    assert got("Money.allocate.<locals>.inner") == [(9, "+", "-"), (9, "1", "2")]
+    assert got("f") == [(15, "and", "or"), (15, "==", "!="), (15, "2", "3")]
+    assert got("missing") == []
+
+
+def test_quod_only_runs_only_the_named_tests(tmp_path):
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("def test_a():\n    pass\n\ndef test_b():\n    pass\n")
+    only = tmp_path / "only.txt"
+    only.write_text("tests/test_a.py::test_b\n")
+    res = _pytest(tmp_path, f"--quod-only={only}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "1 passed, 1 deselected" in res.stdout
+
+
 def test_the_fingerprint_commands_digest_is_what_the_plugin_accepts(tmp_path):
     """`quod select` pins the digest `python -m quod_probe fingerprint`
     reports; the plugin must accept it in the same environment."""

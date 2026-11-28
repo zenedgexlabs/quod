@@ -88,6 +88,16 @@ inputs:
       record: record every test on every Nth run (by run number) even when
       incremental, so a map never depends on a long chain. 0: never.
     default: '25'
+  mutation:
+    description: >-
+      On pull requests (pytest), run the mutation check (ADR 025): small edits
+      to each function the change touched, each against the tests that run
+      it. Surviving mutants (logic no test checks) are listed in the card.
+      Advisory: it never fails the job.
+    default: 'false'
+  mutation-max:
+    description: At most this many mutants per run.
+    default: '30'
   comment:
     description: >-
       On pull requests, post the Verdict card as a comment, edited in place on
@@ -405,6 +415,30 @@ runs:
         echo "status=$status" >> "$GITHUB_OUTPUT"
         echo "envelope=$dir/verdict.json" >> "$GITHUB_OUTPUT"
         echo "code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Mutation check
+      if: >-
+        inputs.mutation == 'true' && inputs.runner == 'pytest' &&
+        steps.plan.outputs.ready == 'true' && inputs.mode != 'record'
+      continue-on-error: true
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        QUOD: ${{ steps.install.outputs.bin }}
+        QUOD_MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
+        QUOD_PY: ${{ inputs.python }}
+        QUOD_CMD: ${{ inputs.test-command }}
+        QUOD_MAX: ${{ inputs.mutation-max }}
+      run: |
+        set -uo pipefail
+        dir="$RUNNER_TEMP/quod"
+        args=(mutate --map "$QUOD_MAP" --max-mutants "$QUOD_MAX" --card-out "$dir/mutation.md" --report-out "$dir/mutation.json")
+        [ -n "$QUOD_PY" ] && args+=(--python "$QUOD_PY")
+        if "$QUOD" "${args[@]}" -- $QUOD_CMD; then
+          { echo; cat "$dir/mutation.md"; } | tee -a "$GITHUB_STEP_SUMMARY" >> "$dir/card.md"
+        else
+          echo "::warning::Quod: the mutation check didn't run"
+        fi
 
     - name: Comment on the pull request
       if: >-

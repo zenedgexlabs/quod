@@ -20,7 +20,18 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     fp = sub.add_parser("fingerprint", help="print the environment fingerprint")
     fp.add_argument("--env", action="append", default=[], metavar="NAME")
+    mu = sub.add_parser("mutants", help="print mutants of functions in a file (quod mutate)")
+    mu.add_argument("file")
+    mu.add_argument("qual", nargs="+", help="qualified names of the functions to mutate")
     args = ap.parse_args(argv)
+    if args.cmd == "mutants":
+        from . import mutants
+
+        with open(args.file, encoding="utf-8") as f:
+            source = f.read()
+        json.dump({q: mutants.sites(source, q) for q in args.qual}, sys.stdout, sort_keys=True)
+        sys.stdout.write("\n")
+        return 0
     if args.cmd == "fingerprint":
         if "*" in args.env:
             fingerprint.debug_environ("select")

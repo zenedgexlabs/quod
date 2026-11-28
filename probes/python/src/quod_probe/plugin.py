@@ -100,6 +100,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     g.addoption("--quod-skip", metavar="PATH", default=None, help="deselect the tests named in PATH")
     g.addoption("--quod-root", metavar="DIR", default=None, help="repository root (default: git toplevel)")
     g.addoption("--quod-results", metavar="PATH", default=None, help="write per-test outcomes to PATH (JSON Lines)")
+    g.addoption(
+        "--quod-only",
+        metavar="PATH",
+        default=None,
+        help="run only the tests named in PATH (quod mutate: the tests that execute a function)",
+    )
 
 
 class ResultsWriter:
@@ -428,6 +434,17 @@ def pytest_ignore_collect(collection_path, config: pytest.Config):
 
 
 def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: list[pytest.Item]) -> None:
+    only = config.getoption("quod_only")
+    if only:
+        with open(only, encoding="utf-8") as f:
+            wanted = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+        root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
+        keep, drop = [], []
+        for item in items:
+            (keep if item_name(item, root)[0] in wanted else drop).append(item)
+        if drop:
+            config.hook.pytest_deselected(items=drop)
+            items[:] = keep
     plan = _skip_plan(config)
     if not plan:
         return

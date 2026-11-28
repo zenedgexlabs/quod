@@ -30,6 +30,7 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [022](0022-function-granular-python-maps.md) | Accepted | Python maps declare `py.functions`: a changed function no recorded test executed affects nothing, even in a file with no function nodes (no file fallback) | E9 networkx: body edits in untested functions became root-scope changes because `conftest.py` imports every module |
 | [023](0023-transparent-import-tracking.md) | Accepted | The probe replaces nothing the program can see: imports are tracked through `_find_and_load`, bytecode and monitoring events; remaining replacements keep the stdlib's names | E9 pylint: dill pickling and astroid's live builtins broke while recording |
 | [024](0024-incremental-maps.md) | Accepted | `quod record --incremental`: record only the tests the plan runs and keep certified-skipped footprints; the Action does it by default on pytest, with a full recording every 25 runs | Recording the whole suite on every merge was Quod's own biggest cost |
+| [025](0025-change-scoped-mutation.md) | Accepted | `quod mutate`: small edits to each changed function, each run against only the tests that execute it; surviving mutants are reported (advisory) | E9 networkx: an injected bug that no test caught, even in the full suite |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.
