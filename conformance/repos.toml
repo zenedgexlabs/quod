@@ -127,7 +127,7 @@ branch = "main"
 install = ["-e", ".[default,test]"]
 pytest = ["networkx", "-q", "-p", "no:cacheprovider"]
 mutate = ["networkx/algorithms/*.py", "networkx/classes/*.py"]
-ci_timeout = 40
+ci_timeout = 60
 
 [repos.sqlfluff]
 url = "https://github.com/sqlfluff/sqlfluff"
