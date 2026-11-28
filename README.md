@@ -54,7 +54,7 @@ jobs:
       - uses: actions/setup-python@v7
         with: { python-version: '3.13' }   # the probe needs Python 3.12+
       - run: pip install -e .[test]        # your project and its test deps
-      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.7
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.8
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           test-command: python -m pytest -q
