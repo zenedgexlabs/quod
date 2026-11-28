@@ -80,3 +80,11 @@ Two layers, both conservative:
   resolved config; unknown counts as shared. Reproduced with a fixture
   (`test/fixtures/shared`): before, the second test file read a constant
   without recording its module.
+
+## Amendment (2026-11-28)
+
+The hooks changed (ADR 023): imports are no longer seen by wrapping
+`builtins.__import__` and `importlib.import_module`, but through
+`importlib._bootstrap._find_and_load` (loads) and the bytecode and
+`sys.monitoring` events of the code that runs (uses). The closure semantics
+above are unchanged.

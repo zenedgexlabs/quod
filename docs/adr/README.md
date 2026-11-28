@@ -28,6 +28,7 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [020](0020-additive-definitions.md) | Proposed | A new undecorated top-level `def` under an unused name changes only the module's namespace, observed by failed lookups and enumeration (probe `py.namespace`) | E8b attrs: adding a function made every test re-run |
 | [021](0021-environment-enumeration.md) | Accepted | Bulk reads of the environment are one `env:*` observation, and `env:*` leaves out per-run CI bookkeeping variables (reading one by name is still recorded) | E9 networkx: a prefix scan of `os.environ` at import made every CI run look changed |
 | [022](0022-function-granular-python-maps.md) | Accepted | Python maps declare `py.functions`: a changed function no recorded test executed affects nothing, even in a file with no function nodes (no file fallback) | E9 networkx: body edits in untested functions became root-scope changes because `conftest.py` imports every module |
+| [023](0023-transparent-import-tracking.md) | Accepted | The probe replaces nothing the program can see: imports are tracked through `_find_and_load`, bytecode and monitoring events; remaining replacements keep the stdlib's names | E9 pylint: dill pickling and astroid's live builtins broke while recording |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.

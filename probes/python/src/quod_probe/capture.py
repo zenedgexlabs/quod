@@ -185,7 +185,15 @@ class CacheTracker:
                 properties.append((ref, self.attrname))
                 return val
 
-        cached_property.__module__ = "functools"
+        # The replacements stand in for the originals under their names (ADR
+        # 023): pickle and dill pickle a function or class by reference only
+        # if `functools.<qualname>` is that object, so a module dict holding
+        # `lru_cache` pickles and loads as it does without the probe.
+        for new, orig in ((lru_cache, orig_lru), (cache, orig_cache), (cached_property, orig_cp)):
+            new.__module__ = orig.__module__
+            new.__qualname__ = orig.__qualname__
+            new.__doc__ = orig.__doc__
+        lru_cache.__wrapped__, cache.__wrapped__ = orig_lru, orig_cache
         functools.lru_cache, functools.cache, functools.cached_property = lru_cache, cache, cached_property
 
     def uninstall(self) -> None:
@@ -570,8 +578,11 @@ class Recorder:
     # sys.monitoring -------------------------------------------------------
 
     def _on_py_start(self, code: CodeType, _offset: int):
+        # sys._getframe(1) is the frame starting: monitoring calls this
+        # callback directly from it.
+        keep = self.imports.on_start(code, sys._getframe(1))
         self._record_code(code)
-        return sys.monitoring.DISABLE
+        return None if keep else sys.monitoring.DISABLE
 
     def _on_introspect(self, obj) -> None:
         try:

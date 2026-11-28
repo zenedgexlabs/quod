@@ -630,7 +630,14 @@ def test_cached_imports_carry_the_import_closure(tmp_path):
         "test_e.py": "def test_e():\n    assert True\n",
         # New module whose body does a cached relative import.
         "test_f.py": "from lib import rel\n\ndef test_f():\n    assert rel.VALUE == 2\n",
+        # Cached, through an explicit __import__ call.
+        "test_g.py": "def test_g():\n    assert __import__('lib.consts', fromlist=['CONST']).CONST == 2\n",
+        # Cached, through importlib.__import__.
+        "test_h.py": "import importlib\n\ndef test_h():\n    assert importlib.__import__('lib.consts', fromlist=['x']).CONST == 2\n",
+        # Cached relative import inside a function of the package.
+        "test_i.py": "import lib.user\n\ndef test_i():\n    assert lib.user.get() == 2\n",
     }
+    (d / "lib" / "user.py").write_text("def get():\n    from . import consts\n    return consts.CONST\n")
     for name, src in files.items():
         (d / "tests" / name).write_text(src)
     out = d / "capture.jsonl"
@@ -641,9 +648,64 @@ def test_cached_imports_carry_the_import_closure(tmp_path):
         for r in map(json.loads, out.read_text(encoding="utf-8").splitlines())
         if r["type"] == "test"
     }
-    for t in ("test_a", "test_b", "test_c", "test_d", "test_f"):
+    for t in ("test_a", "test_b", "test_c", "test_d", "test_f", "test_g", "test_h", "test_i"):
         assert {"lib/consts.py", "lib/helper.py"} <= tests[t], (t, tests[t])
     assert not any(f.startswith("lib/") for f in tests["test_e"]), tests["test_e"]
+
+
+TEST_TRANSPARENT = """
+import builtins, importlib, inspect, pickle
+
+def test_import_is_the_builtin():
+    assert inspect.isbuiltin(builtins.__import__)
+    assert pickle.loads(pickle.dumps(builtins.__import__)) is builtins.__import__
+
+def test_import_module_is_importlibs():
+    f = importlib.import_module
+    assert f.__code__.co_filename.replace("\\\\", "/").endswith("importlib/__init__.py")
+    assert pickle.loads(pickle.dumps(f)) is f
+
+def test_functools_replacements_pickle_by_name():
+    import functools
+    for f in (functools.lru_cache, functools.cache, functools.cached_property):
+        assert pickle.loads(pickle.dumps(f)) is f
+"""
+
+
+def test_recording_leaves_the_import_builtins_alone(tmp_path):
+    """ADR 023: the probe doesn't replace ``builtins.__import__`` or
+    ``importlib.import_module``. pylint pickles module dicts with dill (which
+    pickles builtins by name) and builds its model of ``builtins`` from the
+    live interpreter; both broke when they were wrappers."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_t.py").write_text(TEST_TRANSPARENT)
+    out = tmp_path / "capture.jsonl"
+    res = _pytest(tmp_path, f"--quod-record={out}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "3 passed" in res.stdout
+
+
+@pytest.mark.parametrize(
+    ("src", "expected"),
+    [
+        ("import a", (("a", 0, None),)),
+        ("import a.b as c", (("a.b", 0, None),)),
+        ("from a import b, c", (("a", 0, ("b", "c")),)),
+        ("from . import x", (("", 1, ("x",)),)),
+        ("from ..p import *", (("p", 2, ("*",)),)),
+    ],
+)
+def test_scan_imports_reads_level_and_fromlist(src, expected):
+    from quod_probe.imports import scan_imports
+
+    assert scan_imports(compile(src, "m", "exec")) == (expected, False)
+
+
+def test_scan_imports_flags_explicit_import_calls():
+    from quod_probe.imports import scan_imports
+
+    assert scan_imports(compile("m = __import__(name)", "m", "exec")) == ((), True)
+    assert scan_imports(compile("x = 1", "m", "exec")) == ((), False)
 
 
 def test_skip_file_lists_whole_files_that_are_not_collected(tmp_path):
