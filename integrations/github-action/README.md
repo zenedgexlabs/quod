@@ -32,9 +32,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }          # Quod diffs against the map's commit
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: '3.13' }  # the probe needs Python 3.12+
       - run: pip install -e .[test]       # your project and its test deps
       - uses: zenedgexlabs/quod-action@v0.1.0-alpha.7
@@ -57,7 +57,7 @@ Verdict is advisory.
 ## Vitest and Jest
 
 ```yaml
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: 22 }
       - run: npm ci
       - uses: zenedgexlabs/quod-action@v0.1.0-alpha.7

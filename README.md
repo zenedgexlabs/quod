@@ -49,9 +49,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: '3.13' }   # the probe needs Python 3.12+
       - run: pip install -e .[test]        # your project and its test deps
       - uses: zenedgexlabs/quod-action@v0.1.0-alpha.7

@@ -126,16 +126,16 @@ def workflow_text(cfg: dict, action: str, version: str, debug_env: bool = False)
     import shlex
 
     runner = cfg.get("runner", "pytest")
-    steps = ["      - uses: actions/checkout@v4", "        with: { fetch-depth: 0 }"]
+    steps = ["      - uses: actions/checkout@v7", "        with: { fetch-depth: 0 }"]
     if runner == "pytest":
-        steps += ["      - uses: actions/setup-python@v5", "        with: { python-version: '3.13' }"]
+        steps += ["      - uses: actions/setup-python@v7", "        with: { python-version: '3.13' }"]
         install = cfg.get("ci_install") or "pip install " + shlex.join([*cfg.get("install", ["-e", "."]), "pytest"])
         args = [a for a in cfg.get("pytest", []) if a not in ("-p", "no:cacheprovider")]
         inputs = f"test-command: {yaml_str(shlex.join(['python', '-m', 'pytest', *args]))}, python: python"
     else:
         if cfg.get("dir"):
             raise SystemExit(f"{runner} in a subdirectory ({cfg['dir']}) isn't supported by the Action yet")
-        steps += ["      - uses: actions/setup-node@v4", "        with: { node-version: 22 }"]
+        steps += ["      - uses: actions/setup-node@v7", "        with: { node-version: 22 }"]
         install = cfg.get("ci_install") or " && ".join(shlex.join(c) for c in cfg.get("install", []))
         inputs = f"runner: {runner}, test-command: {yaml_str(shlex.join(cfg.get('args', [])))}"
     if install:
