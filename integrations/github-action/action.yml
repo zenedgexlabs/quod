@@ -77,6 +77,16 @@ inputs:
   map-retention-days:
     description: Days a published map artifact is kept.
     default: '30'
+  comment:
+    description: >-
+      On pull requests, post the Verdict card as a comment, edited in place on
+      every push (one comment per job). Needs `pull-requests: write`; without
+      it (for example on pull requests from forks) the Action warns and
+      carries on. The card is always in the job summary too.
+    default: 'true'
+  github-token:
+    description: Token used to post the pull request comment.
+    default: ${{ github.token }}
 
 outputs:
   status:
@@ -358,6 +368,50 @@ runs:
         echo "status=$status" >> "$GITHUB_OUTPUT"
         echo "envelope=$dir/verdict.json" >> "$GITHUB_OUTPUT"
         echo "code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on the pull request
+      if: >-
+        inputs.comment == 'true' && steps.verdict.outputs.envelope != '' &&
+        (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        QUOD_PR: ${{ github.event.pull_request.number }}
+        QUOD_REPO: ${{ github.repository }}
+        QUOD_MODE: ${{ inputs.mode }}
+        QUOD_JOB: ${{ github.job }}
+        QUOD_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -uo pipefail
+        dir="$RUNNER_TEMP/quod"
+        # One comment per job, found again by this marker and edited in place.
+        marker="<!-- quod-verdict:$QUOD_JOB -->"
+        body="$dir/comment.md"
+        {
+          echo "$marker"
+          if [ "$QUOD_MODE" = shadow ]; then
+            skipped=$(grep -vc '^#' "$dir/skip.txt" || true)
+            echo "> **Shadow mode:** the full suite ran. In enforce mode Quod would have skipped **$skipped** tests, each with a certificate."
+            echo
+          fi
+          head -c 60000 "$dir/card.md"  # GitHub's limit is 65,536 characters
+          echo
+          echo "<sub>Job \`$QUOD_JOB\` · [run]($QUOD_RUN) · signed Verdict in the run's artifacts</sub>"
+        } > "$body"
+        if ! command -v gh > /dev/null; then
+          echo "::warning::Quod: gh isn't installed; the Verdict is in the job summary only"; exit 0
+        fi
+        id=$(gh api --paginate "repos/$QUOD_REPO/issues/$QUOD_PR/comments" \
+          --jq ".[] | select(.body | startswith(\"$marker\")) | .id" 2>/dev/null | head -n 1)
+        if [ -n "$id" ]; then
+          out=$(gh api -X PATCH "repos/$QUOD_REPO/issues/comments/$id" -F "body=@$body" 2>&1)
+        else
+          out=$(gh api -X POST "repos/$QUOD_REPO/issues/$QUOD_PR/comments" -F "body=@$body" 2>&1)
+        fi
+        if [ $? -ne 0 ]; then
+          echo "::warning::Quod: couldn't comment on the pull request (needs pull-requests: write): $(echo "$out" | tail -n 1)"
+        fi
 
     - name: Upload the Verdict
       if: steps.verdict.outputs.envelope != ''

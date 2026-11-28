@@ -28,6 +28,11 @@ on:
   push: { branches: [main] }
   pull_request:
 
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write                    # the Verdict comment on pull requests
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -53,6 +58,24 @@ Generate the signing key once with `quod keygen --out quod.seed`. Store the
 seed as the `QUOD_SIGNING_KEY` secret, and publish the printed key ID, so
 anyone can verify your Verdicts. Without a key (for example on forks), the
 Verdict is advisory.
+
+## Where the Verdict appears
+
+Every run writes the Verdict card to its job summary (the run's page in the
+Actions tab): the status, how many tests ran and how many were skipped with a
+certificate, why everything ran when it did, and any test-integrity findings
+or untested changes. In shadow mode it also says how many tests Quod would
+have skipped.
+
+On pull requests the card is also posted as a comment, one per job, edited in
+place on every push so the thread doesn't fill up. That needs
+`pull-requests: write`. On pull requests from forks the token is read-only,
+so the Action warns and the card stays in the job summary. Turn the comment
+off with `comment: false`.
+
+The signed Verdict itself (`verdict.json`, a DSSE envelope) is uploaded as
+the `quod-verdict` artifact, with the plan, skip list and test results it
+was computed from.
 
 ## Vitest and Jest
 
@@ -86,8 +109,8 @@ change are still the whole repository's.
 
 ## What you get per pull request
 
-- The job summary: the Verdict card. In shadow mode it also says how many
-  tests Quod would have skipped.
+- The Verdict card, in the job summary and as a pull request comment (see
+  [Where the Verdict appears](#where-the-verdict-appears)).
 - The `quod-verdict` artifact: the signed Verdict, the plan (every test run
   or skipped, with its reason), the skip list and the test results.
 

@@ -83,6 +83,12 @@ on:
   push: {{ branches: [main] }}
   pull_request:
 
+# pull-requests: the Action comments each job's Verdict card on the PR.
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
 # A new push to a branch cancels its run in progress.
 concurrency:
   group: quod-${{{{ github.ref }}}}
