@@ -24,15 +24,15 @@
     "scored_steps": 10,
     "escapes": 0,
     "failing_tests": 8,
-    "tests_fraction": 0.37,
-    "time_fraction": 0.47,
+    "tests_fraction": 0.19,
+    "time_fraction": 0.283,
     "date": "2026-11-28",
     "quod_version": "latest",
     "action": "zenedgexlabs/quod-action@v0.1.0-alpha.7",
     "archive": {
-      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/networkx-2026-11-28-4/e9-networkx-2026-11-28.tar.gz",
-      "sha256": "11771f89ce392cd61897d6dcc1205525770e84277943bab96018418542667a80",
-      "bytes": 4302833
+      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/networkx-2026-11-28-5/e9-networkx-2026-11-28.tar.gz",
+      "sha256": "aa35a6f9b3592b03403e5d6411ef5a7a9bd57294d8d5e87f8c36a5f2dd3ffa6e",
+      "bytes": 4037083
     }
   },
   "ufo": {
