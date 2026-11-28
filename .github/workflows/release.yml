@@ -141,8 +141,8 @@ jobs:
             echo "::notice::NPM_TOKEN isn't set: not publishing quod-js to npm"
             exit 0
           fi
-          tgz=$(ls dist/quod-js-*.tgz)
-          version=${tgz#dist/quod-js-}; version=${version%.tgz}
+          tgz=./$(ls dist/quod-js-*.tgz)  # ./: npm reads dist/x.tgz as a GitHub repository
+          version=${tgz#./dist/quod-js-}; version=${version%.tgz}
           if npm view "quod-js@$version" version > /dev/null 2>&1; then
             echo "quod-js $version is already on npm"
             exit 0
