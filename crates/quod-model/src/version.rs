@@ -17,6 +17,13 @@ pub const JOURNAL_VERSION: u32 = 1;
 /// splitting is sound only for maps whose captures all declare it.
 pub const CAP_PY_INTROSPECTION: &str = "py.introspection";
 
+/// Probe capability: every function of a Python source file that runs while
+/// recording is recorded as a function node, whatever else the test observes
+/// in that file. A Python file with no function nodes then means no recorded
+/// test executed any of its functions, so a change confined to one of them
+/// affects none (rather than the whole file). ADR 022.
+pub const CAP_PY_FUNCTIONS: &str = "py.functions";
+
 /// Probe capability: captures carry environment and invocation fingerprints
 /// and per-test environment variable reads, which turns on environment mode
 /// in `quod select --python` (ADR 012).

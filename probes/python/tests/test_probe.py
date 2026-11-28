@@ -237,7 +237,7 @@ def test_header_and_names(captured):
     res, recs, tests, _ = captured
     assert "21 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
-    assert recs[0]["capabilities"] == ["py.environment", "py.introspection"]
+    assert recs[0]["capabilities"] == ["py.environment", "py.functions", "py.introspection"]
     assert recs[-1]["type"] == "root"
     assert set(tests) >= {
         "tests/test_pay.py::test_charge",

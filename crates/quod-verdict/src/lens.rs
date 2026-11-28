@@ -6,7 +6,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use quod_change::{ChangeSet, FileStatus};
 use quod_graph::{FootprintGraph, NodeId, TestIdx};
-use quod_ladder::resolve_changes;
+use quod_ladder::{function_granular, resolve_changes};
 use quod_model::{NodeKind, TestFlags, names};
 use quod_policy::{ChangedNode, Evaluation, Policy};
 use serde::{Deserialize, Serialize};
@@ -134,7 +134,11 @@ pub fn untested_changes(inp: &LensInput<'_>) -> Vec<Finding> {
                 Some(n) => executed(g, n),
                 None => match file {
                     // Known only at file granularity: no claim.
-                    Some(f) if !fn_files.contains(&f) => true,
+                    Some(f)
+                        if !fn_files.contains(&f) && !function_granular(g, &names::file(path)) =>
+                    {
+                        true
+                    }
                     // Function-level coverage exists and nobody executed it,
                     // or no test loaded the file at all.
                     _ => false,

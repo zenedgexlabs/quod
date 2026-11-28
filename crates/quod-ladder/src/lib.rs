@@ -24,7 +24,8 @@ use quod_graph::{FootprintGraph, NodeId, TestIdx, kind_tag};
 use quod_hash::{Digest, Domain, hash_value};
 use quod_model::{
     CertKind, Certificate, CertificateBody, Evidence, ModelError, NodeKind, PinnedInputs, SkipType,
-    StableTestId, Traceability, version::CERT_VERSION,
+    StableTestId, Traceability,
+    version::{CAP_PY_FUNCTIONS, CERT_VERSION},
 };
 use quod_policy::{ChangedNode, Evaluation, Policy};
 
@@ -100,6 +101,20 @@ impl Selection {
     }
 }
 
+/// True if the map records `file` at function granularity even when no test
+/// executed any of its functions: its captures all declare
+/// [`CAP_PY_FUNCTIONS`] and it is a Python source file. Then a function of
+/// that file missing from the map was executed by no recorded test, rather
+/// than recorded only as part of the file.
+pub fn function_granular(graph: &FootprintGraph, file: &str) -> bool {
+    file.ends_with(".py")
+        && graph
+            .meta()
+            .capabilities
+            .iter()
+            .any(|c| c == CAP_PY_FUNCTIONS)
+}
+
 /// Resolves policy-level changed nodes to graph nodes and evidence refs.
 ///
 /// Returns the graph nodes to intersect with footprints, plus the refs
@@ -141,12 +156,13 @@ pub fn resolve_changes(
             None => match (&c.kind, &c.fallback_file) {
                 (NodeKind::Function, Some(file)) => match graph.find_node(NodeKind::File, file) {
                     // The file is known only at file granularity: use the file node.
-                    Some(f) if !fn_files.contains(&f) => {
+                    Some(f) if !fn_files.contains(&f) && !function_granular(graph, file) => {
                         nodes.insert(f);
                         refs.insert(graph.node_ref(f));
                     }
-                    // Function-level coverage exists and nobody executed it, or the
-                    // file was never observed.
+                    // Function-level coverage exists (or the probe would have
+                    // recorded any executed function) and nobody executed it, or
+                    // the file was never observed.
                     _ => {
                         refs.insert(format!("{}:{}", kind_tag(c.kind), c.name));
                     }
@@ -297,8 +313,16 @@ mod tests {
     ///
     /// `tests/conftest.py` is root scope.
     fn graph() -> (FootprintGraph, Digest) {
+        graph_with(&[])
+    }
+
+    /// [`graph`], with `tests/conftest.py` also importing `src/util.py` in
+    /// the root scope when `util_in_root`, recorded by captures declaring
+    /// `capabilities`.
+    fn graph_with_root(capabilities: &[&str], util_in_root: bool) -> (FootprintGraph, Digest) {
         let mut b = GraphBuilder::new(MapMeta {
             repo: "acme/app".into(),
+            capabilities: capabilities.iter().map(|c| (*c).to_owned()).collect(),
             ..MapMeta::default()
         });
         let h = |s: &str| Some(hash_domain(Domain::Blob, s.as_bytes()));
@@ -313,6 +337,9 @@ mod tests {
         let conftest = b.node(NodeKind::File, "tests/conftest.py", h("cf"), None);
         let pkg = b.node(NodeKind::ExtPackage, "pypi:requests", h("r"), None);
         b.observe_root(conftest);
+        if util_in_root {
+            b.observe_root(util);
+        }
 
         let t1 = b.test(
             StableTestId::derive("tests/test_pay.py", "test_pay", ""),
@@ -340,6 +367,10 @@ mod tests {
         let g = b.build();
         let (_, root) = g.encode().unwrap();
         (g, root)
+    }
+
+    fn graph_with(capabilities: &[&str]) -> (FootprintGraph, Digest) {
+        graph_with_root(capabilities, false)
     }
 
     fn change(files: Vec<FileDetail>) -> ChangeSet {
@@ -372,7 +403,14 @@ mod tests {
     }
 
     fn run_select(files: Vec<FileDetail>, advisory: bool) -> (FootprintGraph, Selection) {
-        let (g, root) = graph();
+        run_select_on(graph(), files, advisory)
+    }
+
+    fn run_select_on(
+        (g, root): (FootprintGraph, Digest),
+        files: Vec<FileDetail>,
+        advisory: bool,
+    ) -> (FootprintGraph, Selection) {
         let policy = Policy::default_policy();
         let cs = change(files);
         let ev = policy.evaluate(
@@ -514,6 +552,55 @@ mod tests {
                 "tests/test_util.py::test_util"
             ]
         );
+    }
+
+    /// ADR 022: with `py.functions`, a Python file without function nodes had
+    /// none of its functions executed, so a change inside one affects no
+    /// test, not every test that imported the file.
+    #[test]
+    fn function_change_in_unexecuted_python_file_affects_nobody_with_py_functions() {
+        let (g, sel) = run_select_on(
+            graph_with(&[CAP_PY_FUNCTIONS]),
+            vec![py("src/util.py", false, &["helper"])],
+            false,
+        );
+        assert_eq!(
+            names_of(&g, sel.run.iter().map(|r| r.0)),
+            vec!["tests/test_net.py::test_net"],
+            "only the network test (R009) runs"
+        );
+        assert!(
+            sel.changed_refs
+                .contains(&"fn:src/util.py::helper".to_string())
+        );
+    }
+
+    /// The networkx case: `conftest.py` imports every module, so falling back
+    /// to the file node puts the change in the root scope (R017).
+    #[test]
+    fn unexecuted_function_of_a_root_scope_file_is_not_a_root_scope_change_with_py_functions() {
+        let (_, without) = run_select_on(
+            graph_with_root(&[], true),
+            vec![py("src/util.py", false, &["helper"])],
+            false,
+        );
+        assert!(
+            without.skipped.is_empty(),
+            "file fallback: R017 runs everything"
+        );
+        let (_, with) = run_select_on(
+            graph_with_root(&[CAP_PY_FUNCTIONS], true),
+            vec![py("src/util.py", false, &["helper"])],
+            false,
+        );
+        assert_eq!(with.skipped.len(), 2);
+        // A module-level change of the same file still runs everything.
+        let (_, module) = run_select_on(
+            graph_with_root(&[CAP_PY_FUNCTIONS], true),
+            vec![py("src/util.py", true, &[])],
+            false,
+        );
+        assert!(module.skipped.is_empty());
     }
 
     #[test]
