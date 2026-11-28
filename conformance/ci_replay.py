@@ -401,7 +401,7 @@ def main() -> int:
     ap.add_argument("--owner", default="zenedgexlabs")
     ap.add_argument("--python", default="3.13")
     ap.add_argument("--work", type=Path, default=R.ROOT / "conformance" / ".work")
-    ap.add_argument("--action", default="zenedgexlabs/quod-action@v0.1.0-alpha.8",
+    ap.add_argument("--action", default="zenedgexlabs/quod-action@v0.1.0-alpha.9",
                     help="the Action the fork's workflow uses")
     ap.add_argument("--quod-version", default="latest", help="Quod release the Action installs")
     ap.add_argument("--print-workflow", action="store_true", help="print the fork's workflow and exit")

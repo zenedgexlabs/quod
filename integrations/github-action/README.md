@@ -42,7 +42,7 @@ jobs:
       - uses: actions/setup-python@v7
         with: { python-version: '3.13' }  # the probe needs Python 3.12+
       - run: pip install -e .[test]       # your project and its test deps
-      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.8
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.9
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           test-command: python -m pytest -q
@@ -100,7 +100,7 @@ job; `mutation-max` (default 30) bounds the number of edits (ADR 025).
       - uses: actions/setup-node@v7
         with: { node-version: 22 }
       - run: npm ci
-      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.8
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.9
         with:
           mode: ${{ github.event_name == 'push' && 'record' || 'shadow' }}
           runner: vitest                  # or jest
@@ -117,7 +117,7 @@ repository root. Quod records and selects from there; the map and the
 change are still the whole repository's.
 
 ```yaml
-      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.8
+      - uses: zenedgexlabs/quod-action@v0.1.0-alpha.9
         with:
           working-directory: services/billing
           test-command: python -m pytest -q

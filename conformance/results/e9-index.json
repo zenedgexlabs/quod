@@ -35,6 +35,24 @@
       "bytes": 4037083
     }
   },
+  "pylint": {
+    "repo": "pylint",
+    "fork": "zenedgexlabs/pylint",
+    "steps": 10,
+    "scored_steps": 10,
+    "escapes": 0,
+    "failing_tests": 2,
+    "tests_fraction": 0.972,
+    "time_fraction": 1.079,
+    "date": "2026-11-29",
+    "quod_version": "latest",
+    "action": "zenedgexlabs/quod-action@v0.1.0-alpha.8",
+    "archive": {
+      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/pylint-2026-11-29/e9-pylint-2026-11-29.tar.gz",
+      "sha256": "ba8f102acd09482f9cb6b462ae6ab5f61c811c2ae3be063559973fe689215f1d",
+      "bytes": 1704376
+    }
+  },
   "ufo": {
     "repo": "ufo",
     "fork": "zenedgexlabs/ufo",
