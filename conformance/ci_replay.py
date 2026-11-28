@@ -34,8 +34,37 @@ from pathlib import Path
 import culprit as E7
 import replay as R
 
+# Network failures worth retrying: a replay runs for hours, and one dropped
+# DNS lookup or GitHub 5xx shouldn't end it.
+TRANSIENT = (
+    "could not resolve host", "connection reset", "connection refused", "timed out", "early eof",
+    "failed to connect", "error connecting to", "tls handshake", "http 502", "http 503", "http 504",
+    "the remote end hung up", "unexpected disconnect",
+)
+
+
+def net(fn, *args, **kwargs):
+    """Calls `fn` (an `R.sh`-style command), retrying transient network
+    failures with backoff, whether they raise or return a failed process."""
+    for attempt in range(6):
+        last = attempt == 5
+        try:
+            res = fn(*args, **kwargs)
+        except RuntimeError as e:
+            if last or not any(t in str(e).lower() for t in TRANSIENT):
+                raise
+            R.log(f"    network error, retrying: {str(e).strip().splitlines()[-1][:160]}")
+        else:
+            out = f"{getattr(res, 'stdout', '')}{getattr(res, 'stderr', '')}".lower()
+            if last or res.returncode == 0 or not any(t in out for t in TRANSIENT):
+                return res
+            R.log("    network error, retrying")
+        time.sleep(min(120, 10 * 2 ** attempt))
+    raise AssertionError("unreachable")
+
+
 def gh(*args: str, check: bool = True):
-    return R.sh(["gh", *args], check=check)
+    return net(R.sh, ["gh", *args], check=check)
 
 
 def upstream_slug(cfg: dict) -> str:
@@ -178,7 +207,7 @@ def push(args, cfg: dict, ws: R.Workspace, fork: str, good: str, window: list[st
     ws.checkout(good)
     with_quod_workflow(ws, cfg, args)
     base = commit(ws, f"E9: Quod workflow on {good[:10]}")
-    ws.git("push", "-q", "--force", "fork", f"{base}:refs/heads/main")
+    net(ws.git, "push", "-q", "--force", "fork", f"{base}:refs/heads/main")
     R.log(f"[{fork}] main = {base[:8]} (upstream {good[:8]} + workflow); recording the map")
     wait_for_run(fork, base)
 
@@ -201,7 +230,7 @@ def push(args, cfg: dict, ws: R.Workspace, fork: str, good: str, window: list[st
         subject = ws.git("log", "-1", "--format=%s", c).stdout.strip()
         sha = commit(ws, f"E9 step {k}: {subject}" + (f" + mutant {desc}" if desc else ""))
         branch = f"e9-{k}"
-        ws.git("push", "-q", "--force", "fork", f"{sha}:refs/heads/{branch}")
+        net(ws.git, "push", "-q", "--force", "fork", f"{sha}:refs/heads/{branch}")
         body = f"Replays upstream {c} on the map's commit" + (f", plus the mutant `{desc}`." if desc else ".")
         gh("pr", "create", "-R", fork, "--base", "main", "--head", branch,
            "--title", f"E9 step {k}: {subject}"[:120], "--body", body, check=False)
@@ -214,7 +243,7 @@ def push(args, cfg: dict, ws: R.Workspace, fork: str, good: str, window: list[st
         ws.git("read-tree", "-u", "--reset", c)
         with_quod_workflow(ws, cfg, args)
         base = commit(ws, f"E9 main: {subject}")
-        ws.git("push", "-q", "--force", "fork", f"{base}:refs/heads/main")
+        net(ws.git, "push", "-q", "--force", "fork", f"{base}:refs/heads/main")
         R.log(f"    main = {base[:8]} (upstream {c[:8]}); recording the map")
         wait_for_run(fork, base)
 
@@ -385,7 +414,7 @@ def main() -> int:
     if args.push:
         ws = R.setup(args.repo, cfg, args.work / args.repo, args.python)
         branch = cfg["branch"]
-        ws.git("fetch", "-q", "origin", branch, check=False)
+        net(ws.git, "fetch", "-q", "origin", branch, check=False)
         commits = ws.git("log", "--first-parent", "--format=%H", f"-n{args.window + 1}",
                          f"origin/{branch}").stdout.split()[::-1]
         push(args, cfg, ws, fork, commits[0], commits[1:])
