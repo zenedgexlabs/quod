@@ -133,6 +133,26 @@ def environ_hash(environ: dict[str, str] | None = None) -> str:
     return hashlib.sha256(_HASH_PREFIX + json.dumps(items).encode("utf-8", "surrogateescape")).hexdigest()
 
 
+def debug_environ(where: str, environ: dict[str, str] | None = None) -> None:
+    """With ``QUOD_DEBUG_ENV`` set, writes the names and value hashes (never
+    the values) behind ``env:*`` to stderr, to find which variable made it
+    differ between a recording and a plan."""
+    env = os.environ if environ is None else environ
+    target = env.get("QUOD_DEBUG_ENV")
+    if not target:
+        return
+    lines = [
+        f"quod-debug-env {where} {key} {env_value_hash(env.get(key))[:12]}\n"
+        for key in sorted(env_key(k) for k in env)
+        if key not in RUNNER_ENV_NAMES and not key.startswith("QUOD_") and not ci_bookkeeping(key)
+    ]
+    if os.path.isdir(target):  # one file per process: quod captures the fingerprint's stderr
+        with open(os.path.join(target, f"{where}-{os.getpid()}.txt"), "w", encoding="utf-8") as f:
+            f.writelines(lines)
+    else:
+        sys.stderr.writelines(lines)
+
+
 def digest(fp: dict[str, str]) -> str:
     """Canonical digest of a fingerprint map."""
     return hashlib.sha256(json.dumps(fp, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()

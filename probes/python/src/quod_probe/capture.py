@@ -303,6 +303,9 @@ class EnvTracker:
         cls = type(os.environ)
         note, written, environ = self._note, self.written, os.environ
         outer = environ_hash(dict(os.environ))
+        from .fingerprint import debug_environ
+
+        debug_environ("record", dict(os.environ))
         orig = {n: cls.__dict__[n] for n in ("__getitem__", "__setitem__", "__delitem__", "__iter__", "__len__")}
         # ``items``/``values`` come from ``collections.abc.Mapping``: restored
         # by deleting the override (``None``), not by setting an attribute.

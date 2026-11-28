@@ -22,6 +22,8 @@ def main(argv: list[str] | None = None) -> int:
     fp.add_argument("--env", action="append", default=[], metavar="NAME")
     args = ap.parse_args(argv)
     if args.cmd == "fingerprint":
+        if "*" in args.env:
+            fingerprint.debug_environ("select")
         env = {
             n: fingerprint.environ_hash() if n == "*" else fingerprint.env_value_hash(os.environ.get(n))
             for n in args.env

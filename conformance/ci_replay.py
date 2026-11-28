@@ -68,6 +68,7 @@ jobs:
 {setup}
       - uses: {action}
         with: {{ mode: record, quod-version: {version}, {inputs} }}
+{post}
 
   pr:
     if: github.event_name == 'pull_request'
@@ -81,6 +82,7 @@ jobs:
 {setup}
       - uses: {action}
         with: {{ mode: '${{{{ matrix.mode }}}}', quod-version: {version}, {inputs} }}
+{post}
 """
 
 
@@ -88,7 +90,7 @@ def yaml_str(s: str) -> str:
     return "'" + s.replace("'", "''") + "'"
 
 
-def workflow_text(cfg: dict, action: str, version: str) -> str:
+def workflow_text(cfg: dict, action: str, version: str, debug_env: bool = False) -> str:
     """The fork's workflow for one repository, from its repos.toml entry.
     Optional keys: `ci_timeout` (minutes, default 20), `ci_install` (shell
     command replacing the one derived from `install`)."""
@@ -109,8 +111,36 @@ def workflow_text(cfg: dict, action: str, version: str) -> str:
         inputs = f"runner: {runner}, test-command: {yaml_str(shlex.join(cfg.get('args', [])))}"
     if install:
         steps.append(f"      - run: {yaml_str(install)}")
+    post = ""
+    if debug_env:
+        # Names and short value hashes (never values) of the job's environment
+        # and of what the probe hashes (QUOD_DEBUG_ENV), to diff a recording
+        # job against a pull request job. The probe comes from main.
+        if runner == "pytest":
+            steps.append('      - run: pip install "git+https://github.com/zenedgexlabs/quod@main#subdirectory=probes/python"')
+            inputs += ", install-probe: false"
+        steps.append('      - run: mkdir -p "$RUNNER_TEMP/qd" && echo "QUOD_DEBUG_ENV=$RUNNER_TEMP/qd" >> "$GITHUB_ENV"')
+        post = "\n".join(
+            [
+                "      - name: What the probe hashed",
+                "        if: always()",
+                '        run: cat "$RUNNER_TEMP"/qd/* || true',
+            ]
+        )
+        steps += [
+            "      - name: Environment (names and value hashes)",
+            "        run: |",
+            "          env | cut -d= -f1 | sort | while read -r k; do",
+            '            echo "$k $(printenv "$k" | sha256sum | cut -c1-12)"',
+            "          done",
+        ]
     return WORKFLOW.format(
-        timeout=cfg.get("ci_timeout", 20), setup="\n".join(steps), action=action, version=version, inputs=inputs
+        timeout=cfg.get("ci_timeout", 20),
+        setup="\n".join(steps),
+        action=action,
+        version=version,
+        inputs=inputs,
+        post=post,
     )
 
 
@@ -121,7 +151,9 @@ def with_quod_workflow(ws: R.Workspace, cfg: dict, args) -> None:
     if wf.exists():
         shutil.rmtree(wf)
     wf.mkdir(parents=True)
-    (wf / "quod.yml").write_text(workflow_text(cfg, args.action, args.quod_version), encoding="utf-8", newline="\n")
+    (wf / "quod.yml").write_text(
+        workflow_text(cfg, args.action, args.quod_version, args.debug_env), encoding="utf-8", newline="\n"
+    )
     ws.git("add", "-A", ".github")
 
 
@@ -223,6 +255,8 @@ def collect(args, fork: str) -> dict:
         if not pr["headRefName"].startswith("e9-"):
             continue
         k = int(pr["headRefName"].split("-")[1])
+        if k > args.window:  # left over from an earlier, longer replay
+            continue
         run = wait_for_run(fork, pr["headRefOid"])
         rid = str(run["databaseId"])
         d = out_dir / f"step-{k}"
@@ -333,6 +367,7 @@ def main() -> int:
     ap.add_argument("--print-workflow", action="store_true", help="print the fork's workflow and exit")
     ap.add_argument("--archive-repo", default="zenedgexlabs/quod-replays",
                     help="where --collect archives the raw artifacts (a release per run); empty to skip")
+    ap.add_argument("--debug-env", action="store_true", help="print each job's variable names and value hashes")
     ap.add_argument("--push", action="store_true")
     ap.add_argument("--collect", action="store_true")
     args = ap.parse_args()
@@ -340,7 +375,7 @@ def main() -> int:
     cfg = tomllib.loads((R.ROOT / "conformance" / "repos.toml").read_text(encoding="utf-8"))["repos"][args.repo]
     fork = f"{args.owner}/{upstream_slug(cfg).split('/')[1]}"
     if args.print_workflow:
-        print(workflow_text(cfg, args.action, args.quod_version), end="")
+        print(workflow_text(cfg, args.action, args.quod_version, args.debug_env), end="")
         return 0
     if args.push:
         ws = R.setup(args.repo, cfg, args.work / args.repo, args.python)
