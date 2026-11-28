@@ -58,6 +58,12 @@ from .capture import Collector, Recorder
 
 _STATE: "_State | None" = None
 
+# The environment as it was when pytest loaded the plugin, before any
+# conftest or plugin code ran: what recording and ``quod select`` see. A
+# conftest that sets a variable (networkx: ``OMP_NUM_THREADS``) must not make
+# the skip file's checks fail.
+_OUTER_ENV: dict[str, str] = dict(os.environ)
+
 
 class _State:
     def __init__(self, recorder: Recorder, out: IO[str]) -> None:
@@ -430,7 +436,7 @@ def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> st
         kind, args = c[0], c[1:]
         if kind == "environment" and len(args) == 1:
             if env_fp is None:
-                env_fp = fingerprint.environment()
+                env_fp = fingerprint.environment(environ=_OUTER_ENV)
             if fingerprint.digest(env_fp) != args[0]:
                 return "the environment differs from the one the map was recorded in"
         elif kind == "invocation" and len(args) == 1:
@@ -439,7 +445,11 @@ def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> st
                 return "the pytest invocation or ini configuration differs from the recorded one"
         elif kind == "env" and len(args) == 2:
             name, expected = args
-            actual = fingerprint.environ_hash() if name == "*" else fingerprint.env_value_hash(os.environ.get(name))
+            actual = (
+                fingerprint.environ_hash(_OUTER_ENV)
+                if name == "*"
+                else fingerprint.env_value_hash(_OUTER_ENV.get(fingerprint.env_key(name), _OUTER_ENV.get(name)))
+            )
             if actual != expected:
                 return f"environment variable {name} differs"
         else:

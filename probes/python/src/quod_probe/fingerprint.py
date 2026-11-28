@@ -222,9 +222,9 @@ def _interpreter() -> dict[str, str]:
     return out
 
 
-def _process_env() -> dict[str, str]:
+def _process_env(environ: dict[str, str] | None = None) -> dict[str, str]:
     out = {}
-    for k, v in os.environ.items():
+    for k, v in (os.environ if environ is None else environ).items():
         key = env_key(k)
         if key.startswith(_PROCESS_ENV_PREFIXES) or key in _PROCESS_ENV_NAMES:
             out[f"process_env.{key}"] = env_value_hash(v)
@@ -239,12 +239,12 @@ def _distributions(index: PackageIndex) -> dict[str, str]:
     return out
 
 
-def environment(index: PackageIndex | None = None) -> dict[str, str]:
+def environment(index: PackageIndex | None = None, environ: dict[str, str] | None = None) -> dict[str, str]:
     """The environment fingerprint of this process."""
     fp: dict[str, str] = {}
     fp.update(_interpreter())
     fp.update(_system())
-    fp.update(_process_env())
+    fp.update(_process_env(environ))
     fp.update(_distributions(index or PackageIndex()))
     return fp
 

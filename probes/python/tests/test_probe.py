@@ -559,6 +559,20 @@ def test_recording_doesnt_change_cached_property_behaviour(tmp_path):
     assert "2 passed" in rec.stdout, rec.stdout + rec.stderr
 
 
+def test_a_conftest_setting_a_variable_doesnt_void_the_skip_file(tmp_path):
+    """E9 on networkx: its conftest sets OMP_NUM_THREADS, and the skip
+    file's env:* check hashed the environment after that, so nothing was
+    skipped. The checks use the environment as pytest started."""
+    proj = tmp_path / "proj"
+    (proj / "tests").mkdir(parents=True)
+    (proj / "conftest.py").write_text("import os\nos.environ['QPT_SET_BY_CONFTEST'] = '1'\n")
+    (proj / "tests" / "test_a.py").write_text("def test_one():\n    pass\n\ndef test_two():\n    pass\n")
+    skip = tmp_path / "skip.txt"
+    skip.write_text(f"# quod-env * {fingerprint.environ_hash(ENV)}\ntests/test_a.py::test_one\n")
+    res = _pytest(proj, f"--quod-skip={skip}")
+    assert "1 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
+
+
 def test_real_paths_match_realpath(tmp_path):
     """The per-directory resolution gives exactly ``normcase(realpath())``,
     including for a file that is itself a symlink."""
