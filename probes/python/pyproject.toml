@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quod-probe"
-version = "0.4.9"
+version = "0.4.10"
 description = "pytest plugin that records per-test footprints for Quod"
 requires-python = ">=3.12"
 dependencies = ["pytest>=8"]

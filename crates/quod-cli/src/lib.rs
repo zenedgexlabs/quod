@@ -632,6 +632,10 @@ pub struct SelectOptions {
 struct Fingerprint {
     environment: BTreeMap<String, String>,
     env: BTreeMap<String, String>,
+    /// The probe's digest of `environment` (newer probes): what the runner
+    /// re-checks before skipping anything.
+    #[serde(default)]
+    environment_digest: Option<String>,
 }
 
 /// Runs the probe's fingerprint command in the target environment.
@@ -908,13 +912,11 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
     let fingerprint_cmd =
         fingerprint_command(opts.python.as_deref(), opts.fingerprint_cmd.as_ref());
     let env_mode = fingerprint_cmd.is_some() && env_capable(&graph);
-    let environment = match (&fingerprint_cmd, env_mode) {
-        (Some(cmd), true) => Some(environment_delta(
-            &graph,
-            &fingerprint(cmd, &env_var_names(&graph))?,
-        )),
+    let target = match (&fingerprint_cmd, env_mode) {
+        (Some(cmd), true) => Some(fingerprint(cmd, &env_var_names(&graph))?),
         _ => None,
     };
+    let environment = target.as_ref().map(|t| environment_delta(&graph, t));
     let mut evaluation = policy.evaluate(
         &change,
         &EvalContext {
@@ -962,12 +964,20 @@ pub fn run_select(repo: &Repo, opts: &SelectOptions) -> Result<SelectResult> {
         .map(|(t, _)| graph.test_name(*t).to_owned())
         .collect();
     // Conditions the pytest plugin re-checks before deselecting anything:
-    // the environment and invocation the map was recorded in, and the
+    // the environment the plan was made for, the invocation the map was
+    // recorded with, and the
     // environment variables skipped tests (or the root scope) read.
     let mut skip_header = Vec::new();
     if binding.is_some() && !selection.skipped.is_empty() {
         let meta = graph.meta();
-        skip_header.push(format!("# quod-environment {}", meta.environment_digest));
+        // The environment the plan was made for: the runner re-checks that
+        // nothing changed between planning and running. (Older probes don't
+        // report a digest: then the map's, which is stricter.)
+        let planned = target
+            .as_ref()
+            .and_then(|t| t.environment_digest.as_deref())
+            .unwrap_or(&meta.environment_digest);
+        skip_header.push(format!("# quod-environment {planned}"));
         skip_header.push(format!("# quod-invocation {}", meta.invocation_digest));
         let mut vars: BTreeMap<String, Digest> = BTreeMap::new();
         let nodes = selection

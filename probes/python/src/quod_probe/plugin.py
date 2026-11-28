@@ -455,7 +455,7 @@ def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> st
             if env_fp is None:
                 env_fp = fingerprint.environment(environ=_OUTER_ENV)
             if fingerprint.digest(env_fp) != args[0]:
-                return "the environment differs from the one the map was recorded in"
+                return "the environment differs from the one the plan was made for"
         elif kind == "invocation" and len(args) == 1:
             root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
             if fingerprint.digest(fingerprint.invocation(config, root)) != args[0]:

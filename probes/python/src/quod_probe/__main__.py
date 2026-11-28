@@ -28,8 +28,15 @@ def main(argv: list[str] | None = None) -> int:
             n: fingerprint.environ_hash() if n == "*" else fingerprint.env_value_hash(os.environ.get(n))
             for n in args.env
         }
+        environment = fingerprint.environment()
         json.dump(
-            {"probe": PROBE_ID, "environment": fingerprint.environment(), "env": env},
+            {
+                "probe": PROBE_ID,
+                "environment": environment,
+                # What the plugin re-checks before skipping: this environment.
+                "environment_digest": fingerprint.digest(environment),
+                "env": env,
+            },
             sys.stdout,
             sort_keys=True,
         )

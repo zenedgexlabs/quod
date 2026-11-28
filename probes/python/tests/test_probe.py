@@ -685,6 +685,23 @@ def test_recording_leaves_the_import_builtins_alone(tmp_path):
     assert "3 passed" in res.stdout
 
 
+def test_the_fingerprint_commands_digest_is_what_the_plugin_accepts(tmp_path):
+    """`quod select` pins the digest `python -m quod_probe fingerprint`
+    reports; the plugin must accept it in the same environment."""
+    out = subprocess.run(
+        [sys.executable, "-m", "quod_probe", "fingerprint"], capture_output=True, text=True, env=ENV, check=True
+    )
+    planned = json.loads(out.stdout)["environment_digest"]
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("def test_a():\n    assert True\n\ndef test_b():\n    assert True\n")
+    skip = tmp_path / "skip.txt"
+    skip.write_text(f"# quod-environment {planned}\ntests/test_a.py::test_a\n")
+    res = _pytest(tmp_path, f"--quod-skip={skip}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "not skipping" not in res.stderr, res.stderr
+    assert "1 passed, 1 deselected" in res.stdout, res.stdout
+
+
 def test_checking_a_skip_file_while_recording_leaves_the_root_alone(tmp_path):
     """ADR 024: an incremental recording runs with a skip file. Checking its
     conditions fingerprints the environment, which is the probe's own work

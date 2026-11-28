@@ -1468,3 +1468,20 @@ fn incremental_recording_matches_a_full_recording() {
         "rehashed at the new commit"
     );
 }
+
+/// The skip file pins the environment the plan was made for (the probe's
+/// digest of the target fingerprint), not the map's: a package that differs
+/// from the recording only re-runs its users, and the runner must still skip
+/// the rest. Older probes report no digest; then the map's, as before.
+#[test]
+fn skip_file_pins_the_planned_environment() {
+    let f = setup_env_mode();
+    let py = fake_python(&f, recorded_environment(), H1);
+    let fp = f.map.parent().unwrap().join("fp.json");
+    let mut v: serde_json::Value = serde_json::from_str(&fs::read_to_string(&fp).unwrap()).unwrap();
+    v["environment_digest"] = serde_json::json!("planneddigest");
+    fs::write(&fp, v.to_string()).unwrap();
+    let res = select_with(&f, Some(py));
+    assert_eq!(res.skip_header[0], "# quod-environment planneddigest");
+    assert_eq!(res.skip_header[1], "# quod-invocation invdigest");
+}

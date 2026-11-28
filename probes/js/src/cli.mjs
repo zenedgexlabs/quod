@@ -239,7 +239,7 @@ export function checkSkipFile(file, { root, dir, args, runner }) {
     const [kind, ...rest] = line.slice('# quod-'.length).trim().split(/\s+/);
     if (kind === 'environment' && rest.length === 1) {
       envFp ??= environment(root, dir);
-      if (digest(envFp) !== rest[0]) return 'the environment differs from the one the map was recorded in';
+      if (digest(envFp) !== rest[0]) return 'the environment differs from the one the plan was made for';
     } else if (kind === 'invocation' && rest.length === 1) {
       if (digest(invocation(args, { runner, root, dir })) !== rest[0]) return 'the test runner invocation differs from the recorded one';
     } else if (kind === 'skip-file') {
@@ -297,7 +297,9 @@ export function main(argv) {
     const env = Object.fromEntries(
       opts.env.map((n) => [n, n === '*' ? environHash() : envValueHash(process.env[n])]),
     );
-    process.stdout.write(`${JSON.stringify({ probe: PROBE_ID, environment: environment(opts.root, opts.dir), env })}\n`);
+    const fp = environment(opts.root, opts.dir);
+    // environment_digest: what the runner re-checks before skipping anything.
+    process.stdout.write(`${JSON.stringify({ probe: PROBE_ID, environment: fp, environment_digest: digest(fp), env })}\n`);
     return 0;
   }
   const runner = opts.runner ?? detectRunner(opts.dir);

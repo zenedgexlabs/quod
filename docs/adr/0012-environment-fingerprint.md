@@ -159,3 +159,21 @@ The JavaScript probe implements the same contract:
   depends on the kernel version itself isn't covered; run it in a container
   (`QUOD_CONTAINER_DIGEST`) or mark it never-skip. `quod select` ignores
   the key in maps recorded by older probes.
+
+## Amendment (2026-11-29): the skip file pins the planned environment
+
+The skip file's `# quod-environment` line held the digest of the
+environment the map was recorded in, and the runner refused every skip when
+its own environment's digest differed. So any package that differed from the
+recording (a dependency bump, or the probe itself after an upgrade) made the
+runner run everything, although the plan had already re-run exactly the
+tests that use that package. Seen in the demo's first incremental recording
+(ADR 024): quod-probe 0.4.8 recorded the map, 0.4.9 ran.
+
+The line now holds the digest of the target environment the plan was made
+for, as the probe's fingerprint command reports it (`environment_digest`;
+Python probe 0.4.10, JS probe 0.2.4). The runner's check is what it was meant
+to be: nothing changed between planning and running. Probes that don't
+report a digest get the map's, the stricter old check. Regression tests:
+`skip_file_pins_the_planned_environment`,
+`test_the_fingerprint_commands_digest_is_what_the_plugin_accepts`.
