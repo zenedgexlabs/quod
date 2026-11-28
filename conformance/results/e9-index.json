@@ -1,0 +1,38 @@
+{
+  "more-itertools": {
+    "repo": "more-itertools",
+    "fork": "zenedgexlabs/more-itertools",
+    "steps": 10,
+    "scored_steps": 9,
+    "escapes": 0,
+    "failing_tests": 24,
+    "tests_fraction": 0.411,
+    "time_fraction": 0.678,
+    "date": "2026-11-27",
+    "quod_version": "v0.1.0-alpha.3",
+    "action": "zenedgexlabs/quod/integrations/github-action@main",
+    "archive": {
+      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/more-itertools-2026-11-27/e9-more-itertools-2026-11-27.tar.gz",
+      "sha256": "1f5181e7bc14aed0d64ce715c9af4880aa0bfca14e472a6d1ae0c11e8741faf3",
+      "bytes": 259446
+    }
+  },
+  "ufo": {
+    "repo": "ufo",
+    "fork": "zenedgexlabs/ufo",
+    "steps": 10,
+    "scored_steps": 10,
+    "escapes": 0,
+    "failing_tests": 41,
+    "tests_fraction": 0.318,
+    "time_fraction": 0.887,
+    "date": "2026-11-27",
+    "quod_version": "v0.1.0-alpha.3",
+    "action": "zenedgexlabs/quod/integrations/github-action@main",
+    "archive": {
+      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/ufo-2026-11-27/e9-ufo-2026-11-27.tar.gz",
+      "sha256": "1bf87faa19b12b5bcd88b5732de4857486a9fe93da440caac993e83364059768",
+      "bytes": 215200
+    }
+  }
+}

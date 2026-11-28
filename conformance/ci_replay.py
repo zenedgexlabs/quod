@@ -210,8 +210,12 @@ def seconds(a: str, b: str) -> float:
 
 
 def collect(args, fork: str) -> dict:
-    out_dir = R.ROOT / "conformance" / "results" / f"e9-{args.repo}"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # Raw per-step artifacts stay out of git: they are archived to a release
+    # of the archive repository (see archive()), and only the summary is kept.
+    out_dir = R.ROOT / "conformance" / ".work" / "e9-raw" / args.repo
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True)
     prs = json.loads(gh("pr", "list", "-R", fork, "--state", "all", "--limit", "100",
                         "--json", "number,headRefName,headRefOid,title").stdout)
     steps = []
@@ -273,10 +277,46 @@ def collect(args, fork: str) -> dict:
         "tests_fraction": round(sum(s["tests"] - s["would_skip"] for s in scored) / max(1, sum(s["tests"] for s in scored)), 3),
         "time_fraction": round(sum(s["time_enforce"] or 0 for s in scored) / max(1e-9, sum(s["time_shadow"] or 0 for s in scored)), 3),
     }
+    summary["date"] = datetime.now().strftime("%Y-%m-%d")
+    summary["quod_version"] = args.quod_version
+    summary["action"] = args.action
+    if args.archive_repo:
+        summary["archive"] = archive(args, out_dir, summary["date"])
     out = R.ROOT / "conformance" / "results" / f"e9-{args.repo}.json"
     out.write_text(json.dumps({"summary": summary, "steps": steps}, indent=2), encoding="utf-8")
+    index_path = R.ROOT / "conformance" / "results" / "e9-index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.exists() else {}
+    index[args.repo] = summary
+    index_path.write_text(json.dumps(dict(sorted(index.items())), indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))
     return summary
+
+
+def archive(args, raw: Path, date: str) -> dict:
+    """Packs the raw per-step artifacts into one archive and attaches it to a
+    release `<repo>-<date>[-N]` of the archive repository. Returns where it
+    is and its SHA-256."""
+    import hashlib
+    import tarfile
+
+    name = f"e9-{args.repo}-{date}.tar.gz"
+    path = raw.parent / name
+    with tarfile.open(path, "w:gz") as tar:
+        tar.add(raw, arcname=f"e9-{args.repo}")
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    (raw.parent / f"{name}.sha256").write_text(f"{digest}  {name}\n", encoding="utf-8")
+    tag, n = f"{args.repo}-{date}", 1
+    while gh("release", "view", tag, "-R", args.archive_repo, check=False).returncode == 0:
+        n += 1
+        tag = f"{args.repo}-{date}-{n}"
+    notes = (f"E9 replay of {args.repo} ({args.window} commits) with Quod {args.quod_version} "
+             f"and {args.action}. Summary: https://github.com/zenedgexlabs/quod/blob/main/"
+             f"conformance/results/e9-{args.repo}.json")
+    gh("release", "create", tag, "-R", args.archive_repo, "--title", tag, "--notes", notes,
+       str(path), str(raw.parent / f"{name}.sha256"))
+    url = f"https://github.com/{args.archive_repo}/releases/download/{tag}/{name}"
+    R.log(f"archived raw artifacts: {url}")
+    return {"url": url, "sha256": digest, "bytes": path.stat().st_size}
 
 
 def main() -> int:
@@ -291,6 +331,8 @@ def main() -> int:
                     help="the Action the fork's workflow uses")
     ap.add_argument("--quod-version", default="latest", help="Quod release the Action installs")
     ap.add_argument("--print-workflow", action="store_true", help="print the fork's workflow and exit")
+    ap.add_argument("--archive-repo", default="zenedgexlabs/quod-replays",
+                    help="where --collect archives the raw artifacts (a release per run); empty to skip")
     ap.add_argument("--push", action="store_true")
     ap.add_argument("--collect", action="store_true")
     args = ap.parse_args()
