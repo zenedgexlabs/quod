@@ -4,7 +4,32 @@
   "description": "Quod probe for JavaScript and TypeScript test runners (Vitest, Jest): per-test executed functions via V8 precise coverage",
   "type": "module",
   "license": "Apache-2.0",
-  "private": true,
+  "author": "zenedgex labs",
+  "homepage": "https://github.com/zenedgexlabs/quod#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zenedgexlabs/quod.git",
+    "directory": "probes/js"
+  },
+  "bugs": {
+    "url": "https://github.com/zenedgexlabs/quod/issues"
+  },
+  "keywords": [
+    "vitest",
+    "jest",
+    "test-selection",
+    "test-impact-analysis",
+    "ci",
+    "quod"
+  ],
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "bin": {
     "quod-js": "src/cli.mjs",
     "quod-vitest": "src/cli.mjs"

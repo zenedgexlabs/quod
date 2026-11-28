@@ -93,6 +93,62 @@ jobs:
           pre=""; case "$TAG" in *-*) pre="--prerelease";; esac
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" $pre --generate-notes --title "Quod $TAG" dist/*
 
+  # The Python probe to PyPI by trusted publishing (no token: PyPI trusts
+  # this workflow, set up once under the project's Publishing settings).
+  # A version that is already on PyPI is skipped.
+  pypi:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: probes
+          path: dist
+      - name: only the Python probe
+        run: mkdir pypi && cp dist/quod_probe-*.whl dist/quod_probe-*.tar.gz pypi/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: pypi
+          skip-existing: true
+
+  # The JS probe to npm, with provenance (npm links the package to this
+  # workflow run). Needs the NPM_TOKEN secret; skipped without it, and for a
+  # version that is already on npm.
+  npm:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: probes
+          path: dist
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice::NPM_TOKEN isn't set: not publishing quod-js to npm"
+            exit 0
+          fi
+          tgz=$(ls dist/quod-js-*.tgz)
+          version=${tgz#dist/quod-js-}; version=${version%.tgz}
+          if npm view "quod-js@$version" version > /dev/null 2>&1; then
+            echo "quod-js $version is already on npm"
+            exit 0
+          fi
+          npm publish "$tgz" --provenance --access public
+
   # What the Quod Action does on a runner without quod: download this
   # release's binary, check its SHA-256, run it.
   install-check:
