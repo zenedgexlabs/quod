@@ -77,6 +77,17 @@ inputs:
   map-retention-days:
     description: Days a published map artifact is kept.
     default: '30'
+  incremental:
+    description: >-
+      record (pytest): plan the push against the previous map and record only
+      the tests the plan doesn't skip; the certified-skipped tests keep their
+      footprints (ADR 024). The map is the one a full recording would give.
+    default: 'true'
+  full-record-every:
+    description: >-
+      record: record every test on every Nth run (by run number) even when
+      incremental, so a map never depends on a long chain. 0: never.
+    default: '25'
   comment:
     description: >-
       On pull requests, post the Verdict card as a comment, edited in place on
@@ -141,6 +152,16 @@ runs:
         echo "js=$js" >> "$GITHUB_OUTPUT"
 
     # ---- record (default branch) ------------------------------------------
+    # The previous map, for an incremental recording. A cache restores to the
+    # path it was saved from: the record step moves it aside.
+    - name: Restore the previous map
+      if: inputs.mode == 'record' && inputs.incremental == 'true' && inputs.runner == 'pytest'
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
+        key: quod-map-${{ github.event.before || 'none' }}
+        restore-keys: quod-map-
+
     - name: Record footprints
       id: record
       if: inputs.mode == 'record'
@@ -152,16 +173,32 @@ runs:
         QUOD_CMD: ${{ inputs.test-command }}
         QUOD_PROBE_JS: ${{ steps.probe.outputs.js }}
         QUOD_MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
+        QUOD_PY: ${{ inputs.python }}
+        QUOD_INCREMENTAL: ${{ inputs.incremental }}
+        QUOD_FULL_EVERY: ${{ inputs.full-record-every }}
       run: |
         set -euo pipefail
         mkdir -p "$(dirname "$QUOD_MAP")" "$RUNNER_TEMP/quod"
         res="$RUNNER_TEMP/quod/results.jsonl"
+        # Incremental (pytest): the previous map, restored above, is the base.
+        inc=()
+        if [ "$QUOD_RUNNER" = pytest ] && [ "$QUOD_INCREMENTAL" = true ] && [ -f "$QUOD_MAP" ]; then
+          every="${QUOD_FULL_EVERY:-0}"
+          if [ "$every" -gt 0 ] && [ $((GITHUB_RUN_NUMBER % every)) -eq 0 ]; then
+            echo "::notice::Quod: recording every test (one run in $every does)"
+          else
+            mv "$QUOD_MAP" "$RUNNER_TEMP/quod/prev.qmap"
+            inc=(--incremental "$RUNNER_TEMP/quod/prev.qmap")
+            [ -n "$QUOD_PY" ] && inc+=(--python "$QUOD_PY")
+          fi
+        fi
+        rm -f "$QUOD_MAP"  # the result is always this run's map
         if [ "$QUOD_RUNNER" != pytest ]; then
           cap="$RUNNER_TEMP/quod-capture.jsonl"
           node "$QUOD_PROBE_JS" record --runner "$QUOD_RUNNER" --out "$cap" --results "$res" -- $QUOD_CMD || true
           "$QUOD" ingest --capture "$cap" --out "$QUOD_MAP" --allow-dirty
         else
-          "$QUOD" record --out "$QUOD_MAP" --allow-dirty -- $QUOD_CMD "--quod-results=$res" || true  # failures are recorded; green says so
+          "$QUOD" record --out "$QUOD_MAP" --allow-dirty "${inc[@]}" -- $QUOD_CMD "--quod-results=$res" || true  # failures are recorded; green says so
         fi
         # Green: every test passed. The commit becomes the reference for
         # Culprit when a later push turns main red.

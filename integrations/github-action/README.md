@@ -77,6 +77,15 @@ The signed Verdict itself (`verdict.json`, a DSSE envelope) is uploaded as
 the `quod-verdict` artifact, with the plan, skip list and test results it
 was computed from.
 
+## Recording on the default branch
+
+Pushes to the default branch record the footprint map (`mode: record`). On
+pytest the recording is incremental: the push is planned against the
+previous map, only the tests the plan doesn't skip are run and recorded, and
+the certified-skipped tests keep their footprints. The map is the one a full
+recording would give (ADR 024). Every 25th run records every test
+(`full-record-every`); `incremental: false` always does.
+
 ## Vitest and Jest
 
 ```yaml

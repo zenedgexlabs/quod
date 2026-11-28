@@ -10,7 +10,10 @@ use clap::{Parser, Subcommand};
 
 use quod_cert::{Ed25519Signer, Signer, write_jsonl};
 use quod_change::Repo;
-use quod_cli::{ENGINE_VERSION, SelectOptions, VerdictOptions, ingest, run_select, run_verdict};
+use quod_cli::{
+    Carry, ENGINE_VERSION, SelectOptions, VerdictOptions, ingest, ingest_incremental, run_select,
+    run_verdict,
+};
 use quod_graph::MapMeta;
 use quod_verdict::{AuthorKind, Status};
 
@@ -64,6 +67,20 @@ enum Cmd {
         /// Allow a dirty working tree.
         #[arg(long)]
         allow_dirty: bool,
+        /// Record incrementally against this map (ADR 024): plan the change
+        /// since its commit, run and record only the tests the plan doesn't
+        /// skip, and keep the certified-skipped tests' footprints. Falls back
+        /// to a full recording when there is nothing to skip or the plan
+        /// can't be made. pytest only.
+        #[arg(long)]
+        incremental: Option<PathBuf>,
+        /// Python interpreter the tests run in, for planning (environment
+        /// mode, as in `select --python`).
+        #[arg(long)]
+        python: Option<PathBuf>,
+        /// Policy file for planning (default: quod.toml at the root).
+        #[arg(long)]
+        policy: Option<PathBuf>,
         /// The test command (the probe flag is appended).
         #[arg(last = true, required = true)]
         command: Vec<String>,
@@ -275,7 +292,14 @@ fn require_clean(repo: &Repo, allow_dirty: bool) -> Result<()> {
     Ok(())
 }
 
-fn write_map(repo: &Repo, id: &str, commit: &str, captures: &[PathBuf], out: &Path) -> Result<()> {
+fn write_map(
+    repo: &Repo,
+    id: &str,
+    commit: &str,
+    captures: &[PathBuf],
+    out: &Path,
+    carry: Option<&Carry<'_>>,
+) -> Result<()> {
     let meta = MapMeta {
         repo: id.to_owned(),
         base_commit: repo.rev_parse(commit)?,
@@ -284,7 +308,10 @@ fn write_map(repo: &Repo, id: &str, commit: &str, captures: &[PathBuf], out: &Pa
         capabilities: Vec::new(),
         ..MapMeta::default()
     };
-    let graph = ingest(captures, repo.root(), meta)?;
+    let graph = match carry {
+        None => ingest(captures, repo.root(), meta)?,
+        Some(c) => ingest_incremental(captures, repo.root(), meta, c)?,
+    };
     let (bytes, root) = graph.encode()?;
     if let Some(dir) = out.parent().filter(|d| !d.as_os_str().is_empty()) {
         fs::create_dir_all(dir)?;
@@ -330,12 +357,16 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 commit.as_deref().unwrap_or("HEAD"),
                 captures,
                 out,
+                None,
             )?;
             Ok(ExitCode::SUCCESS)
         }
         Cmd::Record {
             out,
             allow_dirty,
+            incremental,
+            python,
+            policy,
             command,
         } => {
             let repo = Repo::discover(&cli.repo_dir)?;
@@ -344,6 +375,51 @@ fn run(cli: Cli) -> Result<ExitCode> {
             let dir = std::env::temp_dir().join(format!("quod-capture-{}", std::process::id()));
             fs::create_dir_all(&dir)?;
             let capture = dir.join("capture.jsonl");
+            // Incremental: plan against the previous map; keep what it skips.
+            let plan = match incremental.as_ref().filter(|m| m.exists()) {
+                None => None,
+                Some(map) => {
+                    let opts = SelectOptions {
+                        map: map.clone(),
+                        head: None,
+                        policy: policy.clone(),
+                        key: None,
+                        advisory: true,
+                        repo_id: id.clone(),
+                        python: python.clone(),
+                        fingerprint_cmd: None,
+                    };
+                    match run_select(&repo, &opts) {
+                        Ok(res) if !res.selection.skipped.is_empty() => Some(res),
+                        Ok(_) => {
+                            eprintln!(
+                                "quod: incremental: the change runs every test; recording all of them"
+                            );
+                            None
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "quod: incremental: can't plan against {} ({e:#}); recording every test",
+                                map.display()
+                            );
+                            None
+                        }
+                    }
+                }
+            };
+            let skip_file = dir.join("skip.txt");
+            if let Some(res) = &plan {
+                let mut text: String = res
+                    .skip_header
+                    .iter()
+                    .chain(res.skip_names.iter())
+                    .map(|l| format!("{l}\n"))
+                    .collect();
+                if text.is_empty() {
+                    text.push('\n');
+                }
+                fs::write(&skip_file, text)?;
+            }
             // In the current directory when it's inside the repository (a
             // project in a subdirectory of a monorepo), else at the root.
             // (Compared canonically, but run from the plain path: Windows'
@@ -357,9 +433,13 @@ fn run(cli: Cli) -> Result<ExitCode> {
                     },
                 )
                 .unwrap_or_else(|| repo.root().to_path_buf());
-            let status = Command::new(&command[0])
-                .args(&command[1..])
-                .arg(format!("--quod-record={}", capture.display()))
+            let mut cmd = Command::new(&command[0]);
+            cmd.args(&command[1..])
+                .arg(format!("--quod-record={}", capture.display()));
+            if plan.is_some() {
+                cmd.arg(format!("--quod-skip={}", skip_file.display()));
+            }
+            let status = cmd
                 .current_dir(&run_dir)
                 .status()
                 .with_context(|| format!("running {:?}", command[0]))?;
@@ -374,7 +454,25 @@ fn run(cli: Cli) -> Result<ExitCode> {
             if captures.is_empty() {
                 bail!("the test command produced no capture (is the quod-probe plugin installed?)");
             }
-            write_map(&repo, &id, "HEAD", &captures, out)?;
+            match &plan {
+                None => write_map(&repo, &id, "HEAD", &captures, out, None)?,
+                Some(res) => {
+                    let carry = Carry {
+                        base: &res.graph,
+                        tests: res.selection.skip_set(),
+                    };
+                    eprintln!(
+                        "quod: incremental: recorded {} tests, kept {} certified-skipped footprints from {}",
+                        res.selection.run.len(),
+                        carry.tests.len(),
+                        incremental
+                            .as_ref()
+                            .map(|p| p.display().to_string())
+                            .unwrap_or_default()
+                    );
+                    write_map(&repo, &id, "HEAD", &captures, out, Some(&carry))?;
+                }
+            }
             let _ = fs::remove_dir_all(&dir);
             if !status.success() {
                 eprintln!(

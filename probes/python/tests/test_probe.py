@@ -685,6 +685,27 @@ def test_recording_leaves_the_import_builtins_alone(tmp_path):
     assert "3 passed" in res.stdout
 
 
+def test_checking_a_skip_file_while_recording_leaves_the_root_alone(tmp_path):
+    """ADR 024: an incremental recording runs with a skip file. Checking its
+    conditions fingerprints the environment, which is the probe's own work
+    and must not show up in the root scope."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("def test_a():\n    assert True\n")
+
+    def root(*extra):
+        out = tmp_path / "capture.jsonl"
+        res = _pytest(tmp_path, f"--quod-record={out}", *extra, "tests")
+        assert res.returncode == 0, res.stdout + res.stderr
+        recs = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
+        r = next(r for r in recs if r["type"] == "root")
+        return sorted(map(tuple, r["env"])), sorted(r["packages"]), sorted(r["files"])
+
+    skip = tmp_path / "skip.txt"
+    # A condition that doesn't hold: the check fingerprints the environment.
+    skip.write_text("# quod-environment 00\ntests/test_a.py::test_nothing\n")
+    assert root(f"--quod-skip={skip}") == root()
+
+
 @pytest.mark.parametrize(
     ("src", "expected"),
     [

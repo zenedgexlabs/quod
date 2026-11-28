@@ -264,6 +264,11 @@ impl GraphBuilder {
         TestIdx(i)
     }
 
+    /// True if a test with this ID was added.
+    pub fn has_test(&self, id: &StableTestId) -> bool {
+        self.test_ix.contains_key(id)
+    }
+
     /// Records that test `t` observed node `n`.
     pub fn observe(&mut self, t: TestIdx, n: NodeId) {
         self.obs[t.0 as usize].insert(n.0);

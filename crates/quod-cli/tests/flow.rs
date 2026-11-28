@@ -1370,3 +1370,101 @@ fn pulled_map_path_is_invisible_to_working_tree_diffs() {
         p.display()
     );
 }
+
+/// Footprints by test name, as node names: what selection reads.
+fn footprints(g: &FootprintGraph) -> std::collections::BTreeMap<String, Vec<String>> {
+    (0..g.test_count() as u32)
+        .map(|i| {
+            let t = quod_graph::TestIdx(i);
+            let mut fp: Vec<String> = g.footprint(t).map(|n| g.node_ref(n)).collect();
+            fp.sort();
+            (g.test_name(t).to_owned(), fp)
+        })
+        .collect()
+}
+
+/// ADR 024: a map recorded incrementally (only the tests the plan ran, plus
+/// the certified-skipped tests' old footprints) is the map a full recording
+/// at the same commit gives, with file nodes hashed at the new commit.
+#[test]
+fn incremental_recording_matches_a_full_recording() {
+    let f = setup();
+    // Change `charge`: test_charge (and the untraced test_broken) run, the
+    // others are skipped with certificates.
+    fs::write(
+        f.root.join("app/billing.py"),
+        BILLING.replace("x * 2", "x * 3"),
+    )
+    .unwrap();
+    git(&f.root, &["commit", "-qam", "change charge"]);
+    let res = select(&f);
+    let mut skipped: Vec<&str> = res.skip_names.iter().map(String::as_str).collect();
+    skipped.sort_unstable();
+    assert_eq!(
+        skipped,
+        [
+            "tests/test_http.py::test_get",
+            "tests/test_misc.py::test_ok"
+        ]
+    );
+
+    let repo = Repo::discover(&f.root).unwrap();
+    let meta = || MapMeta {
+        repo: "acme/app".into(),
+        base_commit: repo.rev_parse("HEAD").unwrap(),
+        engine: "test".into(),
+        ..MapMeta::default()
+    };
+    // The incremental run's capture: only the tests that ran.
+    let full_capture = capture();
+    let partial: String = full_capture
+        .lines()
+        .filter(|l| !l.contains("test_get") && !l.contains("test_ok"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let dir = tempfile::tempdir().unwrap();
+    let (pcap, fcap) = (
+        dir.path().join("partial.jsonl"),
+        dir.path().join("full.jsonl"),
+    );
+    fs::write(&pcap, partial).unwrap();
+    fs::write(&fcap, &full_capture).unwrap();
+
+    let carry = quod_cli::Carry {
+        base: &res.graph,
+        tests: res.selection.skip_set(),
+    };
+    let inc = quod_cli::ingest_incremental(&[pcap], repo.root(), meta(), &carry).unwrap();
+    let full = ingest(&[fcap], repo.root(), meta()).unwrap();
+
+    assert_eq!(footprints(&inc), footprints(&full));
+    let roots = |g: &FootprintGraph| {
+        let mut r: Vec<String> = g.root_nodes().map(|n| g.node_ref(n)).collect();
+        r.sort();
+        r
+    };
+    assert_eq!(roots(&inc), roots(&full));
+    // Every node, hash included: billing.py is hashed at the new commit.
+    let nodes = |g: &FootprintGraph| {
+        let mut v: Vec<(String, Option<String>)> = (0..g.node_count() as u32)
+            .map(|i| {
+                let n = quod_graph::NodeId(i);
+                (g.node_ref(n), g.node(n).hash.map(|h| h.to_string()))
+            })
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(nodes(&inc), nodes(&full));
+    let billing = |g: &FootprintGraph| {
+        let n = g
+            .find_node(quod_model::NodeKind::File, "app/billing.py")
+            .unwrap();
+        g.node(n).hash
+    };
+    assert_ne!(
+        billing(&inc),
+        billing(&res.graph),
+        "rehashed at the new commit"
+    );
+}

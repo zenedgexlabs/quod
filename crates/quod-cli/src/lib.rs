@@ -8,7 +8,7 @@ pub mod install;
 pub mod mcp;
 pub mod pull;
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -264,6 +264,56 @@ impl Ingest<'_> {
         let hash = self.package_hashes.get(name).copied().flatten();
         self.b.node(NodeKind::ExtPackage, name, hash, None)
     }
+
+    /// Re-creates `base`'s node `n` here. Files are rehashed at the new
+    /// commit (another part of the file may have changed); other nodes keep
+    /// what the new run recorded for them, or else their old hash.
+    fn carried_node(&mut self, base: &FootprintGraph, n: NodeId) -> NodeId {
+        let node = base.node(n);
+        let name = base.node_name(n).to_owned();
+        match node.kind {
+            NodeKind::File => self.file(&name),
+            NodeKind::ExtPackage => {
+                let hash = self
+                    .package_hashes
+                    .get(&name)
+                    .copied()
+                    .flatten()
+                    .or(node.hash);
+                self.b.node(NodeKind::ExtPackage, &name, hash, None)
+            }
+            kind => {
+                let parent = node.parent.map(|p| self.carried_node(base, NodeId(p)));
+                self.b.node(kind, &name, node.hash, parent)
+            }
+        }
+    }
+
+    /// Adds each certified-skipped test of `c.base` that the new run didn't
+    /// record, with its old footprint, and the old root scope.
+    fn carry(&mut self, c: &Carry<'_>) {
+        let base = c.base;
+        for i in 0..base.test_count() as u32 {
+            let t = quod_graph::TestIdx(i);
+            let entry = base.test(t);
+            if !c.tests.contains(&entry.id) || self.b.has_test(&entry.id) {
+                continue;
+            }
+            let fp: Vec<NodeId> = base.footprint(t).collect();
+            let nt = self
+                .b
+                .test(entry.id, base.test_name(t), entry.flags, entry.cost_ms_p50);
+            for n in fp {
+                let nn = self.carried_node(base, n);
+                self.b.observe(nt, nn);
+            }
+        }
+        let root: Vec<NodeId> = base.root_nodes().collect();
+        for n in root {
+            let nn = self.carried_node(base, n);
+            self.b.observe_root(nn);
+        }
+    }
 }
 
 /// Rewrites a record's package names to graph node names (`pypi:x`,
@@ -285,7 +335,38 @@ fn qualify_packages(rec: &mut Record, eco: quod_model::Ecosystem) {
 /// Only tests that *passed* during recording are skippable later. A failed,
 /// errored, skipped or unreported test may have stopped early, so its
 /// footprint is incomplete and it is marked `untraced`.
-pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Result<FootprintGraph> {
+pub fn ingest(captures: &[PathBuf], repo_root: &Path, meta: MapMeta) -> Result<FootprintGraph> {
+    ingest_with(captures, repo_root, meta, None)
+}
+
+/// What an incremental recording keeps from the previous map (ADR 024).
+pub struct Carry<'a> {
+    /// The map the change was planned against.
+    pub base: &'a FootprintGraph,
+    /// Tests the plan skipped with a certificate: nothing they observed
+    /// changed, so their recorded footprints still hold at the new commit.
+    pub tests: HashSet<StableTestId>,
+}
+
+/// Builds a map from captures of an incremental run (only the tests the plan
+/// didn't skip), keeping each certified-skipped test's footprint from
+/// `carry.base`. File nodes are rehashed at the new commit; the root scope
+/// is the union of the new and the old one; capabilities are those of both.
+pub fn ingest_incremental(
+    captures: &[PathBuf],
+    repo_root: &Path,
+    meta: MapMeta,
+    carry: &Carry<'_>,
+) -> Result<FootprintGraph> {
+    ingest_with(captures, repo_root, meta, Some(carry))
+}
+
+fn ingest_with(
+    captures: &[PathBuf],
+    repo_root: &Path,
+    mut meta: MapMeta,
+    carry: Option<&Carry<'_>>,
+) -> Result<FootprintGraph> {
     // Phase 1: parse and validate every capture file, collecting probe IDs.
     let mut records = Vec::new();
     // Capabilities every capture declares. A map is only as capable as its
@@ -374,6 +455,10 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
         _ => {
             capabilities.remove(CAP_PY_ENVIRONMENT);
         }
+    }
+    if let Some(c) = carry {
+        // A map is only as capable as its least capable recording.
+        capabilities.retain(|cap| c.base.meta().capabilities.contains(cap));
     }
     meta.capabilities = capabilities.into_iter().collect();
 
@@ -489,6 +574,9 @@ pub fn ingest(captures: &[PathBuf], repo_root: &Path, mut meta: MapMeta) -> Resu
                 }
             }
         }
+    }
+    if let Some(c) = carry {
+        st.carry(c);
     }
     Ok(st.b.build())
 }

@@ -364,19 +364,36 @@ def _skip_plan(config: pytest.Config) -> tuple[set[str], set[str], str] | None:
         names: set[str] = set()
         files: set[str] = set()
         checks: list[tuple[str, ...]] = []
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("# quod-skip-file "):
-                    files.add(line[len("# quod-skip-file "):])
-                elif line.startswith("# quod-"):
-                    checks.append(tuple(line[len("# quod-"):].split()))
-                elif line and not line.startswith("#"):
-                    names.add(line)
+        # Reading the skip file and checking its conditions (which
+        # fingerprints the environment) is the probe's own work. While
+        # recording (an incremental run, ADR 024), what it reads goes to a
+        # throwaway scope, not the root.
+        st = _STATE
+        scratch = None
+        if st is not None:
+            from .capture import Collector
+
+            scratch = Collector()
+            st.recorder.push(scratch)
         try:
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("# quod-skip-file "):
+                        files.add(line[len("# quod-skip-file "):])
+                    elif line.startswith("# quod-"):
+                        checks.append(tuple(line[len("# quod-"):].split()))
+                    elif line and not line.startswith("#"):
+                        names.add(line)
             problem = _check_skip_file(config, checks)
         except Exception as e:  # noqa: BLE001 - can't confirm the conditions: don't skip
             problem = f"could not check the skip file ({type(e).__name__}: {e})"
+        finally:
+            if st is not None and scratch is not None:
+                st.recorder.pop(scratch)
+                # Code first run during the check is disabled for the scope it
+                # ran in; re-enable it so the root still records it.
+                sys.monitoring.restart_events()
         if problem:
             spaced = _space_separated_quod_options(config.invocation_params.args)
             if spaced:
