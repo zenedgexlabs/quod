@@ -19,6 +19,7 @@ import site
 import sys
 import sysconfig
 import threading
+import weakref
 from dataclasses import dataclass, field
 from types import CodeType, FunctionType, MethodType
 
@@ -84,6 +85,12 @@ def entity_qualname(co_qualname: str) -> str | None:
     return ".".join(parts) if parts else None
 
 
+def _strong(obj):
+    """A strong stand-in for ``weakref.ref(obj)``, for objects without weak
+    reference support."""
+    return lambda: obj
+
+
 class CacheTracker:
     """Clears ``functools`` caches at every test boundary during recording.
 
@@ -106,7 +113,7 @@ class CacheTracker:
 
     def __init__(self) -> None:
         self._wrappers: list = []
-        self._properties: list[tuple[object, str]] = []
+        self._properties: list[tuple[object, str]] = []  # (reference to the instance, attribute)
         self._orig: tuple | None = None
 
     def install(self) -> None:
@@ -135,12 +142,48 @@ class CacheTracker:
         def cache(user_function):
             return lru_cache(maxsize=None)(user_function)
 
+        missing = object()
+
         class cached_property(orig_cp):  # noqa: N801 - keeps the stdlib name
+            # The stdlib's __get__ (3.12+), not a wrapper around it: a wrapper
+            # adds a frame per access, so deeply nested properties hit the
+            # recursion limit only while recording.
             def __get__(self, instance, owner=None):
-                value = super().__get__(instance, owner)
-                if instance is not None:
-                    properties.append((instance, self.attrname))
-                return value
+                if instance is None:
+                    return self
+                if self.attrname is None:
+                    raise TypeError("Cannot use cached_property instance without calling __set_name__ on it.")
+                try:
+                    cache = instance.__dict__
+                except AttributeError:
+                    msg = (
+                        f"No '__dict__' attribute on {type(instance).__name__!r} "
+                        f"instance to cache {self.attrname!r} property."
+                    )
+                    raise TypeError(msg) from None
+                val = cache.get(self.attrname, missing)
+                if val is missing:
+                    val = self.func(instance)
+                    try:
+                        cache[self.attrname] = val
+                    except TypeError:
+                        msg = (
+                            f"The '__dict__' attribute on {type(instance).__name__!r} instance "
+                            f"does not support item assignment for caching {self.attrname!r} property."
+                        )
+                        raise TypeError(msg) from None
+                # Every access, not only a miss: a value can arrive without
+                # one (`copy.copy` copies `__dict__`) and must still be
+                # cleared after the test. Weakly: holding the instance would
+                # keep it alive after the test drops it (a test that checks
+                # the object is freed then fails); a freed instance has no
+                # cache left.
+                try:
+                    ref = weakref.ref(instance)
+                except TypeError:  # no __weakref__ slot
+                    ref = _strong(instance)
+                properties.append((ref, self.attrname))
+                return val
 
         cached_property.__module__ = "functools"
         functools.lru_cache, functools.cache, functools.cached_property = lru_cache, cache, cached_property
@@ -158,7 +201,10 @@ class CacheTracker:
                 w.cache_clear()
             except Exception:  # noqa: BLE001
                 pass
-        for instance, name in self._properties:
+        for ref, name in self._properties:
+            instance = ref()
+            if instance is None:
+                continue
             try:
                 instance.__dict__.pop(name, None)
             except Exception:  # noqa: BLE001

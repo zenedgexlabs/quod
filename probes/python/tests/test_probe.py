@@ -489,6 +489,59 @@ def test_skip_file_outside_the_project_needs_the_equals_form(tmp_path):
     assert "Pass --quod-skip=PATH, not --quod-skip PATH" in res.stderr, res.stderr
 
 
+CACHED_PROPS = """
+import gc
+import sys
+import weakref
+from functools import cached_property
+
+
+class Node:
+    def __init__(self, child=None):
+        self.child = child
+
+    @cached_property
+    def depth(self):
+        return 0 if self.child is None else self.child.depth + 1
+
+
+def test_object_is_freed_after_reading_a_cached_property():
+    # networkx: views are cached properties, and the graph must be freed.
+    gc.disable()
+    try:
+        n = Node()
+        assert n.depth == 0
+        ref = weakref.ref(n)
+        del n
+        assert ref() is None
+    finally:
+        gc.enable()
+
+
+def test_deeply_nested_cached_properties():
+    # sqlfluff: recursive properties near the recursion limit. Each level
+    # takes two frames (``__get__`` and ``depth``); a third would overflow.
+    levels = sys.getrecursionlimit() // 2 - 80
+    n = None
+    for _ in range(levels):
+        n = Node(n)
+    assert n.depth == levels - 1
+"""
+
+
+def test_recording_doesnt_change_cached_property_behaviour(tmp_path):
+    """Found by E9 on networkx and sqlfluff: the probe's cached_property
+    held every instance it saw (so objects weren't freed), and added a frame
+    per access (so deep recursion hit the limit only while recording)."""
+    proj = tmp_path / "proj"
+    (proj / "tests").mkdir(parents=True)
+    (proj / "tests" / "test_props.py").write_text(textwrap.dedent(CACHED_PROPS))
+    plain = _pytest(proj, "tests")
+    assert "2 passed" in plain.stdout, plain.stdout + plain.stderr
+    rec = _pytest(proj, "tests", f"--quod-record={tmp_path / 'cap.jsonl'}")
+    assert "2 passed" in rec.stdout, rec.stdout + rec.stderr
+
+
 def test_real_paths_match_realpath(tmp_path):
     """The per-directory resolution gives exactly ``normcase(realpath())``,
     including for a file that is itself a symlink."""

@@ -191,7 +191,10 @@ def runs_for(fork: str, sha: str) -> list[dict]:
     return json.loads(out or "[]")
 
 
-def wait_for_run(fork: str, sha: str, timeout: float = 3600) -> dict:
+def wait_for_run(fork: str, sha: str, timeout: float = 4 * 3600) -> dict:
+    """Waits for every run on `sha` to complete. Generous: a slow suite with a
+    hanging mutant takes its job timeout, and the clock also runs while the
+    machine sleeps."""
     t0 = time.monotonic()
     while time.monotonic() - t0 < timeout:
         runs = runs_for(fork, sha)
