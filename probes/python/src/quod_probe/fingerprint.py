@@ -68,14 +68,67 @@ def env_value_hash(value: str | None) -> str:
     return hashlib.sha256(_HASH_PREFIX + data).hexdigest()
 
 
+# CI bookkeeping (ADR 021): per-run identifiers and runner-private paths
+# that differ on every CI run. Left out of ``env:*`` only, the observation
+# that code iterated the whole environment; reading one by name is still
+# recorded. A test whose outcome depended on them through iteration would
+# differ from run to run on the same commit.
+CI_BOOKKEEPING_NAMES = frozenset(
+    {
+        # GitHub Actions
+        "GITHUB_ACTION",
+        "GITHUB_ACTION_PATH",
+        "GITHUB_ACTION_REF",
+        "GITHUB_ACTION_REPOSITORY",
+        "GITHUB_ACTOR",
+        "GITHUB_ACTOR_ID",
+        "GITHUB_ARTIFACTS",
+        "GITHUB_ARTIFACTS_LIST",
+        "GITHUB_BASE_REF",
+        "GITHUB_ENV",
+        "GITHUB_EVENT_NAME",
+        "GITHUB_EVENT_PATH",
+        "GITHUB_HEAD_REF",
+        "GITHUB_JOB",
+        "GITHUB_OUTPUT",
+        "GITHUB_PATH",
+        "GITHUB_REF",
+        "GITHUB_REF_NAME",
+        "GITHUB_REF_PROTECTED",
+        "GITHUB_REF_TYPE",
+        "GITHUB_RUN_ATTEMPT",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_NUMBER",
+        "GITHUB_SHA",
+        "GITHUB_STATE",
+        "GITHUB_STEP_SUMMARY",
+        "GITHUB_TRIGGERING_ACTOR",
+        "GITHUB_WORKFLOW",
+        "GITHUB_WORKFLOW_REF",
+        "GITHUB_WORKFLOW_SHA",
+        "RUNNER_NAME",
+        "RUNNER_TRACKING_ID",
+        # systemd, which starts the runner
+        "INVOCATION_ID",
+        "JOURNAL_STREAM",
+        "SYSTEMD_EXEC_PID",
+    }
+)
+CI_BOOKKEEPING_PREFIXES = ("ACTIONS_",)
+
+
+def ci_bookkeeping(key: str) -> bool:
+    return key in CI_BOOKKEEPING_NAMES or key.startswith(CI_BOOKKEEPING_PREFIXES)
+
+
 def environ_hash(environ: dict[str, str] | None = None) -> str:
     """Hash of the whole environment (the ``env:*`` node), minus the
-    variables the test runner sets itself and Quod's own."""
+    variables the test runner sets itself, Quod's own, and CI bookkeeping."""
     env = os.environ if environ is None else environ
     items = sorted(
         (key, v)
         for key, v in ((env_key(k), v) for k, v in env.items())
-        if key not in RUNNER_ENV_NAMES and not key.startswith("QUOD_")
+        if key not in RUNNER_ENV_NAMES and not key.startswith("QUOD_") and not ci_bookkeeping(key)
     )
     return hashlib.sha256(_HASH_PREFIX + json.dumps(items).encode("utf-8", "surrogateescape")).hexdigest()
 

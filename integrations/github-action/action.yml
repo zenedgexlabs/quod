@@ -132,27 +132,27 @@ runs:
       shell: bash
       env:
         QUOD: ${{ steps.install.outputs.bin }}
-        RUNNER: ${{ inputs.runner }}
-        CMD: ${{ inputs.test-command }}
-        PROBE_JS: ${{ steps.probe.outputs.js }}
-        MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
+        QUOD_RUNNER: ${{ inputs.runner }}
+        QUOD_CMD: ${{ inputs.test-command }}
+        QUOD_PROBE_JS: ${{ steps.probe.outputs.js }}
+        QUOD_MAP: ${{ inputs.map-path || format('{0}/quod-map/map.qmap', runner.temp) }}
       run: |
         set -euo pipefail
-        mkdir -p "$(dirname "$MAP")" "$RUNNER_TEMP/quod"
+        mkdir -p "$(dirname "$QUOD_MAP")" "$RUNNER_TEMP/quod"
         res="$RUNNER_TEMP/quod/results.jsonl"
-        if [ "$RUNNER" != pytest ]; then
+        if [ "$QUOD_RUNNER" != pytest ]; then
           cap="$RUNNER_TEMP/quod-capture.jsonl"
-          node "$PROBE_JS" record --runner "$RUNNER" --out "$cap" --results "$res" -- $CMD || true
-          "$QUOD" ingest --capture "$cap" --out "$MAP" --allow-dirty
+          node "$QUOD_PROBE_JS" record --runner "$QUOD_RUNNER" --out "$cap" --results "$res" -- $QUOD_CMD || true
+          "$QUOD" ingest --capture "$cap" --out "$QUOD_MAP" --allow-dirty
         else
-          "$QUOD" record --out "$MAP" --allow-dirty -- $CMD "--quod-results=$res" || true  # failures are recorded; green says so
+          "$QUOD" record --out "$QUOD_MAP" --allow-dirty -- $QUOD_CMD "--quod-results=$res" || true  # failures are recorded; green says so
         fi
         # Green: every test passed. The commit becomes the reference for
         # Culprit when a later push turns main red.
         if [ -f "$res" ] && ! grep -Eq '"outcome": ?"failed"' "$res"; then
           echo "green=true" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/quod/green"
-          cp "$MAP" "$RUNNER_TEMP/quod/green/map.qmap"
+          cp "$QUOD_MAP" "$RUNNER_TEMP/quod/green/map.qmap"
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/quod/green/sha.txt"
         else
           echo "green=false" >> "$GITHUB_OUTPUT"
@@ -287,11 +287,11 @@ runs:
       if: inputs.mode != 'record'
       shell: bash
       env:
-        MODE: ${{ inputs.mode }}
-        RUNNER: ${{ inputs.runner }}
-        CMD: ${{ inputs.test-command }}
-        PROBE_JS: ${{ steps.probe.outputs.js }}
-        READY: ${{ steps.plan.outputs.ready }}
+        QUOD_MODE: ${{ inputs.mode }}
+        QUOD_RUNNER: ${{ inputs.runner }}
+        QUOD_CMD: ${{ inputs.test-command }}
+        QUOD_PROBE_JS: ${{ steps.probe.outputs.js }}
+        QUOD_READY: ${{ steps.plan.outputs.ready }}
       run: |
         # Not -e (GitHub's default for bash): failing tests are what the
         # Verdict is about. The Outcome step fails the job afterwards.
@@ -299,13 +299,13 @@ runs:
         dir="$RUNNER_TEMP/quod"
         skip="$dir/skip.txt"
         # Shadow mode runs everything: the skip list is only reported.
-        [ "$MODE" = enforce ] && [ "$READY" = true ] || { skip="$dir/empty.txt"; : > "$skip"; }
-        if [ "$RUNNER" = vitest ] || [ "$RUNNER" = jest ]; then
-          node "$PROBE_JS" run --runner "$RUNNER" --skip "$skip" --results "$dir/results.jsonl" -- $CMD
+        [ "$QUOD_MODE" = enforce ] && [ "$QUOD_READY" = true ] || { skip="$dir/empty.txt"; : > "$skip"; }
+        if [ "$QUOD_RUNNER" = vitest ] || [ "$QUOD_RUNNER" = jest ]; then
+          node "$QUOD_PROBE_JS" run --runner "$QUOD_RUNNER" --skip "$skip" --results "$dir/results.jsonl" -- $QUOD_CMD
         else
           extra=("--quod-results=$dir/results.jsonl")
           [ -s "$skip" ] && extra+=("--quod-skip=$skip")
-          $CMD "${extra[@]}"
+          $QUOD_CMD "${extra[@]}"
         fi
         echo "exit=$?" >> "$GITHUB_OUTPUT"
 

@@ -1,6 +1,6 @@
 {
   "name": "quod-js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Quod probe for JavaScript and TypeScript test runners (Vitest, Jest): per-test executed functions via V8 precise coverage",
   "type": "module",
   "license": "Apache-2.0",

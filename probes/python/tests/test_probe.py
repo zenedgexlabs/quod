@@ -164,25 +164,29 @@ TEST_ENV = """
 import os
 
 def test_env_read():
-    assert os.environ.get("QUOD_T_A") == "1"
-    assert "QUOD_T_MISSING" not in os.environ
+    assert os.environ.get("QPT_A") == "1"
+    assert "QPT_MISSING" not in os.environ
 
 def test_env_written(monkeypatch):
-    monkeypatch.setenv("QUOD_T_B", "x")
-    assert os.environ["QUOD_T_B"] == "x"
+    monkeypatch.setenv("QPT_B", "x")
+    assert os.environ["QPT_B"] == "x"
 
 def test_env_iter(monkeypatch):
-    monkeypatch.setenv("ZZ_QUOD_T_C", "y")
+    monkeypatch.setenv("ZZ_QPT_C", "y")
     assert len(dict(os.environ)) > 0
+
+def test_env_items():
+    # networkx: settings from every variable with a prefix (ADR 021).
+    assert {k: v for k, v in os.environ.items() if k.startswith("QPT_PREFIX_")} == {}
 
 def test_env_runner():
     assert os.environ.get("PYTEST_VERSION")
     assert os.environ.get("PYTEST_CURRENT_TEST")
 """
 
-ENV = {**os.environ, "QUOD_T_A": "1"}
-ENV.pop("QUOD_T_MISSING", None)
-ENV.pop("QUOD_T_B", None)
+ENV = {**os.environ, "QPT_A": "1"}
+ENV.pop("QPT_MISSING", None)
+ENV.pop("QPT_B", None)
 
 
 def _pytest(d, *args: str) -> subprocess.CompletedProcess:
@@ -231,7 +235,7 @@ def fns(rec: dict) -> set[tuple[str, str]]:
 
 def test_header_and_names(captured):
     res, recs, tests, _ = captured
-    assert "20 passed" in res.stdout
+    assert "21 passed" in res.stdout
     assert recs[0]["type"] == "header" and recs[0]["v"] == 1
     assert recs[0]["capabilities"] == ["py.environment", "py.introspection"]
     assert recs[-1]["type"] == "root"
@@ -316,7 +320,7 @@ def test_skip_file_deselects_named_tests(project_dir):
     skip.write_text("tests/test_pay.py::test_charge\ntests/test_pay.py::test_param[2]\n")
     res = _pytest(project_dir, f"--quod-skip={skip}")
     assert res.returncode == 0, res.stdout + res.stderr
-    assert "18 passed, 2 deselected" in res.stdout
+    assert "19 passed, 2 deselected" in res.stdout
 
 
 @pytest.mark.parametrize(
@@ -382,7 +386,7 @@ def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir)
     test wrote a variable before enumerating."""
     _, recs, tests, _ = captured
     out = subprocess.run(
-        [sys.executable, "-m", "quod_probe", "fingerprint", "--env", "QUOD_T_A", "--env", "NOPE_X", "--env", "*"],
+        [sys.executable, "-m", "quod_probe", "fingerprint", "--env", "QPT_A", "--env", "NOPE_X", "--env", "*"],
         cwd=project_dir,
         capture_output=True,
         text=True,
@@ -392,19 +396,22 @@ def test_fingerprint_cli_matches_the_recorded_environment(captured, project_dir)
     fp = json.loads(out.stdout)
     assert fp["environment"] == recs[0]["environment"]
     assert fp["env"].pop("*") == env_of(tests["tests/test_env.py::test_env_iter"])["*"]
-    assert fp["env"] == {"QUOD_T_A": fingerprint.env_value_hash("1"), "NOPE_X": fingerprint.env_value_hash(None)}
+    assert fp["env"] == {"QPT_A": fingerprint.env_value_hash("1"), "NOPE_X": fingerprint.env_value_hash(None)}
 
 
 def test_environment_reads_are_recorded_per_test(captured):
     _, _, tests, _ = captured
     read = env_of(tests["tests/test_env.py::test_env_read"])
-    assert read["QUOD_T_A"] == fingerprint.env_value_hash("1")
-    assert read["QUOD_T_MISSING"] == fingerprint.env_value_hash(None)
+    assert read["QPT_A"] == fingerprint.env_value_hash("1")
+    assert read["QPT_MISSING"] == fingerprint.env_value_hash(None)
     assert "*" not in read
     # A key the test wrote itself is in-process state, not an input.
-    assert "QUOD_T_B" not in env_of(tests["tests/test_env.py::test_env_written"])
+    assert "QPT_B" not in env_of(tests["tests/test_env.py::test_env_written"])
     assert "*" in env_of(tests["tests/test_env.py::test_env_iter"])
-    assert "QUOD_T_A" not in env_of(tests["tests/test_pay.py::test_charge"])
+    assert "QPT_A" not in env_of(tests["tests/test_pay.py::test_charge"])
+    # A bulk read is one whole-environment observation, not one per key.
+    items = env_of(tests["tests/test_env.py::test_env_items"])
+    assert "*" in items and "QPT_A" not in items and "PATH" not in items
     # Variables pytest sets for itself aren't inputs.
     assert env_of(tests["tests/test_env.py::test_env_runner"]).keys().isdisjoint(fingerprint.RUNNER_ENV_NAMES)
 
@@ -422,10 +429,10 @@ def test_skip_file_checks_pass_when_everything_matches(captured, project_dir):
         project_dir,
         f"# quod-environment {fingerprint.digest(h['environment'])}",
         f"# quod-invocation {fingerprint.digest(h['invocation'])}",
-        f"# quod-env QUOD_T_A {fingerprint.env_value_hash('1')}",
+        f"# quod-env QPT_A {fingerprint.env_value_hash('1')}",
     )
     res = _pytest(project_dir, f"--quod-skip={skip}")
-    assert "19 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
+    assert "20 passed, 1 deselected" in res.stdout, res.stdout + res.stderr
 
 
 @pytest.mark.parametrize(
@@ -433,13 +440,13 @@ def test_skip_file_checks_pass_when_everything_matches(captured, project_dir):
     [
         ("# quod-environment 00", "environment differs"),
         ("# quod-invocation 00", "invocation"),
-        ("# quod-env QUOD_T_A " + fingerprint.env_value_hash("2"), "QUOD_T_A differs"),
+        ("# quod-env QPT_A " + fingerprint.env_value_hash("2"), "QPT_A differs"),
         ("# quod-something new", "unknown"),
     ],
 )
 def test_skip_file_mismatch_runs_everything(project_dir, line, why):
     res = _pytest(project_dir, f"--quod-skip={_skip_file(project_dir, line)}")
-    assert "20 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
+    assert "21 passed" in res.stdout and "deselected" not in res.stdout, res.stdout
     assert why in res.stderr
 
 
@@ -453,6 +460,16 @@ def test_results_file_names_match_recorded_names(captured, project_dir):
     results = [json.loads(line) for line in out.read_text(encoding="utf-8").splitlines()]
     assert {r["name"] for r in results} == set(tests)
     assert all(r["type"] == "result" and r["outcome"] in {"passed", "skipped"} for r in results)
+
+
+def test_ci_bookkeeping_is_not_part_of_the_whole_environment():
+    """ADR 021: per-run CI identifiers don't change ``env:*``; other
+    variables do."""
+    base = {"PATH": "/bin", "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "1", "ACTIONS_ORCHESTRATION_ID": "a"}
+    same = {**base, "GITHUB_RUN_ID": "2", "ACTIONS_ORCHESTRATION_ID": "b", "GITHUB_SHA": "f00"}
+    assert fingerprint.environ_hash(base) == fingerprint.environ_hash(same)
+    assert fingerprint.environ_hash(base) != fingerprint.environ_hash({**base, "GITHUB_ACTIONS": "false"})
+    assert fingerprint.environ_hash(base) != fingerprint.environ_hash({**base, "MY_SETTING": "1"})
 
 
 def test_quod_options_are_stripped_in_both_forms():

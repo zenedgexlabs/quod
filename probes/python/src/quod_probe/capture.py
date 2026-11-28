@@ -304,13 +304,16 @@ class EnvTracker:
         note, written, environ = self._note, self.written, os.environ
         outer = environ_hash(dict(os.environ))
         orig = {n: cls.__dict__[n] for n in ("__getitem__", "__setitem__", "__delitem__", "__iter__", "__len__")}
-        self._orig = orig
+        # ``items``/``values`` come from ``collections.abc.Mapping``: restored
+        # by deleting the override (``None``), not by setting an attribute.
+        abc_items, abc_values, orig_copy = cls.items, cls.values, cls.copy
+        self._orig = {**orig, "items": cls.__dict__.get("items"), "values": cls.__dict__.get("values"), "copy": cls.__dict__.get("copy")}
 
         def __getitem__(self, key):
             if self is environ:
                 try:
                     k = env_key(key)
-                    if k not in written and k not in RUNNER_ENV_NAMES:
+                    if k not in written and k not in RUNNER_ENV_NAMES and not k.startswith("QUOD_"):
                         try:
                             value = orig["__getitem__"](self, key)
                         except KeyError:
@@ -346,6 +349,31 @@ class EnvTracker:
             whole(self)
             return orig["__len__"](self)
 
+        # Bulk reads are one ``env:*`` observation, not a read of every key:
+        # ``{k: v for k, v in os.environ.items() if k.startswith(P)}`` would
+        # otherwise depend on each variable by name, CI bookkeeping included
+        # (ADR 021). They return a snapshot, as ``copy`` always did.
+        def snapshot(self):
+            return {k: orig["__getitem__"](self, k) for k in orig["__iter__"](self)}
+
+        def items(self):
+            if self is not environ:
+                return abc_items(self)
+            whole(self)
+            return snapshot(self).items()
+
+        def values(self):
+            if self is not environ:
+                return abc_values(self)
+            whole(self)
+            return snapshot(self).values()
+
+        def copy(self):
+            if self is not environ:
+                return orig_copy(self)
+            whole(self)
+            return snapshot(self)
+
         try:
             from _pytest.monkeypatch import MonkeyPatch
 
@@ -362,13 +390,20 @@ class EnvTracker:
             ("__delitem__", __delitem__),
             ("__iter__", __iter__),
             ("__len__", __len__),
+            ("items", items),
+            ("values", values),
+            ("copy", copy),
         ):
             setattr(cls, name, f)
 
     def uninstall(self) -> None:
         cls = type(os.environ)
         for name, f in self._orig.items():
-            setattr(cls, name, f)
+            if f is None:
+                if name in cls.__dict__:
+                    delattr(cls, name)
+            else:
+                setattr(cls, name, f)
         self._orig = {}
         for owner, meth, f in reversed(self._mp):
             setattr(owner, meth, f)

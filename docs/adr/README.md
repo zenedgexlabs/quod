@@ -26,6 +26,7 @@ accepted ADR, add a new one that supersedes it. Full context is in
 | [018](0018-culprit.md) | Accepted | `quod culprit` names the commit(s) that changed what a failing test executes; one means a revert-sufficient culprit, none means not code; drifts and global rules withhold claims | Red main is the top CI pain; footprints answer it without bisecting |
 | [019](0019-import-closures.md) | Accepted | A file change obligates every test that ran its functions; the Python probe gives cached imports the imported module's closure | A module body runs once, in the first importer's scope: a changed constant skipped a test that read it |
 | [020](0020-additive-definitions.md) | Proposed | A new undecorated top-level `def` under an unused name changes only the module's namespace, observed by failed lookups and enumeration (probe `py.namespace`) | E8b attrs: adding a function made every test re-run |
+| [021](0021-environment-enumeration.md) | Accepted | Bulk reads of the environment are one `env:*` observation, and `env:*` leaves out per-run CI bookkeeping variables (reading one by name is still recorded) | E9 networkx: a prefix scan of `os.environ` at import made every CI run look changed |
 
 The linked per-ADR files will be written out as each decision is exercised in
 code. Until then, this table and `architecture.md` are authoritative.

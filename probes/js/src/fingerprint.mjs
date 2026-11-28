@@ -25,11 +25,29 @@ export function envValueHash(value) {
   return createHash('sha256').update(HASH_PREFIX + data, 'utf8').digest('hex');
 }
 
-/** Hash of the whole environment (the `env:*` node), minus Quod's own variables. */
+/**
+ * CI bookkeeping (ADR 021): per-run identifiers and runner-private paths
+ * that differ on every CI run. Left out of `env:*` only, the observation
+ * that code enumerated the whole environment; reading one by name is still
+ * recorded. Must match `quod_probe.fingerprint.CI_BOOKKEEPING_NAMES`.
+ */
+export const CI_BOOKKEEPING_NAMES = new Set([
+  'GITHUB_ACTION', 'GITHUB_ACTION_PATH', 'GITHUB_ACTION_REF', 'GITHUB_ACTION_REPOSITORY',
+  'GITHUB_ACTOR', 'GITHUB_ACTOR_ID', 'GITHUB_ARTIFACTS', 'GITHUB_ARTIFACTS_LIST',
+  'GITHUB_BASE_REF', 'GITHUB_ENV', 'GITHUB_EVENT_NAME', 'GITHUB_EVENT_PATH', 'GITHUB_HEAD_REF',
+  'GITHUB_JOB', 'GITHUB_OUTPUT', 'GITHUB_PATH', 'GITHUB_REF', 'GITHUB_REF_NAME',
+  'GITHUB_REF_PROTECTED', 'GITHUB_REF_TYPE', 'GITHUB_RUN_ATTEMPT', 'GITHUB_RUN_ID',
+  'GITHUB_RUN_NUMBER', 'GITHUB_SHA', 'GITHUB_STATE', 'GITHUB_STEP_SUMMARY',
+  'GITHUB_TRIGGERING_ACTOR', 'GITHUB_WORKFLOW', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA',
+  'RUNNER_NAME', 'RUNNER_TRACKING_ID', 'INVOCATION_ID', 'JOURNAL_STREAM', 'SYSTEMD_EXEC_PID',
+]);
+export const ciBookkeeping = (k) => CI_BOOKKEEPING_NAMES.has(k) || k.startsWith('ACTIONS_');
+
+/** Hash of the whole environment (the `env:*` node), minus Quod's own variables and CI bookkeeping. */
 export function environHash(env = process.env) {
   const items = Object.keys(env)
     .map((k) => [envKey(k), env[k]])
-    .filter(([k]) => !k.startsWith('QUOD_'))
+    .filter(([k]) => !k.startsWith('QUOD_') && !ciBookkeeping(k))
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return createHash('sha256').update(HASH_PREFIX + JSON.stringify(items), 'utf8').digest('hex');
 }
