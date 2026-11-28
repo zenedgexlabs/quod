@@ -158,7 +158,9 @@ def with_quod_workflow(ws: R.Workspace, cfg: dict, args) -> None:
 
 
 def commit(ws: R.Workspace, message: str) -> str:
-    ws.git("-c", "user.name=quod-e9", "-c", "user.email=e9@users.noreply.github.com",
+    # A reserved domain (RFC 2606): GitHub links an address like
+    # NAME@users.noreply.github.com to the account NAME, which is someone else.
+    ws.git("-c", "user.name=quod-e9", "-c", "user.email=quod-e9@replay.invalid",
            "commit", "-q", "--allow-empty", "-m", message)
     return ws.git("rev-parse", "HEAD").stdout.strip()
 
