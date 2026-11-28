@@ -28,6 +28,7 @@ def render(repo: str, data: dict, cfg: dict) -> str:
     scored = [x for x in data["steps"] if x["has_artifacts"]]
     tests = sum(x["tests"] for x in scored)
     run = sum(x["tests"] - x["would_skip"] for x in scored)
+    kept_skipped = sum(x.get("kept_skipped", 0) for x in scored)
     t_shadow = sum(x["time_shadow"] or 0 for x in scored)
     t_enforce = sum(x["time_enforce"] or 0 for x in scored)
     failing = sum(x["failing"] for x in scored)
@@ -48,6 +49,7 @@ def render(repo: str, data: dict, cfg: dict) -> str:
         "|---|---|",
         f"| Pull requests scored | {len(scored)} of {len(data['steps'])} |",
         f"| Tests Quod ran | {run:,} of {tests:,} ({pct(run, tests)}) |",
+        f"| ...of which pytest itself skips (skip and xfail markers) | {kept_skipped:,} |",
         f"| Test step time, enforce vs full | {t_enforce:.0f} s vs {t_shadow:.0f} s ({pct(t_enforce, t_shadow)}) |",
         f"| Failing tests in the full run | {failing} |",
         f"| ...also failed in the enforce run | {caught} |",
@@ -57,9 +59,14 @@ def render(repo: str, data: dict, cfg: dict) -> str:
         "skipped. Times are the Quod step in each job (install, plan, tests, Verdict), "
         "as reported by GitHub in whole seconds.",
         "",
+        "Tests that pytest skips (a skip or xfail marker, a missing optional "
+        "dependency) never pass while Quod records them, so Quod can't prove what "
+        "they depend on and always keeps them. They are counted as run here, but "
+        "pytest skips them at once, so they cost almost no time.",
+        "",
         "## Per pull request",
         "",
-        "| # | Change | Injected bug | Tests run | Failing | Escapes | Enforce | Full |",
+        "| # | Change | Injected bug | Tests run (pytest-skipped) | Failing | Escapes | Enforce | Full |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for x in data["steps"]:
@@ -72,8 +79,9 @@ def render(repo: str, data: dict, cfg: dict) -> str:
             out.append(f"| {link} | {title} | {bug} | not scored (the run timed out or was cancelled) | | | | |")
             continue
         ran = x["tests"] - x["would_skip"]
+        kept = f" ({x['kept_skipped']:,})" if x.get("kept_skipped") else ""
         out.append(
-            f"| {link} | {title} | {bug} | {ran:,} of {x['tests']:,} | {x['failing']} | {len(x['escapes'])} | "
+            f"| {link} | {title} | {bug} | {ran:,} of {x['tests']:,}{kept} | {x['failing']} | {len(x['escapes'])} | "
             f"{x['time_enforce'] or 0:.0f} s | {x['time_shadow'] or 0:.0f} s |"
         )
     out += [

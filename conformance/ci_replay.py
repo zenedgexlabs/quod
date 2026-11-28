@@ -290,6 +290,9 @@ def collect(args, fork: str) -> dict:
             "tests": len(shadow),
             "would_skip": len(would_skip),
             "ran_enforce": len(enforce),
+            # Kept but skipped by pytest itself (skip/xfail markers): they never
+            # pass while recording, so their footprint is never complete (R012).
+            "kept_skipped": sum(1 for n, o in shadow.items() if o == "skipped" and n not in would_skip),
             "failing": len(failing),
             "caught_enforce": len(failing & {n for n, o in enforce.items() if o == "failed"}),
             "escapes": sorted(failing & would_skip),

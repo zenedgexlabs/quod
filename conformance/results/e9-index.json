@@ -17,6 +17,24 @@
       "bytes": 259446
     }
   },
+  "networkx": {
+    "repo": "networkx",
+    "fork": "zenedgexlabs/networkx",
+    "steps": 10,
+    "scored_steps": 10,
+    "escapes": 0,
+    "failing_tests": 8,
+    "tests_fraction": 0.472,
+    "time_fraction": 0.537,
+    "date": "2026-11-28",
+    "quod_version": "latest",
+    "action": "zenedgexlabs/quod-action@v0.1.0-alpha.7",
+    "archive": {
+      "url": "https://github.com/zenedgexlabs/quod-replays/releases/download/networkx-2026-11-28-3/e9-networkx-2026-11-28.tar.gz",
+      "sha256": "25cc678d9eb2c540ded13712e6c7c9a1941ea199daefa468e91d5eb3feb05ee1",
+      "bytes": 3927220
+    }
+  },
   "ufo": {
     "repo": "ufo",
     "fork": "zenedgexlabs/ufo",
