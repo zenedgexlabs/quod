@@ -134,3 +134,36 @@ install = ["-e", ".", "hypothesis"]
 pytest = ["test", "-q", "-p", "no:cacheprovider"]
 mutate = ["src/sqlfluff/core/parser/*.py", "src/sqlfluff/core/rules/*.py", "src/sqlfluff/rules/*/*.py"]
 ci_timeout = 60
+
+[repos.pylint]
+url = "https://github.com/pylint-dev/pylint"
+branch = "main"
+install = ["-r", "requirements_test_min.txt"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["pylint/checkers/*.py", "pylint/checkers/*/*.py"]
+ci_timeout = 60
+
+[repos.sphinx]
+url = "https://github.com/sphinx-doc/sphinx"
+branch = "master"
+install = ["-e", ".", "--group", "test"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["sphinx/util/*.py", "sphinx/domains/*.py", "sphinx/writers/*.py"]
+ci_timeout = 60
+
+[repos.black]
+url = "https://github.com/psf/black"
+branch = "main"
+install = ["-e", ".[d]", "--group", "tests"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["src/black/*.py", "src/blib2to3/pgen2/*.py"]
+ci_timeout = 30
+
+# pytest-randomly (in its tox deps) is left out: the replay needs a fixed order.
+[repos.pygments]
+url = "https://github.com/pygments/pygments"
+branch = "master"
+install = ["-e", ".", "wcag-contrast-ratio"]
+pytest = ["tests", "-q", "-p", "no:cacheprovider"]
+mutate = ["pygments/*.py", "pygments/formatters/*.py"]
+ci_timeout = 30
