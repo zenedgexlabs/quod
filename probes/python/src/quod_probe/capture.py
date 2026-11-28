@@ -298,7 +298,7 @@ class EnvTracker:
     def install(self) -> None:
         if self._orig:
             return
-        from .fingerprint import RUNNER_ENV_NAMES, env_key, env_value_hash, environ_hash
+        from .fingerprint import RUNNER_ENV_NAMES, env_key, env_value_hash, environ_hash, quod_own
 
         cls = type(os.environ)
         note, written, environ = self._note, self.written, os.environ
@@ -316,7 +316,7 @@ class EnvTracker:
             if self is environ:
                 try:
                     k = env_key(key)
-                    if k not in written and k not in RUNNER_ENV_NAMES and not k.startswith("QUOD_"):
+                    if k not in written and k not in RUNNER_ENV_NAMES and not quod_own(k):
                         try:
                             value = orig["__getitem__"](self, key)
                         except KeyError:

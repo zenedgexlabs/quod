@@ -40,14 +40,17 @@ export const CI_BOOKKEEPING_NAMES = new Set([
   'GITHUB_RUN_NUMBER', 'GITHUB_SHA', 'GITHUB_STATE', 'GITHUB_STEP_SUMMARY',
   'GITHUB_TRIGGERING_ACTOR', 'GITHUB_WORKFLOW', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA',
   'RUNNER_NAME', 'RUNNER_TRACKING_ID', 'INVOCATION_ID', 'JOURNAL_STREAM', 'SYSTEMD_EXEC_PID',
+  '_', 'OLDPWD', 'SHLVL',
 ]);
+/** Quod's own variables (`QUOD`, the binary the Action passes, and `QUOD_*`): never test inputs. */
+export const quodOwn = (k) => k === 'QUOD' || k.startsWith('QUOD_');
 export const ciBookkeeping = (k) => CI_BOOKKEEPING_NAMES.has(k) || k.startsWith('ACTIONS_');
 
 /** Hash of the whole environment (the `env:*` node), minus Quod's own variables and CI bookkeeping. */
 export function environHash(env = process.env) {
   const items = Object.keys(env)
     .map((k) => [envKey(k), env[k]])
-    .filter(([k]) => !k.startsWith('QUOD_') && !ciBookkeeping(k))
+    .filter(([k]) => !quodOwn(k) && !ciBookkeeping(k))
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return createHash('sha256').update(HASH_PREFIX + JSON.stringify(items), 'utf8').digest('hex');
 }
@@ -63,7 +66,7 @@ export function outerEnv(env = process.env) {
   const values = {};
   for (const k of Object.keys(env)) {
     const key = envKey(k);
-    if (!key.startsWith('QUOD_')) values[key] = envValueHash(env[k]);
+    if (!quodOwn(key)) values[key] = envValueHash(env[k]);
   }
   return { all: environHash(env), values };
 }
@@ -116,7 +119,7 @@ function processEnv() {
   for (const [k, v] of Object.entries(process.env)) {
     const key = envKey(k);
     if (PROCESS_ENV_NAMES.has(key) || PROCESS_ENV_PREFIXES.some((p) => key.startsWith(p))) {
-      if (key.startsWith('QUOD_')) continue;
+      if (quodOwn(key)) continue;
       out[`process_env.${key}`] = envValueHash(v);
     }
   }

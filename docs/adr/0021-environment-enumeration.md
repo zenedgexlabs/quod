@@ -47,9 +47,13 @@ was ever skipped. Any project whose start-up enumerates the environment
    The JS probe uses the same list. Reading one of these by name is still
    recorded as `env:NAME`: only the enumeration ignores them.
 
-3. **Quod's own variables aren't inputs.** Reads of `QUOD_*` aren't
-   recorded (they were already left out of `env:*`). The Action passes its
-   step settings as `QUOD_*`.
+3. **Quod's own variables aren't inputs.** Reads of `QUOD` (the binary the
+   Action passes) and `QUOD_*` aren't recorded, and `env:*` leaves them
+   out. The Action passes its step settings as `QUOD_*`.
+
+4. **Shell bookkeeping.** `_` (bash sets it to the path of the command it
+   runs: quod in the Plan step, python in the test step), `OLDPWD` and
+   `SHLVL` are left out of `env:*` too (found on networkx, after 1-3).
 
 ## Why this is sound enough
 

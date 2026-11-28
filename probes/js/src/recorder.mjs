@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { executedFunctions } from './coverage.mjs';
-import { envKey, envValueHash, environHash } from './fingerprint.mjs';
+import { envKey, envValueHash, environHash, quodOwn } from './fingerprint.mjs';
 
 const slash = (p) => p.split(path.sep).join('/');
 
@@ -152,7 +152,7 @@ function trackEnv(sc, proc) {
   const written = new Set();
   const outer = readOuterEnv();
   const note = (k, h) => {
-    if (k.startsWith('QUOD_') || sc.env.has(k)) return;
+    if (quodOwn(k) || sc.env.has(k)) return;
     if (outer) h = k === '*' ? outer.all : (outer.values[k] ?? envValueHash(undefined));
     sc.env.set(k, h);
   };

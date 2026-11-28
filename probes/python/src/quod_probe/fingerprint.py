@@ -112,9 +112,19 @@ CI_BOOKKEEPING_NAMES = frozenset(
         "INVOCATION_ID",
         "JOURNAL_STREAM",
         "SYSTEMD_EXEC_PID",
+        # the shell: the last command's path, the previous directory, depth
+        "_",
+        "OLDPWD",
+        "SHLVL",
     }
 )
 CI_BOOKKEEPING_PREFIXES = ("ACTIONS_",)
+
+
+def quod_own(key: str) -> bool:
+    """Quod's own variables (``QUOD``, the binary the Action passes, and
+    ``QUOD_*``): never test inputs."""
+    return key == "QUOD" or key.startswith("QUOD_")
 
 
 def ci_bookkeeping(key: str) -> bool:
@@ -128,7 +138,7 @@ def environ_hash(environ: dict[str, str] | None = None) -> str:
     items = sorted(
         (key, v)
         for key, v in ((env_key(k), v) for k, v in env.items())
-        if key not in RUNNER_ENV_NAMES and not key.startswith("QUOD_") and not ci_bookkeeping(key)
+        if key not in RUNNER_ENV_NAMES and not quod_own(key) and not ci_bookkeeping(key)
     )
     return hashlib.sha256(_HASH_PREFIX + json.dumps(items).encode("utf-8", "surrogateescape")).hexdigest()
 
@@ -144,7 +154,7 @@ def debug_environ(where: str, environ: dict[str, str] | None = None) -> None:
     lines = [
         f"quod-debug-env {where} {key} {env_value_hash(env.get(key))[:12]}\n"
         for key in sorted(env_key(k) for k in env)
-        if key not in RUNNER_ENV_NAMES and not key.startswith("QUOD_") and not ci_bookkeeping(key)
+        if key not in RUNNER_ENV_NAMES and not quod_own(key) and not ci_bookkeeping(key)
     ]
     if os.path.isdir(target):  # one file per process: quod captures the fingerprint's stderr
         with open(os.path.join(target, f"{where}-{os.getpid()}.txt"), "w", encoding="utf-8") as f:

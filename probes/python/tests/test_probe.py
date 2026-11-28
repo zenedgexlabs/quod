@@ -466,7 +466,8 @@ def test_ci_bookkeeping_is_not_part_of_the_whole_environment():
     """ADR 021: per-run CI identifiers don't change ``env:*``; other
     variables do."""
     base = {"PATH": "/bin", "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "1", "ACTIONS_ORCHESTRATION_ID": "a"}
-    same = {**base, "GITHUB_RUN_ID": "2", "ACTIONS_ORCHESTRATION_ID": "b", "GITHUB_SHA": "f00"}
+    same = {**base, "GITHUB_RUN_ID": "2", "ACTIONS_ORCHESTRATION_ID": "b", "GITHUB_SHA": "f00",
+            "QUOD": "/tmp/quod", "_": "/usr/bin/python", "OLDPWD": "/"}
     assert fingerprint.environ_hash(base) == fingerprint.environ_hash(same)
     assert fingerprint.environ_hash(base) != fingerprint.environ_hash({**base, "GITHUB_ACTIONS": "false"})
     assert fingerprint.environ_hash(base) != fingerprint.environ_hash({**base, "MY_SETTING": "1"})
