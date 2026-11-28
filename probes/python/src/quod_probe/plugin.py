@@ -189,6 +189,15 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
     imports land in the root scope."""
     global _STATE
     ns = early_config.known_args_namespace
+    # The invocation fingerprint, taken once, here: before plugins configure.
+    # Plugins add their markers to the ini configuration while configuring
+    # (`config.addinivalue_line("markers", ...)`), so a fingerprint taken
+    # later, when the skip file is checked, would never match the recorded one.
+    try:
+        early_root = _repo_root(str(early_config.invocation_params.dir), getattr(ns, "quod_root", None))
+        early_config._quod_invocation = fingerprint.invocation(early_config, early_root)
+    except Exception:  # noqa: BLE001 - checked again (and failed closed) later
+        early_config._quod_invocation = None
     path = getattr(ns, "quod_record", None)
     if not path or _STATE is not None:
         return
@@ -202,7 +211,7 @@ def pytest_load_initial_conftests(early_config: pytest.Config, parser: pytest.Pa
     capabilities = list(CAPABILITIES)
     try:
         env_fp = fingerprint.environment(recorder.packages)
-        inv_fp = fingerprint.invocation(early_config, root)
+        inv_fp = early_config._quod_invocation or fingerprint.invocation(early_config, root)
         fingerprints = {
             "environment": env_fp,
             "invocation": inv_fp,
@@ -475,7 +484,8 @@ def _check_skip_file(config: pytest.Config, checks: list[tuple[str, ...]]) -> st
                 return "the environment differs from the one the plan was made for"
         elif kind == "invocation" and len(args) == 1:
             root = _repo_root(str(config.invocation_params.dir), config.getoption("quod_root"))
-            if fingerprint.digest(fingerprint.invocation(config, root)) != args[0]:
+            inv = getattr(config, "_quod_invocation", None) or fingerprint.invocation(config, root)
+            if fingerprint.digest(inv) != args[0]:
                 return "the pytest invocation or ini configuration differs from the recorded one"
         elif kind == "env" and len(args) == 2:
             name, expected = args

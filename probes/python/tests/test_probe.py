@@ -725,6 +725,28 @@ def test_mutants_cover_the_functions_own_body_only():
     assert got("missing") == []
 
 
+def test_markers_added_while_configuring_dont_change_the_invocation(tmp_path):
+    """E9 pylint: plugins add markers to the ini configuration in
+    `pytest_configure`. The invocation the plugin checks must be the one it
+    recorded, taken before that, or no skip file ever matches."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("def test_a():\n    pass\n\ndef test_b():\n    pass\n")
+    # A TOML list: pytest appends to it in place (an ini string is re-parsed).
+    (tmp_path / "pyproject.toml").write_text('[tool.pytest.ini_options]\nmarkers = ["slow: slow tests"]\n')
+    (tmp_path / "conftest.py").write_text(
+        "def pytest_configure(config):\n    config.addinivalue_line('markers', 'late: added while configuring')\n"
+    )
+    out = tmp_path / "capture.jsonl"
+    res = _pytest(tmp_path, f"--quod-record={out}", "tests")
+    assert res.returncode == 0, res.stdout + res.stderr
+    header = json.loads(out.read_text(encoding="utf-8").splitlines()[0])
+    skip = tmp_path / "skip.txt"
+    skip.write_text(f"# quod-invocation {header['invocation_digest']}\ntests/test_a.py::test_a\n")
+    res = _pytest(tmp_path, f"--quod-skip={skip}", "tests")
+    assert "not skipping" not in res.stderr, res.stderr
+    assert "1 passed, 1 deselected" in res.stdout, res.stdout
+
+
 def test_quod_only_runs_only_the_named_tests(tmp_path):
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_a.py").write_text("def test_a():\n    pass\n\ndef test_b():\n    pass\n")

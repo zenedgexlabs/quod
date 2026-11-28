@@ -177,3 +177,17 @@ to be: nothing changed between planning and running. Probes that don't
 report a digest get the map's, the stricter old check. Regression tests:
 `skip_file_pins_the_planned_environment`,
 `test_the_fingerprint_commands_digest_is_what_the_plugin_accepts`.
+
+## Amendment (2026-11-29): the invocation is fingerprinted once, early
+
+E9 on pylint: every pull request ran everything, with "the pytest invocation
+or ini configuration differs from the recorded one". pytest plugins register
+their markers while configuring (`config.addinivalue_line("markers", ...)`),
+and with a `pyproject.toml` configuration that appends to the very list the
+invocation fingerprint reads. The recording fingerprinted the invocation
+before plugins configured; the skip-file check, during collection, after.
+
+The plugin (Python probe 0.4.11) now takes the invocation fingerprint once,
+at the start of `pytest_load_initial_conftests`, and both the recording
+header and the skip-file check use that value. Regression test:
+`test_markers_added_while_configuring_dont_change_the_invocation`.
